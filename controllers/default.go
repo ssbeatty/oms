@@ -8,8 +8,17 @@ type MainController struct {
 	beego.Controller
 }
 
+type HostController struct {
+	beego.Controller
+}
+
 func (c *MainController) Get() {
 	c.Data["Website"] = "beego.me"
 	c.Data["Email"] = "astaxie@gmail.com"
-	c.TplName = "index.tpl"
+	c.TplName = "index.html"
+}
+
+func (c *HostController) Get() {
+
+	c.TplName = "host.html"
 }
