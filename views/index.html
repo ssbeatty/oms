@@ -7,41 +7,125 @@
   <link rel="stylesheet" href="/css/layui.css">
   <style>
     .global-body {
+      padding: 2% 0;
       background-color: #e3e2e2;
       width: 100%;
       height: 1000px;
     }
     .body {
-      margin: 0 10%;
+      margin: 0 2%;
       background-color: #ffffff;
-      height: 1000px;
+      height: 90%;
+      padding-left: 5%;
+      padding-top: 5%;
+    }
+    .host-card {
+      background-color: #e3e2e2;
+      width: 20%;
+      float: left;
+      margin-right: 5%;
+      margin-bottom: 2em;
     }
   </style>
 </head>
 <body>
 <header>
   <ul class="layui-nav" lay-filter="">
-    <li class="layui-nav-item layui-this"><a href="">主机</a></li>
-    <li class="layui-nav-item"><a href="">主机组</a></li>
-    <li class="layui-nav-item"><a href="">SSH模式</a></li>
+    <li class="layui-nav-item"><a href="#">主机</a></li>
+    <li class="layui-nav-item"><a href="#">主机组</a></li>
+    <li class="layui-nav-item"><a href="#">SSH模式</a></li>
     <li class="layui-nav-item">
       <a href="javascript:;">运维模式</a>
       <dl class="layui-nav-child">
-        <dd><a href="">移动模块</a></dd>
-        <dd><a href="">后台模版</a></dd>
-        <dd><a href="">电商平台</a></dd>
+        <dd><a href="#">移动模块</a></dd>
+        <dd><a href="#">后台模版</a></dd>
+        <dd><a href="#">电商平台</a></dd>
       </dl>
     </li>
-    <li class="layui-nav-item"><a href="">关于</a></li>
+    <li class="layui-nav-item"><a href="#">关于</a></li>
   </ul>
 </header>
 
+<div class="global-body">
+  <div class="body">
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+    <div class="layui-card host-card">
+      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-body">
+        卡片式面板面板通常用于非白色背景色的主体内<br>
+        从而映衬出边框投影
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/js/layui.js"></script>
+<script src="/js/jquery-3.5.1.min.js"></script>
 <script>
   //注意：导航 依赖 element 模块，否则无法进行功能性操作
   layui.use('element', function(){
     var element = layui.element;
+  });
+</script>
+<script>
+  // 用于标头选中效果
+  if (!$('.layui-nav-item:first').hasClass('layui-this')) {
+    $('.layui-nav-item:first').addClass('layui-this');
+  }
+
+  $('.layui-nav-item').each(function(index){
+    $(this).click(function(){
+      $(this).addClass('layui-this').siblings().removeClass('layui-this');
+    });
   });
 </script>
 </body>
