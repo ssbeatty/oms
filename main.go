@@ -6,8 +6,11 @@ import (
 )
 
 func main() {
+	// static files
 	beego.SetStaticPath("/images", "static/images")
 	beego.SetStaticPath("/css", "static/css")
 	beego.SetStaticPath("/js", "static/js")
+
+	// main func
 	beego.Run()
 }

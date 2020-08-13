@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+</body>
+<script>
+    var socket = new WebSocket('ws://localhost:8080/ws/ssh');
+
+    socket.onmessage = function (msg) {
+        console.log(msg);
+        console.log(msg.data);
+    };
+    socket.onopen = function (msg) {
+        console.log(msg);
+        socket.send("123")
+    }
+</script>
+</html>
