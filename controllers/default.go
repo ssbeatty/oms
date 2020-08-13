@@ -8,16 +8,7 @@ type MainController struct {
 	beego.Controller
 }
 
-type HostController struct {
-	beego.Controller
-}
-
 func (c *MainController) Get() {
 	c.TplName = "index.html"
 	c.Render()
-}
-
-func (c *HostController) Get() {
-
-	c.TplName = "host.html"
 }
