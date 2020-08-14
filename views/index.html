@@ -26,20 +26,27 @@
       margin-right: 5%;
       margin-bottom: 2em;
     }
+    .edit {
+      float: right;
+      color: blue;
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
 <header>
   <ul class="layui-nav" lay-filter="">
-    <li class="layui-nav-item"><a href="#">主机</a></li>
-    <li class="layui-nav-item"><a href="#">主机组</a></li>
-    <li class="layui-nav-item"><a href="#">SSH模式</a></li>
+    <li class="layui-nav-item"><a href="/">主机</a></li>
+    <li class="layui-nav-item"><a href="">主机组</a></li>
+    <li class="layui-nav-item"><a href="">SSH模式</a></li>
     <li class="layui-nav-item">
       <a href="javascript:;">运维模式</a>
       <dl class="layui-nav-child">
-        <dd><a href="#">移动模块</a></dd>
-        <dd><a href="#">后台模版</a></dd>
-        <dd><a href="#">电商平台</a></dd>
+        <dd><a href="">移动模块</a></dd>
+        <dd><a href="">后台模版</a></dd>
+        <dd><a href="">电商平台</a></dd>
       </dl>
     </li>
     <li class="layui-nav-item"><a href="#">关于</a></li>
@@ -48,63 +55,30 @@
 
 <div class="global-body">
   <div class="body">
+    {{range .Hosts}}
     <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
+      <div class="layui-card-header">
+        主机
+        <a class="edit" style="color: red">删除</a>
+        <a class="edit">编辑</a>
+      </div>
       <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
+        主机名: <a href="">{{.Name}}</a><br>
+        地址: {{.Addr}}<br>
+        端口: {{.Port}}<br>
+        {{if .Group}}
+          组: {{.Group.Name}}<br>
+        {{else}}
+          组: 无<br>
+        {{end}}
+        标签:
+        {{range .Tags}}
+        <a style="font-size: 11px; color: blue" href="">{{.Name}}</a>
+        {{end}}
+        <br>
       </div>
     </div>
-
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
-    <div class="layui-card host-card">
-      <div class="layui-card-header">卡片面板</div>
-      <div class="layui-card-body">
-        卡片式面板面板通常用于非白色背景色的主体内<br>
-        从而映衬出边框投影
-      </div>
-    </div>
+    {{end}}
   </div>
 </div>
 
@@ -114,18 +88,6 @@
   //注意：导航 依赖 element 模块，否则无法进行功能性操作
   layui.use('element', function(){
     var element = layui.element;
-  });
-</script>
-<script>
-  // 用于标头选中效果
-  if (!$('.layui-nav-item:first').hasClass('layui-this')) {
-    $('.layui-nav-item:first').addClass('layui-this');
-  }
-
-  $('.layui-nav-item').each(function(index){
-    $(this).click(function(){
-      $(this).addClass('layui-this').siblings().removeClass('layui-this');
-    });
   });
 </script>
 </body>

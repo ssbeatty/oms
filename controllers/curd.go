@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/astaxie/beego"
 	"oms/models"
 )
@@ -19,7 +18,7 @@ func (c *HostController) Get() {
 		panic(err)
 	}
 	for _, host := range hosts {
-		fmt.Println(host)
+		Logger.Println(host)
 	}
 	data := &Response{HttpStatusOk, "success",
 		hosts}
