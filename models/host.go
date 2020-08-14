@@ -1,6 +1,9 @@
 package models
 
-import "github.com/astaxie/beego/orm"
+import (
+	"github.com/astaxie/beego/orm"
+	"oms/logger"
+)
 
 // Model Struct
 type Host struct {
@@ -21,7 +24,7 @@ func GetAllHost() []Host {
 	var hosts []Host
 	_, err := o.QueryTable(host).RelatedSel().All(&hosts)
 	if err != nil {
-		Logger.Println(err)
+		logger.Logger.Println(err)
 	}
 	// 获取tags
 	for i := 0; i < len(hosts); i++ {

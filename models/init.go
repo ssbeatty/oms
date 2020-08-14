@@ -3,16 +3,12 @@ package models
 import (
 	"fmt"
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var Logger = logs.GetLogger()
-
 func init() {
-	logs.SetLogger("console")
 
 	userName := beego.AppConfig.String("mysqluser")
 	passWord := beego.AppConfig.String("mysqlpass")
