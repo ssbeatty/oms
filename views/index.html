@@ -152,11 +152,11 @@
       layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
       $.ajax({
           "url" : "/host",
-          "type" : "delete",
+          "type" : "post",
           "data" : {
-            "id" : sid
+            "id": sid,
+            "_method": "DELETE"
           },
-          "dataType" : "json",
           "success" : callBack,
           "error" : function(err) {
             console.log(err)
