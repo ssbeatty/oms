@@ -1,8 +1,17 @@
 package controllers
 
-import "github.com/astaxie/beego/orm"
+import (
+	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beego/orm"
+)
 
 var o = orm.NewOrm()
+
+var Logger = logs.GetLogger()
+
+func init() {
+	logs.SetLogger("console")
+}
 
 const (
 	HttpStatusOk    = "200"
