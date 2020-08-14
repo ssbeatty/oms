@@ -56,10 +56,10 @@
 <div class="global-body">
   <div class="body">
     {{range .Hosts}}
-    <div class="layui-card host-card">
+    <div id="{{.Id}}" class="layui-card host-card">
       <div class="layui-card-header">
         主机
-        <a class="edit" style="color: red">删除</a>
+        <a class="edit del" style="color: red">删除</a>
         <a class="edit">编辑</a>
       </div>
       <div class="layui-card-body">
@@ -89,6 +89,37 @@
   layui.use('element', function(){
     var element = layui.element;
   });
+  layui.use('layer', function(){
+    var $ = layui.jquery;
+    // 删除操作
+    $('a.del').click(function()
+    {
+      var sid = $(this).parent().parent().attr('id');
+      layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
+      $.ajax({
+          "url" : "/host",
+          "type" : "post",
+          "data" : {
+            "id" : sid
+          },
+          "dataType" : "json",
+          "success" : callBack,
+          "error" : function(err) {
+            console.log(err)
+          }
+        });
+        function callBack(data) {
+          if (data.code === "200") {
+            $(".host-card#"+sid).remove()
+          }else {
+            layer.msg("delete error")
+          }
+          layer.close(index);
+        }
+      });
+
+    })
+  })
 </script>
 </body>
 </html>

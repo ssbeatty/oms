@@ -5,8 +5,13 @@ const (
 	HttpStatusError = "400"
 )
 
-type Response struct {
-	Code string
-	Msg  string
+type ResponseGet struct {
+	Code string      `json:"code"`
+	Msg  string      `json:"msg"`
 	Data interface{} `json:"data"`
+}
+
+type ResponsePost struct {
+	Code string `json:"code"`
+	Msg  string `json:"msg"`
 }

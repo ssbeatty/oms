@@ -18,6 +18,17 @@ type Host struct {
 	Tags  []*Tag `orm:"rel(m2m);null;rel_table(Tag)"`
 }
 
+func DeleteHostById(id int) bool {
+	o := orm.NewOrm()
+	host := Host{Id: id}
+	_, err := o.Delete(&host)
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	return true
+}
+
 func GetAllHost() []Host {
 	var o = orm.NewOrm()
 	host := new(Host)
