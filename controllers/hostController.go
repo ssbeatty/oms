@@ -13,22 +13,22 @@ type HostController struct {
 }
 
 func (c *HostController) Get() {
-	//user := new(models.Host)
-	//var hosts []models.Host
-	//_, err := o.QueryTable(user).All(&hosts)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//for _, host := range hosts {
-	//	Logger.Println(host)
-	//}
+	hosts := models.GetAllHost()
+	data := &ResponseGet{HttpStatusOk, "success",
+		hosts}
+	c.Data["json"] = data
+	c.ServeJSON()
+}
+
+func (c *HostController) Post() {
+
 	//data := &ResponseGet{HttpStatusOk, "success",
 	//	hosts}
 	//c.Data["json"] = data
 	c.ServeJSON()
 }
 
-func (c *HostController) Post() {
+func (c *HostController) Delete() {
 	var msg = "success"
 	var code = HttpStatusOk
 	id, err := strconv.Atoi(c.Input().Get("id"))
