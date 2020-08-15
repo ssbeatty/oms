@@ -62,6 +62,54 @@ func InsertHost(hostname string, addr string, port int, password string, groupId
 	return &host
 }
 
+func UpdateHost(id int, hostname string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
+	var o = orm.NewOrm()
+	group := Group{Id: groupId}
+	err := o.Read(&group)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	host := Host{Id: id}
+	err = o.Read(&host)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	if hostname != "" {
+		host.Name = hostname
+	}
+	if port != 0 {
+		host.Port = port
+	}
+	if addr != "" {
+		host.Addr = addr
+	}
+	if password != "" {
+		host.PassWord = password
+	}
+	if filePath != "" {
+		host.KeyFile = filePath
+	}
+	if groupId != 0 {
+		host.Group = &group
+	}
+	_, err = o.Update(&host)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	m2m := o.QueryM2M(&host, "Tags")
+	_, err = m2m.Clear()
+	for _, tagIdStr := range tags {
+		tagId, _ := strconv.Atoi(tagIdStr)
+		tag := Tag{Id: tagId}
+		err := o.Read(&tag)
+		_, err = m2m.Add(tag)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+	}
+	return &host
+}
+
 func GetAllHost() []Host {
 	var o = orm.NewOrm()
 	host := new(Host)

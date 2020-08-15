@@ -50,6 +50,40 @@ func (c *HostController) Post() {
 	c.ServeJSON()
 }
 
+func (c *HostController) Put() {
+	var msg = "success"
+	var code = HttpStatusOk
+	var tagJson []string
+	id, err := c.GetInt("id")
+	if err != nil {
+		logger.Logger.Println(err)
+		msg = "can't get param id"
+		code = HttpStatusError
+	}
+	hostname := c.Input().Get("hostname")
+	addr := c.Input().Get("addr")
+	port, _ := c.GetInt("port")
+	password := c.Input().Get("password")
+	groupId, _ := c.GetInt("group")
+	file, _, _ := c.GetFile("keyFile")
+	tags := c.Input().Get("tags")
+
+	err = json.Unmarshal([]byte(tags), &tagJson)
+	if err != nil {
+		msg = "can't get param tags"
+		code = HttpStatusError
+		logger.Logger.Println(err)
+	}
+	filePath := getFileName()
+	defer file.Close()
+	err = c.SaveToFile("keyFile", filePath)
+
+	models.UpdateHost(id, hostname, addr, port, password, groupId, tagJson, filePath)
+	data := &ResponsePost{code, msg}
+	c.Data["json"] = data
+	c.ServeJSON()
+}
+
 func (c *HostController) Delete() {
 	var msg = "success"
 	var code = HttpStatusOk
