@@ -22,7 +22,13 @@ type Host struct {
 func DeleteHostById(id int) bool {
 	o := orm.NewOrm()
 	host := Host{Id: id}
-	_, err := o.Delete(&host)
+	m2m := o.QueryM2M(&host, "Tags")
+	_, err := m2m.Clear()
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	_, err = o.Delete(&host)
 	if err != nil {
 		logger.Logger.Println(err)
 		return false
