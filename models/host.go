@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/astaxie/beego/orm"
 	"oms/logger"
+	"strconv"
 )
 
 // Model Struct
@@ -27,6 +28,38 @@ func DeleteHostById(id int) bool {
 		return false
 	}
 	return true
+}
+
+func InsertHost(hostname string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
+	var o = orm.NewOrm()
+	group := Group{Id: groupId}
+	err := o.Read(&group)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	host := Host{
+		Name:     hostname,
+		Addr:     addr,
+		Port:     port,
+		PassWord: password,
+		Group:    &group,
+		KeyFile:  filePath,
+	}
+	_, err = o.Insert(&host)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	m2m := o.QueryM2M(&host, "Tags")
+	for _, tagIdStr := range tags {
+		tagId, _ := strconv.Atoi(tagIdStr)
+		tag := Tag{Id: tagId}
+		err := o.Read(&tag)
+		_, err = m2m.Add(tag)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+	}
+	return &host
 }
 
 func GetAllHost() []Host {

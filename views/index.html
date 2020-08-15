@@ -175,7 +175,7 @@
     })
   })
   layui.use('layer', function() {
-    $('a.hostForm').click(function () {
+    $('.hostForm').click(function () {
       var title
       if ($(this).hasClass("edit")) {
         title = "编辑设备"
@@ -191,7 +191,7 @@
         shade: 0,
         btn: ['提交', '重置']
         , btn1: function (index, layero) {
-          var tags = []
+          var tags = [];
           // 提交按钮
           var hostname = $("#hostname").val();
           var addr = $("#addr").val();
@@ -201,12 +201,29 @@
           $('input[type=checkbox]:checked').each(function(){
             tags.push($(this).attr("name"))
           });
-          var keyFile = $("#keyFile").val();
-
-          console.log(keyFile)
-          console.log(password)
-          console.log(group)
-          console.log(tags)
+          var keyFile = $("#keyFile")[0].files[0];
+          var formData = new FormData();
+          formData.append("hostname", hostname);
+          formData.append("addr", addr);
+          formData.append("port", port);
+          formData.append("password", password);
+          formData.append("group", group);
+          formData.append("keyFile", keyFile);
+          formData.append("tags", JSON.stringify(tags));
+          $.ajax({
+            "url" : "/host",
+            "type" : "post",
+            "data": formData,
+            "processData" : false,
+            "contentType" : false,
+            "success" : callBack,
+            "error" : function(err) {
+              layer.msg(err);
+            }
+          });
+          function callBack(data) {
+            layer.close(index);
+          }
         },
         btn2: function (index, layero) {
           $("#editFrom")[0].reset();
