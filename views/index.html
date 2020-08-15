@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -39,7 +39,8 @@
 <header>
   <ul class="layui-nav" lay-filter="">
     <li class="layui-nav-item"><a href="/">主机</a></li>
-    <li class="layui-nav-item"><a href="/group">主机组</a></li>
+    <li class="layui-nav-item"><a href="/groupPage">主机组</a></li>
+    <li class="layui-nav-item"><a href="">标签</a></li>
     <li class="layui-nav-item"><a href="">SSH模式</a></li>
     <li class="layui-nav-item">
       <a href="javascript:;">运维模式</a>
@@ -76,7 +77,7 @@
         {{end}}
         标签:
         {{range .Tags}}
-        <a style="font-size: 11px; color: blue" href="">{{.Name}}</a>
+        <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="">{{.Name}}</a>
         {{end}}
         <br>
       </div>
@@ -115,20 +116,18 @@
     <div class="layui-input-block">
       <select name="group" lay-verify="required" id="group">
         <option value=""></option>
-        <option value="0">北京</option>
-        <option value="1">上海</option>
-        <option value="2">广州</option>
-        <option value="3">深圳</option>
-        <option value="4">杭州</option>
+        {{range .Groups}}
+        <option value="{{.Id}}">{{.Name}}</option>
+        {{end}}
       </select>
     </div>
   </div>
   <div class="layui-form-item">
     <label class="layui-form-label">标签</label>
     <div class="layui-input-block" id="tag">
-      <input type="checkbox" name="like[write]" title="写作">
-      <input type="checkbox" name="like[read]" title="阅读">
-      <input type="checkbox" name="like[dai]" title="发呆">
+      {{range .Tags}}
+      <input type="checkbox" name="{{.Id}}" title="{{.Name}}">
+      {{end}}
     </div>
   </div>
   <div class="layui-form-item">
