@@ -2,11 +2,12 @@
   <title>首页</title>
   <style>
     .host-card {
-      background-color: #e3e2e2;
+      background-color: #eeeeee;
       width: 20%;
       float: left;
-      margin-right: 5%;
+      margin-right: 4%;
       margin-bottom: 2em;
+      box-shadow: darkgrey 10px 10px 20px 5px ;
     }
     .mButton {
       float: right;
@@ -17,33 +18,35 @@
     }
   </style>
 </head>
-<button id="insert" type="button" class="layui-btn layui-btn-primary layui-btn-sm hostForm" style="width: 4rem;height: 4rem;position: fixed;bottom: 3rem;right: 3rem;z-index: 9999;background-color: #393D49">
-  <p style="font-size: 15px;color: #FFFFFF">新增</p>
-</button>
-{{range .Hosts}}
-  <div id="{{.Id}}" class="layui-card host-card">
-    <div class="layui-card-header">
-      主机
-      <a class="mButton del" style="color: red">删除</a>
-      <a class="mButton edit hostForm">编辑</a>
+<div>
+  <button id="insert" type="button" class="layui-btn layui-btn-primary layui-btn-sm hostForm" style="width: 4rem;height: 4rem;position: fixed;bottom: 3rem;right: 3rem;z-index: 9999;background-color: #393D49">
+    <p style="font-size: 15px;color: #FFFFFF">新增</p>
+  </button>
+  {{range .Hosts}}
+    <div id="{{.Id}}" class="layui-card host-card">
+      <div class="layui-card-header">
+        主机
+        <a class="mButton del" style="color: red">删除</a>
+        <a class="mButton edit hostForm">编辑</a>
+      </div>
+      <div class="layui-card-body">
+        主机名: <a href="">{{.Name}}</a><br>
+        地址: {{.Addr}}<br>
+        端口: {{.Port}}<br>
+        {{if .Group}}
+          组: {{.Group.Name}}<br>
+        {{else}}
+          组: 无<br>
+        {{end}}
+        标签:
+        {{range .Tags}}
+          <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="">{{.Name}}</a>
+        {{end}}
+        <br>
+      </div>
     </div>
-    <div class="layui-card-body">
-      主机名: <a href="">{{.Name}}</a><br>
-      地址: {{.Addr}}<br>
-      端口: {{.Port}}<br>
-      {{if .Group}}
-        组: {{.Group.Name}}<br>
-      {{else}}
-        组: 无<br>
-      {{end}}
-      标签:
-      {{range .Tags}}
-        <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="">{{.Name}}</a>
-      {{end}}
-      <br>
-    </div>
-  </div>
-{{end}}
+  {{end}}
+</div>
 
 <form class="layui-form" id="editFrom" style="display:none;margin:50px 50px 0 0">
   <div class="layui-form-item">

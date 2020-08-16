@@ -36,6 +36,10 @@ func (c *MainController) Get() {
 }
 
 func (c *MainController) GroupPage() {
+	groups := models.GetAllGroup()
+	tags := models.GetAllTag()
+	c.Data["Groups"] = groups
+	c.Data["Tags"] = tags
 	c.Layout = "base/layout.html"
 	c.TplName = "group.html"
 	c.Render()
