@@ -12,11 +12,23 @@ type Host struct {
 	Name     string `orm:"size(100)"`
 	Addr     string `orm:"null"`
 	Port     int    `orm:"default(22)"`
-	PassWord string `orm:"null" json:"-"`
-	KeyFile  string `orm:"null" json:"-"`
+	PassWord string `orm:"null"`
+	KeyFile  string `orm:"null"`
 
 	Group *Group `orm:"rel(fk);null;on_delete(set_null)"`
 	Tags  []*Tag `orm:"rel(m2m);null;rel_table(Tag)"`
+}
+
+func GetHostById(id int) *Host {
+	var o = orm.NewOrm()
+	host := Host{Id: id}
+	err := o.Read(&host)
+	o.LoadRelated(&host, "Tags")
+	o.LoadRelated(&host, "Group")
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return &host
 }
 
 func DeleteHostById(id int) bool {

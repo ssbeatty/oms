@@ -69,9 +69,14 @@ func (c *HostController) Put() {
 		logger.Logger.Println(err)
 	}
 	filePath := getFileName()
-	defer file.Close()
+	if file != nil {
+		defer file.Close()
+	}
 	err = c.SaveToFile("keyFile", filePath)
-
+	if err != nil {
+		filePath = ""
+		logger.Logger.Println(err)
+	}
 	models.UpdateHost(id, hostname, addr, port, password, groupId, tagJson, filePath)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
@@ -93,6 +98,22 @@ func (c *HostController) Delete() {
 	}
 	logger.Logger.Println(msg)
 	data := &ResponsePost{code, msg}
+	c.Data["json"] = data
+	c.ServeJSON()
+}
+
+func (c *HostController) GetOneHost() {
+	var msg = "success"
+	var code = HttpStatusOk
+	idStr := c.Ctx.Input.Param(":id")
+	id, err := strconv.Atoi(idStr)
+	hosts := models.GetHostById(id)
+	if err != nil {
+		msg = "Error params id"
+		code = HttpStatusError
+	}
+	data := &ResponseGet{code, msg,
+		hosts}
 	c.Data["json"] = data
 	c.ServeJSON()
 }

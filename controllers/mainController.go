@@ -9,10 +9,6 @@ type MainController struct {
 	beego.Controller
 }
 
-type TestController struct {
-	beego.Controller
-}
-
 // resources
 type GroupController struct {
 	beego.Controller
@@ -23,11 +19,6 @@ type HostController struct {
 }
 
 type TagController struct {
-	beego.Controller
-}
-
-//path
-type GroupPathController struct {
 	beego.Controller
 }
 
@@ -43,11 +34,7 @@ func (c *MainController) Get() {
 	c.Render()
 }
 
-func (c *GroupPathController) Get() {
+func (c *MainController) GroupPage() {
 	c.TplName = "group.html"
 	c.Render()
-}
-
-func (c *TestController) Get() {
-	models.TestFunc()
 }

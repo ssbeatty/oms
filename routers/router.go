@@ -6,17 +6,15 @@ import (
 )
 
 func init() {
-	//test
-	beego.Router("/test", &controllers.TestController{})
-
 	//resources
 	beego.Router("/", &controllers.MainController{})
 	beego.Router("/host", &controllers.HostController{})
+	beego.Router("/host/:id", &controllers.HostController{}, "get:GetOneHost")
 	beego.Router("/group", &controllers.GroupController{})
 	beego.Router("/tag", &controllers.TagController{})
 
 	//page
-	beego.Router("/groupPage", &controllers.GroupPathController{})
+	beego.Router("/groupPage", &controllers.MainController{}, "get:GroupPage")
 	//ws ssh
 	beego.Router("/ws/ssh", &controllers.WebSocketController{})
 }
