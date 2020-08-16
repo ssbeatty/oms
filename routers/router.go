@@ -11,7 +11,9 @@ func init() {
 	beego.Router("/host", &controllers.HostController{})
 	beego.Router("/host/:id", &controllers.HostController{}, "get:GetOneHost")
 	beego.Router("/group", &controllers.GroupController{})
+	beego.Router("/group/:id", &controllers.GroupController{}, "get:GetOneGroup")
 	beego.Router("/tag", &controllers.TagController{})
+	beego.Router("/tag/:id", &controllers.TagController{}, "get:GetOneTag")
 
 	//page
 	beego.Router("/groupPage", &controllers.MainController{}, "get:GroupPage")

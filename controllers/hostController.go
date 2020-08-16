@@ -101,7 +101,6 @@ func (c *HostController) Delete() {
 		msg = "Can't delete object"
 		code = HttpStatusError
 	}
-	logger.Logger.Println(msg)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()

@@ -21,3 +21,59 @@ func GetAllTag() []Tag {
 	}
 	return tags
 }
+
+func GetTagById(id int) *Tag {
+	var o = orm.NewOrm()
+	tag := Tag{Id: id}
+	err := o.Read(&tag)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return &tag
+}
+
+func InsertTag(name string) *Tag {
+	var o = orm.NewOrm()
+	tag := Tag{
+		Name: name,
+	}
+	_, err := o.Insert(&tag)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return &tag
+}
+
+func UpdateTag(id int, name string) *Tag {
+	var o = orm.NewOrm()
+	tag := Tag{Id: id}
+	err := o.Read(&tag)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	if name != "" {
+		tag.Name = name
+	}
+	_, err = o.Update(&tag)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return &tag
+}
+
+func DeleteTagById(id int) bool {
+	o := orm.NewOrm()
+	tag := Tag{Id: id}
+	m2m := o.QueryM2M(&tag, "Hosts")
+	_, err := m2m.Clear()
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	_, err = o.Delete(&tag)
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	return true
+}
