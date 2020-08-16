@@ -1,71 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>首页</title>
-    <link rel="stylesheet" href="/static/css/layui.css">
-    <style>
-        .global-body {
-            padding: 2% 0;
-            background-color: #e3e2e2;
-            width: 100%;
-            height: 1000px;
-        }
-        .body {
-            margin: 0 2%;
-            background-color: #ffffff;
-            height: 90%;
-            padding-left: 5%;
-            padding-top: 5%;
-        }
-    </style>
+    <title>分组</title>
 </head>
-<body>
-<header>
-    <ul class="layui-nav" lay-filter="">
-        <li class="layui-nav-item"><a href="/">主机</a></li>
-        <li class="layui-nav-item"><a href="/groupPage">主机组</a></li>
-        <li class="layui-nav-item"><a href="">标签</a></li>
-        <li class="layui-nav-item"><a href="">SSH模式</a></li>
-        <li class="layui-nav-item">
-            <a href="javascript:;">运维模式</a>
-            <dl class="layui-nav-child">
-                <dd><a href="">移动模块</a></dd>
-                <dd><a href="">后台模版</a></dd>
-                <dd><a href="">电商平台</a></dd>
-            </dl>
-        </li>
-        <li class="layui-nav-item"><a href="#">关于</a></li>
-    </ul>
-</header>
 
-<div class="global-body">
-    <div class="body">
-        <button id="insert" type="button" class="layui-btn layui-btn-primary layui-btn-sm hostForm" style="width: 4rem;height: 4rem;position: fixed;bottom: 3rem;right: 3rem;z-index: 9999;background-color: #393D49">
-            <p style="font-size: 15px;color: #FFFFFF">新增</p>
-        </button>
-    </div>
-</div>
+<button id="insert" type="button" class="layui-btn layui-btn-primary layui-btn-sm hostForm" style="width: 4rem;height: 4rem;position: fixed;bottom: 3rem;right: 3rem;z-index: 9999;background-color: #393D49">
+    <p style="font-size: 15px;color: #FFFFFF">新增</p>
+</button>
 
-
-<script src="/static/js/layui.js"></script>
-<script src="/static/js/jquery-3.5.1.min.js"></script>
-<script>
-    //注意：导航 依赖 element 模块，否则无法进行功能性操作
-    layui.use('element', function(){
-        var element = layui.element;
-    });
-    //From
-    layui.use('form', function(){
-        var form = layui.form;
-
-        //监听提交
-        form.on('submit(formDemo)', function(data){
-            layer.msg(JSON.stringify(data.field));
-            return false;
-        });
-    });
-</script>
-</body>
-</html>

@@ -35,9 +35,14 @@ func (c *HostController) Post() {
 		logger.Logger.Println(err)
 	}
 	filePath := getFileName()
-	defer file.Close()
+	if file != nil {
+		defer file.Close()
+	}
 	err = c.SaveToFile("keyFile", filePath)
-
+	if err != nil {
+		filePath = ""
+		logger.Logger.Println(err)
+	}
 	models.InsertHost(hostname, addr, port, password, groupId, tagJson, filePath)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data

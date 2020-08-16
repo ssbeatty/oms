@@ -30,11 +30,13 @@ func (c *MainController) Get() {
 	c.Data["Hosts"] = hosts
 	c.Data["Groups"] = groups
 	c.Data["Tags"] = tags
+	c.Layout = "base/layout.html"
 	c.TplName = "index.html"
 	c.Render()
 }
 
 func (c *MainController) GroupPage() {
+	c.Layout = "base/layout.html"
 	c.TplName = "group.html"
 	c.Render()
 }
