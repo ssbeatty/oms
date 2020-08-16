@@ -22,7 +22,7 @@ func TestNewWithAgent(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	c, err := NewClient("192.168.5.154", "22", "root", "123456")
+	c, err := NewClient("sasaba.net", "6666", "root", "wang199564", "")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -52,7 +52,7 @@ func TestNewWithPrivateKey(t *testing.T) {
 }
 
 func TestBash(t *testing.T) {
-	c, err := NewClient("192.168.8.101", "22", "root", "199564")
+	c, err := NewClient("192.168.8.101", "22", "root", "199564", "")
 	if err != nil {
 		panic(err)
 	}

@@ -99,7 +99,7 @@ func New(cnf *Config) (client *Client, err error) {
 }
 
 // NewClient 根据配置
-func NewClient(host, port, user, password string) (client *Client, err error) {
+func NewClient(host, port, user, password string, keyFile string) (client *Client, err error) {
 	p, _ := strconv.Atoi(port)
 	// if err != nil {
 	// 	p = 22
@@ -108,12 +108,14 @@ func NewClient(host, port, user, password string) (client *Client, err error) {
 		user = "root"
 	}
 	var config = &Config{
-		Host:     host,
-		Port:     p,
-		User:     user,
-		Password: password,
-		// KeyFiles: []string{"~/.ssh/id_rsa"},
+		Host:       host,
+		Port:       p,
+		User:       user,
+		Password:   password,
 		Passphrase: password,
+	}
+	if keyFile != "" {
+		config.KeyFiles = []string{keyFile}
 	}
 	return New(config)
 }
