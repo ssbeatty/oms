@@ -81,6 +81,10 @@ func (c *MainController) AboutPage() {
 }
 
 func (c *MainController) ShellPage() {
+	dType := c.Input().Get("type")
+	idStr := c.Input().Get("id")
+	c.Data["dType"] = dType
+	c.Data["idStr"] = idStr
 	c.Layout = "base/layout.html"
 	c.TplName = "shell.html"
 	c.Render()

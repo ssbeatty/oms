@@ -36,13 +36,13 @@
         地址: {{.Addr}}<br>
         端口: {{.Port}}<br>
         {{if .Group}}
-          组: {{.Group.Name}}<br>
+          组: <a href="/shell?type=group&id={{.Id}}">{{.Group.Name}}</a><br>
         {{else}}
           组: 无<br>
         {{end}}
         标签:
         {{range .Tags}}
-          <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="">{{.Name}}</a>
+          <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="/shell?type=tag&id={{.Id}}">{{.Name}}</a>
         {{end}}
         <br>
       </div>

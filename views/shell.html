@@ -1,12 +1,59 @@
 <head>
     <title>SHELL</title>
+    <style>
+        .code {
+            width: 100%;
+            height: 600px;
+            background-color: #393D49;
+            padding: 2% 5%;
+            margin-top: 2%;
+            overflow-y: auto;
+        }
+        .hName {
+            color: #f91a55;
+            font-size: 17px
+        }
+        .hMsg {
+            color: #FFFFFF;
+            font-size: 15px
+        }
+    </style>
 </head>
 <div style="width: 90%">
     <label>
         <h3>输入命令:</h3>
-        <input type="text" placeholder="请输入命令" autocomplete="off" class="layui-input">
+        <div id="cmdVal" style="display: none" dType="{{.dType}}" val="{{.idStr}}"></div>
+        <input id="cmdText" type="text" placeholder="请输入命令" autocomplete="off" class="layui-input">
     </label>
-    <button style="margin-top: 20px" class="layui-btn-primary layui-btn layui-btn-sm" >立即提交</button>
+    <button style="margin-top: 20px" class="layui-btn-primary layui-btn layui-btn-sm cmd" >立即提交</button>
+    <div class="code">
+    </div>
 </div>
 
-
+<script>
+$('button.cmd').click(function() {
+    var cmdVal = $("#cmdVal");
+    var id = cmdVal.attr("val");
+    var dType = cmdVal.attr("dType");
+    var cmd = $("#cmdText").val();
+    $.ajax({
+        "url" : "/tools/cmd" + "?id=" + id + "&type=" + dType + "&cmd=" + cmd,
+        "type" : "get",
+        "success" : callBack,
+        "error" : function(err) {
+            console.log(err)
+        }
+    });
+    function callBack(data) {
+        $(".code div").remove();
+        for(let i in data.data){
+            let item = data.data[i];
+            var tagStr = "        <div style=\"margin-top: 1em\">\n" +
+                "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
+                "            <p class=\"hMsg\">" + item.Msg + "</p>\n" +
+                "        </div>";
+            $(".code").append(tagStr);
+        }
+    }
+})
+</script>
