@@ -3,7 +3,15 @@ package models
 import (
 	"github.com/astaxie/beego/orm"
 	"oms/logger"
+	"oms/ssh"
 )
+
+type Result struct {
+	Status   bool
+	HostId   int
+	HostName string
+	Msg      string
+}
 
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
@@ -40,4 +48,27 @@ func ParseHostList(pType string, id int) []*Host {
 
 	}
 	return hosts
+}
+
+func RunCmdOne(host *Host, cmd string) ([]byte, error) {
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		return nil, err
+	}
+	return client.Output(cmd)
+}
+
+func RunCmd(hosts []*Host, cmd string) []*Result {
+	var results []*Result
+
+	for _, host := range hosts {
+		result, err := RunCmdOne(host, cmd)
+		if err != nil {
+			results = append(results, &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()})
+		} else {
+			results = append(results, &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(result)})
+		}
+
+	}
+	return results
 }

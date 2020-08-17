@@ -14,11 +14,12 @@ func (c *ToolController) RunCmd() {
 		logger.Logger.Println(err)
 	}
 	pType := c.Input().Get("type")
+	cmd := c.Input().Get("cmd")
 	hosts := models.ParseHostList(pType, id)
 	// do cmd
-
+	results := models.RunCmd(hosts, cmd)
 	data := &ResponseGet{code, msg,
-		hosts}
+		results}
 	c.Data["json"] = data
 	c.ServeJSON()
 }
