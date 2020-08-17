@@ -46,8 +46,27 @@ func (c *MainController) GroupPage() {
 }
 
 func (c *MainController) SshPage() {
-	c.Data["HostId"] = 1
+	idStr := c.Ctx.Input.Param(":id")
+	c.Data["HostId"] = idStr
 	c.Layout = "base/layout.html"
 	c.TplName = "ssh.html"
+	c.Render()
+}
+
+func (c *MainController) AboutPage() {
+	c.Layout = "base/layout.html"
+	c.TplName = "about.html"
+	c.Render()
+}
+
+func (c *MainController) ShellPage() {
+	c.Layout = "base/layout.html"
+	c.TplName = "shell.html"
+	c.Render()
+}
+
+func (c *MainController) FilePage() {
+	c.Layout = "base/layout.html"
+	c.TplName = "file.html"
 	c.Render()
 }

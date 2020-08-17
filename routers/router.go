@@ -17,7 +17,10 @@ func init() {
 
 	//page
 	beego.Router("/groupPage", &controllers.MainController{}, "get:GroupPage")
+	beego.Router("/about", &controllers.MainController{}, "get:AboutPage")
+	beego.Router("/shell", &controllers.MainController{}, "get:ShellPage")
+	beego.Router("/file", &controllers.MainController{}, "get:FilePage")
 	//ws ssh
-	beego.Router("/ssh", &controllers.MainController{}, "get:SshPage")
+	beego.Router("/ssh/:id", &controllers.MainController{}, "get:SshPage")
 	beego.Router("/ws/ssh/:id", &controllers.WebSocketController{})
 }

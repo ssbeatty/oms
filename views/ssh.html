@@ -41,6 +41,7 @@
         };
 
         socket.onclose = function (e) {
+            layer.msg("connect close");
             term.destroy();
         };
     };
