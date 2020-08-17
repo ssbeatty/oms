@@ -1,22 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>SSH</title>
+    <link href="/static/css/xterm.min.css" rel="stylesheet" type="text/css"/>
+    <style>
+        #terms {
+            width: 90%;
+        }
+    </style>
 </head>
-<body>
-
-</body>
+<div id="HostId" val="{{.HostId}}"></div>
+<div id="terms"></div>
+<script src="/static/js/xterm.min.js"></script>
 <script>
-    var socket = new WebSocket('ws://localhost:8080/ws/ssh');
+    var hostId = $("#HostId").attr("val")
+    var socket = new WebSocket('ws://' + window.location.host + '/ws/ssh');
 
-    socket.onmessage = function (msg) {
-        console.log(msg);
-        console.log(msg.data);
+    socket.onopen = function () {
+        socket.send(hostId)
+        var term = new Terminal({
+            rows: 40,
+            col: 180,
+            height: 600
+            });
+        term.open(document.getElementById('terms'));
+
+        term.on('data', function (data) {
+            console.log(data);
+            socket.send(data);
+        });
+
+        socket.onmessage = function (msg) {
+            console.log(msg);
+            console.log(msg.data);
+            term.write(msg.data);
+        };
+        socket.onerror = function (e) {
+            console.log(e);
+        };
+
+        socket.onclose = function (e) {
+            console.log(e);
+            term.destroy();
+        };
     };
-    socket.onopen = function (msg) {
-        console.log(msg);
-        socket.send("123")
-    }
 </script>
-</html>

@@ -44,3 +44,10 @@ func (c *MainController) GroupPage() {
 	c.TplName = "group.html"
 	c.Render()
 }
+
+func (c *MainController) SshPage() {
+	c.Data["HostId"] = 1
+	c.Layout = "base/layout.html"
+	c.TplName = "ssh.html"
+	c.Render()
+}
