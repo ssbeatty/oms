@@ -35,7 +35,7 @@ func (c *WebSocketController) Get() {
 	}
 	defer wsConn.Close()
 	host := models.GetHostById(id)
-	client, err := ssh.NewClient(host.Addr, string(host.Port), host.User, host.PassWord, host.KeyFile)
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
 	if err != nil {
 		logger.Logger.Println(err)
 	}

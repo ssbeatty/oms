@@ -99,8 +99,7 @@ func New(cnf *Config) (client *Client, err error) {
 }
 
 // NewClient 根据配置
-func NewClient(host, port, user, password string, keyFile string) (client *Client, err error) {
-	p, _ := strconv.Atoi(port)
+func NewClient(host string, port int, user string, password string, keyFile string) (client *Client, err error) {
 	// if err != nil {
 	// 	p = 22
 	// }
@@ -109,7 +108,7 @@ func NewClient(host, port, user, password string, keyFile string) (client *Clien
 	}
 	var config = &Config{
 		Host:       host,
-		Port:       p,
+		Port:       port,
 		User:       user,
 		Password:   password,
 		Passphrase: password,
