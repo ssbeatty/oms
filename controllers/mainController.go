@@ -22,6 +22,11 @@ type TagController struct {
 	beego.Controller
 }
 
+//tools
+type ToolController struct {
+	beego.Controller
+}
+
 // 首页主机页
 func (c *MainController) Get() {
 	hosts := models.GetAllHost()
