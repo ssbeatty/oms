@@ -5,7 +5,6 @@ import (
 	"crypto"
 	"encoding/hex"
 	"io"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -21,7 +20,6 @@ func KeyFile() string {
 		return ""
 	}
 	key := filepath.ToSlash(path.Join(home, ".ssh/id_rsa"))
-	log.Println(key)
 	return key
 }
 func FileExist(file string) bool {

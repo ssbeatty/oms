@@ -58,17 +58,32 @@ func RunCmdOne(host *Host, cmd string) ([]byte, error) {
 	return client.Output(cmd)
 }
 
+func RunCmdOneAsync(host *Host, cmd string, ch chan *Result) {
+	var result *Result
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+	msg, err := client.Output(cmd)
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+	} else {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+	}
+
+	ch <- result
+}
+
 func RunCmd(hosts []*Host, cmd string) []*Result {
 	var results []*Result
-
+	channel := make(chan *Result, 20)
 	for _, host := range hosts {
-		result, err := RunCmdOne(host, cmd)
-		if err != nil {
-			results = append(results, &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()})
-		} else {
-			results = append(results, &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(result)})
-		}
-
+		go RunCmdOneAsync(host, cmd, channel)
+	}
+	for _, _ = range hosts {
+		results = append(results, <-channel)
 	}
 	return results
 }

@@ -100,9 +100,6 @@ func New(cnf *Config) (client *Client, err error) {
 
 // NewClient 根据配置
 func NewClient(host string, port int, user string, password string, keyFile string) (client *Client, err error) {
-	// if err != nil {
-	// 	p = 22
-	// }
 	if user == "" {
 		user = "root"
 	}
