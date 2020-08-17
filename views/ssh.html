@@ -3,7 +3,6 @@
     <link href="/static/css/xterm.min.css" rel="stylesheet" type="text/css"/>
     <style>
         #terms {
-            width: 90%;
         }
     </style>
 </head>
@@ -18,18 +17,21 @@
         var term = new Terminal({
             rows: 40,
             col: 180,
-            height: 600
             });
         term.open(document.getElementById('terms'));
 
         term.on('data', function (data) {
-            console.log(data);
             socket.send(data);
+        });
+        term.on('resize', function (size) {
+            socket.send(JSON.stringify({
+                type: "resize",
+                rows: size.rows,
+                cols: size.cols,
+            }));
         });
 
         socket.onmessage = function (msg) {
-            console.log(msg);
-            console.log(msg.data);
             term.write(msg.data);
         };
         socket.onerror = function (e) {
@@ -37,7 +39,6 @@
         };
 
         socket.onclose = function (e) {
-            console.log(e);
             term.destroy();
         };
     };

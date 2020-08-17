@@ -124,7 +124,7 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 			msgObj := wsMsg{
 				Type: "cmd",
 				Cmd:  "",
-				Rows: 50,
+				Rows: 40,
 				Cols: 180,
 			}
 			//if err := json.Unmarshal(wsData, &msgObj); err != nil {
