@@ -10,6 +10,7 @@ import (
 type Host struct {
 	Id       int
 	Name     string `orm:"size(100)"`
+	User     string `orm:"null"`
 	Addr     string `orm:"null"`
 	Port     int    `orm:"default(22)"`
 	PassWord string `orm:"null"`
@@ -48,7 +49,7 @@ func DeleteHostById(id int) bool {
 	return true
 }
 
-func InsertHost(hostname string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
+func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
 	var o = orm.NewOrm()
 	group := Group{Id: groupId}
 	err := o.Read(&group)
@@ -57,6 +58,7 @@ func InsertHost(hostname string, addr string, port int, password string, groupId
 	}
 	host := Host{
 		Name:     hostname,
+		User:     user,
 		Addr:     addr,
 		Port:     port,
 		PassWord: password,
@@ -80,7 +82,7 @@ func InsertHost(hostname string, addr string, port int, password string, groupId
 	return &host
 }
 
-func UpdateHost(id int, hostname string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
+func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []string, filePath string) *Host {
 	var o = orm.NewOrm()
 	group := Group{Id: groupId}
 	err := o.Read(&group)
@@ -94,6 +96,9 @@ func UpdateHost(id int, hostname string, addr string, port int, password string,
 	}
 	if hostname != "" {
 		host.Name = hostname
+	}
+	if user != "" {
+		host.User = user
 	}
 	if port != 0 {
 		host.Port = port

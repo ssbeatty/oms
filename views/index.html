@@ -31,6 +31,7 @@
       </div>
       <div class="layui-card-body">
         主机名: <a href="">{{.Name}}</a><br>
+        用户: {{.User}}<br>
         地址: {{.Addr}}<br>
         端口: {{.Port}}<br>
         {{if .Group}}
@@ -53,6 +54,12 @@
     <label class="layui-form-label">主机名</label>
     <div class="layui-input-block">
       <input type="text" name="title" required  lay-verify="required" placeholder="请输入主机名" autocomplete="on" class="layui-input" id="hostname" style="width: 200px">
+    </div>
+  </div>
+  <div class="layui-form-item">
+    <label class="layui-form-label">用户</label>
+    <div class="layui-input-block">
+      <input type="text" name="title" required  lay-verify="required" placeholder="请输入用户" autocomplete="on" class="layui-input" id="user" style="width: 200px">
     </div>
   </div>
   <div class="layui-form-item">
@@ -113,6 +120,7 @@
       $("#hostname").val(data.Name);
       $("#addr").val(data.Addr);
       $("#port").val(data.Port);
+      $("#user").val(data.User);
       $("#password").val(data.PassWord);
       $("#group").val(data.Group.Id);
       for (var j = 0; j < data.Tags.length; j++) {
@@ -186,6 +194,7 @@
           var hostname = $("#hostname").val();
           var addr = $("#addr").val();
           var port = $("#port").val();
+          var user = $("#user").val();
           var password = $("#password").val();
           var group = $("#group").val();
           $('input[type=checkbox]:checked').each(function(){
@@ -197,6 +206,7 @@
           formData.append("hostname", hostname);
           formData.append("addr", addr);
           formData.append("port", port);
+          formData.append("user", user);
           formData.append("password", password);
           formData.append("group", group);
           formData.append("keyFile", keyFile);

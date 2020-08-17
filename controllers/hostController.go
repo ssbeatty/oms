@@ -20,6 +20,7 @@ func (c *HostController) Post() {
 	var code = HttpStatusOk
 	var tagJson []string
 	hostname := c.Input().Get("hostname")
+	user := c.Input().Get("user")
 	addr := c.Input().Get("addr")
 	port, _ := c.GetInt("port")
 	if port == 0 {
@@ -43,7 +44,7 @@ func (c *HostController) Post() {
 		filePath = ""
 		logger.Logger.Println(err)
 	}
-	models.InsertHost(hostname, addr, port, password, groupId, tagJson, filePath)
+	models.InsertHost(hostname, user, addr, port, password, groupId, tagJson, filePath)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()
@@ -60,6 +61,7 @@ func (c *HostController) Put() {
 		code = HttpStatusError
 	}
 	hostname := c.Input().Get("hostname")
+	user := c.Input().Get("user")
 	addr := c.Input().Get("addr")
 	port, _ := c.GetInt("port")
 	password := c.Input().Get("password")
@@ -82,7 +84,7 @@ func (c *HostController) Put() {
 		filePath = ""
 		logger.Logger.Println(err)
 	}
-	models.UpdateHost(id, hostname, addr, port, password, groupId, tagJson, filePath)
+	models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagJson, filePath)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()
