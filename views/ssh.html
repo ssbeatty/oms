@@ -12,10 +12,9 @@
 <script src="/static/js/xterm.min.js"></script>
 <script>
     var hostId = $("#HostId").attr("val")
-    var socket = new WebSocket('ws://' + window.location.host + '/ws/ssh');
+    var socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=180&rows=40");
 
     socket.onopen = function () {
-        socket.send(hostId)
         var term = new Terminal({
             rows: 40,
             col: 180,
