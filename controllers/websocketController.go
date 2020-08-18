@@ -28,7 +28,6 @@ func (c *WebSocketController) Get() {
 	cols, _ := strconv.Atoi(c.Input().Get("cols"))
 	rows, _ := strconv.Atoi(c.Input().Get("rows"))
 	id, _ := strconv.Atoi(idStr)
-	logger.Logger.Println(id, rows, cols)
 	wsConn, err := upGrader.Upgrade(c.Ctx.ResponseWriter, c.Ctx.Request, nil)
 	if err != nil {
 		logger.Logger.Println(err)

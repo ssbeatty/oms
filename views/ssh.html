@@ -12,12 +12,14 @@
 <script src="/static/js/xterm.min.js"></script>
 <script>
     var hostId = $("#HostId").attr("val")
-    var socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=180&rows=40");
+    var socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=800&rows=40");
 
     socket.onopen = function () {
         var term = new Terminal({
+            cols: 800,
             rows: 40,
-            col: 180,
+            cursorBlink: true,
+            tabStopWidth: 4
             });
         term.open(document.getElementById('terms'));
 
