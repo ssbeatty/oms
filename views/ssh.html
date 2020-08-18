@@ -3,32 +3,35 @@
     <link href="/static/css/xterm.min.css" rel="stylesheet" type="text/css"/>
     <style>
         #terms {
-            width: 90%;
+            width: 80%;
         }
     </style>
 </head>
-<div>
-    <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
-        <div class="layui-form-item">
-            <div class="layui-input-inline" style="width: 380px;min-height: 36px">
-                <select name="host" lay-verify="required" id="host">
-                    <option value=""></option>
-                    {{range .Hosts}}
-                        <option value="{{.Id}}">{{.Name}}</option>
-                    {{end}}
-                </select>
+<div style="margin-left: 4%">
+    <div>
+        <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
+            <div class="layui-form-item">
+                <div class="layui-input-inline" style="width: 380px;min-height: 36px">
+                    <select name="host" lay-verify="required" id="host">
+                        <option value=""></option>
+                        {{range .Hosts}}
+                            <option value="{{.Id}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <button id="connect" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">连接</button>
             </div>
-            <button id="connect" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">连接</button>
-        </div>
-    </form>
+        </form>
 
+    </div>
+    {{if .HostId}}
+        <div id="HostId" class="val" val="{{.HostId}}"></div>
+    {{else}}
+        <div id="HostId"></div>
+    {{end}}
+    <div id="terms"></div>
 </div>
-{{if .HostId}}
-    <div id="HostId" class="val" val="{{.HostId}}"></div>
-{{else}}
-    <div id="HostId"></div>
-{{end}}
-<div id="terms"></div>
+
 <script src="/static/js/xterm.min.js"></script>
 <script>
     var socket;

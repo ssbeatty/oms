@@ -2,7 +2,7 @@
     <title>SHELL</title>
     <style>
         .code {
-            width: 100%;
+            width: 80%;
             height: 600px;
             background-color: #393D49;
             padding: 2% 5%;
@@ -19,10 +19,30 @@
         }
     </style>
 </head>
-<div style="width: 90%">
+<div style="width: 90%;margin-left: 4%">
     <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
-
-        <div id="cmdVal" style="display: none" dType="{{.dType}}" val="{{.idStr}}"></div>
+        <div class="layui-input-inline" style="width: 30%">
+            <div class="layui-form-item">
+                <select lay-filter="dType" name="dType" lay-verify="required" id="dType">
+                    <option value="">请选择类型</option>
+                    <option value="host">主机</option>
+                    <option value="tag">标签</option>
+                    <option value="group">分组</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-input-inline" style="width: 30%">
+            <div class="layui-form-item">
+                <select lay-filter="dId" name="dId" lay-verify="required" id="dId">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+        {{if .idStr}}
+            <div id="cmdVal" class="val" style="display: none" dType="{{.dType}}" val="{{.idStr}}"></div>
+        {{else}}
+            <div id="cmdVal" style="display: none"></div>
+        {{end}}
         <div class="layui-input-inline" style="width: 60%">
             <input  id="cmdText" type="text" placeholder="请输入命令" autocomplete="off" class="layui-input">
         </div>
@@ -33,29 +53,80 @@
 </div>
 
 <script>
-$('button.cmd').click(function() {
+    var zhMap = {
+        "host": "主机",
+        "tag": "标签",
+        "group": "分组",
+    };
     var cmdVal = $("#cmdVal");
-    var id = cmdVal.attr("val");
-    var dType = cmdVal.attr("dType");
-    var cmd = $("#cmdText").val();
-    $.ajax({
-        "url" : "/tools/cmd" + "?id=" + id + "&type=" + dType + "&cmd=" + cmd,
-        "type" : "get",
-        "success" : callBack,
-        "error" : function(err) {
-            console.log(err)
+    layui.use('form', function() {
+        if (cmdVal.hasClass("val")) {
+            var dId = cmdVal.attr("val");
+            var dType = cmdVal.attr("dType");
+            $.ajax({
+                "url": dType,
+                "type": "get",
+                "success": callBack,
+                "error": function (err) {
+                    console.log(err)
+                }
+            });
+            function callBack(data) {
+                $("#dId").empty();
+                $("#dId").append(new Option("请选择" + zhMap[dType], ""));
+                $.each(data.data, function (index, item) {
+                    $("#dId").append(new Option(item.Name, item.Id));
+                });
+                $("#dType").val(dType);
+                $("#dId").val(dId);
+                layui.form.render("select");
+            }
         }
     });
-    function callBack(data) {
-        $(".code div").remove();
-        for(let i in data.data){
-            let item = data.data[i];
-            var tagStr = "        <div style=\"margin-top: 1em\">\n" +
-                "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
-                "            <p class=\"hMsg\">" + item.Msg + "</p>\n" +
-                "        </div>";
-            $(".code").append(tagStr);
+
+    $('button.cmd').click(function() {
+        var id = $("#dId").val();
+        var dType = $("#dType").val();
+        var cmd = $("#cmdText").val();
+        $.ajax({
+            "url" : "/tools/cmd" + "?id=" + id + "&type=" + dType + "&cmd=" + cmd,
+            "type" : "get",
+            "success" : callBack,
+            "error" : function(err) {
+                console.log(err)
+            }
+        });
+        function callBack(data) {
+            $(".code div").remove();
+            for(let i in data.data){
+                let item = data.data[i];
+                var tagStr = "        <div style=\"margin-top: 1em\">\n" +
+                    "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
+                    "            <p class=\"hMsg\">" + item.Msg + "</p>\n" +
+                    "        </div>";
+                $(".code").append(tagStr);
+            }
         }
-    }
-})
+    });
+    layui.use('form', function() {
+        layui.form.on('select(dType)', function (data) {
+            var _dType = data.value;
+            $.ajax({
+                "url" : data.value,
+                "type" : "get",
+                "success" : callBack,
+                "error" : function(err) {
+                    console.log(err)
+                }
+            });
+            function callBack(data) {
+                $("#dId").empty();
+                $("#dId").append(new Option("请选择" + zhMap[_dType],""));
+                $.each(data.data, function(index,item){
+                    $("#dId").append(new Option(item.Name,item.Id));
+                });
+                layui.form.render("select");
+            }
+        });
+    })
 </script>
