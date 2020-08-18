@@ -67,7 +67,9 @@ func (c *MainController) GroupPage() {
 }
 
 func (c *MainController) SshPage() {
-	idStr := c.Ctx.Input.Param(":id")
+	idStr := c.Input().Get("id")
+	hosts := models.GetAllHost()
+	c.Data["Hosts"] = hosts
 	c.Data["HostId"] = idStr
 	c.Layout = "base/layout.html"
 	c.TplName = "ssh.html"
