@@ -20,14 +20,16 @@
     </style>
 </head>
 <div style="width: 90%">
-    <label>
-        <h3>输入命令:</h3>
+    <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
+
         <div id="cmdVal" style="display: none" dType="{{.dType}}" val="{{.idStr}}"></div>
-        <input id="cmdText" type="text" placeholder="请输入命令" autocomplete="off" class="layui-input">
-    </label>
-    <button style="margin-top: 20px" class="layui-btn-primary layui-btn layui-btn-sm cmd" >立即提交</button>
-    <div class="code">
-    </div>
+        <div class="layui-input-inline" style="width: 60%">
+            <input  id="cmdText" type="text" placeholder="请输入命令" autocomplete="off" class="layui-input">
+        </div>
+        <button type="button" class="layui-btn-primary layui-btn cmd" >立即提交</button>
+        <div class="code">
+        </div>
+    </form>
 </div>
 
 <script>
