@@ -21,5 +21,12 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestReadDir(t *testing.T) {
+	c, err := NewClient("192.168.8.101", 22, "root", "123456", "")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	info, err := c.SFTPClient.ReadDir("/root")
+	fmt.Println(info)
 
 }
