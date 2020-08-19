@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	c, err := NewClient("sasaba.net", 6666, "root", "wang199564", "")
+	c, err := NewClient("192.168.8.101", 22, "root", "123456", "")
 	if err != nil {
 		fmt.Println(err)
 		return
