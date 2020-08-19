@@ -100,9 +100,10 @@
             $(".code div").remove();
             for(let i in data.data){
                 let item = data.data[i];
+                var reg = new RegExp('\n', 'g');
                 var tagStr = "        <div style=\"margin-top: 1em\">\n" +
                     "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
-                    "            <p class=\"hMsg\">" + item.Msg + "</p>\n" +
+                    "            <p class=\"hMsg\">" + item.Msg.replace(reg, '<br/>') + "</p>\n" +
                     "        </div>";
                 $(".code").append(tagStr);
             }
