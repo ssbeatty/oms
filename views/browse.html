@@ -1,9 +1,36 @@
 <head>
     <title>文件浏览</title>
     <style>
+        .mButton {
+            cursor: pointer;
+            text-decoration : underline;
+            font-size: 16px;
+        }
     </style>
 </head>
 
-<div style="width: 90%;margin-left: 4%">
-
+<div style="width: 80%;margin-left: 4%">
+    <table class="layui-table" lay-even lay-skin="nob">
+        <colgroup>
+            <col width="150">
+            <col width="200">
+            <col>
+        </colgroup>
+        <thead>
+        <tr>
+            <th>修改时间</th>
+            <th>大小</th>
+            <th>文件名</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>2016-11-29</td>
+            <td>11100</td>
+            <td>
+                <a class="mButton">main.py</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
 </div>
