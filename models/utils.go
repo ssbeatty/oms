@@ -4,6 +4,7 @@ import (
 	"github.com/astaxie/beego/orm"
 	"oms/logger"
 	"oms/ssh"
+	"strings"
 )
 
 type Result struct {
@@ -42,8 +43,26 @@ func ParseHostList(pType string, id int) []*Host {
 				logger.Logger.Println(err)
 			}
 		} else {
-			// TODO mode params
-			// something like 192.168.* or -L'a,b,v' -E re
+			args := strings.Split(group.Params, " ")
+			switch args[0] {
+			case "-G":
+				hosts := GetHostByGlob(args[1])
+				return hosts
+			case "-L":
+				var hosts []*Host
+				addrArgs := strings.Split(args[1], ",")
+				for _, addr := range addrArgs {
+					host := GetHostByAddr(addr)
+					hosts = append(hosts, host...)
+				}
+				return hosts
+			case "-E":
+				hosts := GetHostByReg(args[1])
+				return hosts
+			default:
+				hosts := GetHostByGlob(args[0])
+				return hosts
+			}
 		}
 
 	}

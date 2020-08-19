@@ -1,9 +1,12 @@
 package models
 
 import (
+	"fmt"
 	"github.com/astaxie/beego/orm"
 	"oms/logger"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 // Model Struct
@@ -133,17 +136,59 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 	return &host
 }
 
-func GetAllHost() []Host {
+func GetAllHost() []*Host {
 	var o = orm.NewOrm()
 	host := new(Host)
-	var hosts []Host
+	var hosts []*Host
 	_, err := o.QueryTable(host).RelatedSel().All(&hosts)
 	if err != nil {
 		logger.Logger.Println(err)
 	}
 	// 获取tags
 	for i := 0; i < len(hosts); i++ {
-		o.LoadRelated(&hosts[i], "Tags")
+		o.LoadRelated(hosts[i], "Tags")
+	}
+	return hosts
+}
+
+func GetHostByGlob(glob string) []*Host {
+	var o = orm.NewOrm()
+	var hosts []*Host
+	glob = strings.Replace(glob, "*", "%", -1)
+	sql := fmt.Sprintf("SELECT * FROM host WHERE addr LIKE '%s'", glob)
+	_, err := o.Raw(sql).QueryRows(&hosts)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return hosts
+}
+
+func GetHostByReg(regStr string) []*Host {
+	var o = orm.NewOrm()
+	host := new(Host)
+	var hosts []*Host
+	var hostsR []*Host
+	num, err := o.QueryTable(host).All(&hosts)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	for i := 0; i < int(num); i++ {
+		match, _ := regexp.MatchString(regStr, hosts[i].Addr)
+		if match {
+			hostsR = append(hostsR, hosts[i])
+		}
+	}
+
+	return hostsR
+}
+
+func GetHostByAddr(addr string) []*Host {
+	var o = orm.NewOrm()
+	host := new(Host)
+	var hosts []*Host
+	_, err := o.QueryTable(host).Filter("Addr", addr).All(&hosts)
+	if err != nil {
+		logger.Logger.Println(err)
 	}
 	return hosts
 }
