@@ -3,6 +3,7 @@ package tasks
 import (
 	"errors"
 	"fmt"
+	"github.com/astaxie/beego/orm"
 	"io/ioutil"
 	"oms/logger"
 	"oms/models"
@@ -41,4 +42,22 @@ func ClearCache() error {
 	}
 	logger.Logger.Println("======================Task ClearCache stop ======================")
 	return nil
+}
+
+func GetHostStatus() (err error) {
+	logger.Logger.Println("======================Task GetHostStatus start======================")
+	err = nil
+	var o = orm.NewOrm()
+	host := new(models.Host)
+	var hosts []*models.Host
+	_, err = o.QueryTable(host).All(&hosts)
+	if err != nil {
+		logger.Logger.Println("======================Task GetHostStatus end ======================")
+		return
+	}
+	for i, _ := range hosts {
+		go models.GetStatus(hosts[i])
+	}
+	logger.Logger.Println("======================Task GetHostStatus end ======================")
+	return
 }

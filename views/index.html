@@ -32,6 +32,11 @@
       </div>
       <div class="layui-card-body">
         主机名: <a href="">{{.Name}}</a><br>
+        {{if .Status}}
+          状态: <span class="layui-badge-dot layui-bg-green" style="margin-left: 5px"></span><br>
+        {{else}}
+          状态:<span class="layui-badge-dot" style="margin-left: 5px"></span><br>
+        {{end}}
         用户: {{.User}}<br>
         地址: {{.Addr}}<br>
         端口: {{.Port}}<br>

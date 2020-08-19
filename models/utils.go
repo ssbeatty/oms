@@ -141,3 +141,23 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 
 	ch <- result
 }
+
+func GetStatus(host *Host) bool {
+	var o = orm.NewOrm()
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		host.Status = false
+		_, err = o.Update(host)
+		return false
+	}
+	session, err := client.SSHClient.NewSession()
+	if err != nil {
+		host.Status = false
+		_, err = o.Update(host)
+		return false
+	}
+	defer session.Close()
+	host.Status = true
+	_, err = o.Update(host)
+	return true
+}

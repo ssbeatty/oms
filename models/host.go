@@ -19,6 +19,8 @@ type Host struct {
 	PassWord string `orm:"null"`
 	KeyFile  string `orm:"null"`
 
+	Status bool `orm:"default(false)"`
+
 	Group *Group `orm:"rel(fk);null;on_delete(set_null)"`
 	Tags  []*Tag `orm:"rel(m2m);null;rel_table(Tag)"`
 }
