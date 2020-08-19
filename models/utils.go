@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/astaxie/beego/orm"
+	"mime/multipart"
 	"oms/logger"
 	"oms/ssh"
 	"strings"
@@ -89,7 +90,7 @@ func RunCmdOneAsync(host *Host, cmd string, ch chan *Result) {
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 	} else {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
 	ch <- result
@@ -105,4 +106,38 @@ func RunCmd(hosts []*Host, cmd string) []*Result {
 		results = append(results, <-channel)
 	}
 	return results
+}
+
+func UploadFile(hosts []*Host, files []*multipart.FileHeader, remotePath string) []*Result {
+	var results []*Result
+	channel := make(chan *Result, 20)
+	for _, host := range hosts {
+		go UploadFileOneAsync(host, remotePath, files, channel)
+	}
+	for _, _ = range hosts {
+		results = append(results, <-channel)
+	}
+	return results
+}
+
+func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result) {
+	var result *Result
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+	// do upload
+	for i, _ := range files {
+		err = client.UploadFileOne(files[i], remote)
+		if err != nil {
+			logger.Logger.Println(err)
+			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		} else {
+			result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: "success"}
+		}
+	}
+
+	ch <- result
 }

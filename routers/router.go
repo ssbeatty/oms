@@ -25,4 +25,5 @@ func init() {
 	beego.Router("/ws/ssh/:id", &controllers.WebSocketController{})
 	//tools
 	beego.Router("/tools/cmd", &controllers.ToolController{}, "get:RunCmd")
+	beego.Router("/tools/upload", &controllers.ToolController{}, "post:FileUpload")
 }

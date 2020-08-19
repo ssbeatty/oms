@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"encoding/hex"
 	"io"
+	"mime/multipart"
 	"os"
 	"path"
 	"path/filepath"
@@ -52,6 +53,21 @@ func Md5File(filename string) (string, error) {
 
 	hash := crypto.MD5.New()
 	_, err = io.Copy(hash, r)
+	if err != nil {
+		return "", err
+	}
+
+	out := hex.EncodeToString(hash.Sum(nil))
+	return out, nil
+}
+
+func Md5File2(f multipart.File) (string, error) {
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+
+	hash := crypto.MD5.New()
+	_, err := io.Copy(hash, r)
 	if err != nil {
 		return "", err
 	}

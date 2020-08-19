@@ -2,7 +2,83 @@
     <title>SHELL</title>
 </head>
 <div>
-
+    <form class="layui-form" enctype="multipart/form-data" id="uploadForm">
+        <div class="layui-input-inline" style="width: 42%">
+            <div class="layui-form-item">
+                <select lay-filter="dType" name="type" lay-verify="required" id="dType">
+                    <option value="">请选择类型</option>
+                    <option value="host">主机</option>
+                    <option value="tag">标签</option>
+                    <option value="group">分组</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-input-inline" style="width: 42%">
+            <div class="layui-form-item">
+                <select lay-filter="dId" name="id" lay-verify="required" id="dId">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-input-inline" style="width: 42%">
+            <input type='file' name="files" style="min-height: 30px;width: 230px;align-items: center;" multiple>
+        </div>
+        <div class="layui-input-inline" style="width: 35%">
+            <input name="remote" type="text" placeholder="请输入远程路径" autocomplete="off" class="layui-input">
+        </div>
+        <button id="upload" style="margin-left: 20px;width: 80px;min-height: 30px" type="button" class="layui-btn-sm layui-input-inline layui-btn layui-btn-primary ">上传</button>
+    </form>
 </div>
+
+<script>
+    var zhMap = {
+        "host": "主机",
+        "tag": "标签",
+        "group": "分组",
+    };
+    layui.use('form', function() {
+        layui.form.on('select(dType)', function (data) {
+            var _dType = data.value;
+            $.ajax({
+                "url" : data.value,
+                "type" : "get",
+                "success" : callBack,
+                "error" : function(err) {
+                    console.log(err)
+                }
+            });
+            function callBack(data) {
+                $("#dId").empty();
+                $("#dId").append(new Option("请选择" + zhMap[_dType],""));
+                $.each(data.data, function(index,item){
+                    $("#dId").append(new Option(item.Name,item.Id));
+                });
+                layui.form.render("select");
+            }
+        });
+    })
+</script>
+<script>
+    $("#upload").click(function () {
+        var formData = new FormData($("#uploadForm")[0]);
+        $.ajax({
+            "url" : "/tools/upload",
+            "type" : "post",
+            "data" : formData,
+            "success" : callBack,
+            "contentType": false,
+            "processData": false,
+            "error" : function(err) {
+                console.log(err)
+            }
+        });
+        function callBack(data) {
+
+        }
+    })
+
+
+</script>
+
 
 

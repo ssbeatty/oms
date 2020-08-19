@@ -23,3 +23,28 @@ func (c *ToolController) RunCmd() {
 	c.Data["json"] = data
 	c.ServeJSON()
 }
+
+func (c *ToolController) FileUpload() {
+	var msg = "success"
+	var code = HttpStatusOk
+	var remoteFile string
+	id, err := strconv.Atoi(c.Input().Get("id"))
+	files, _ := c.GetFiles("files")
+	remote := c.GetString("remote")
+	if remote[len(remote)-1] == '/' {
+		remoteFile = remote
+	} else {
+		remoteFile = remote + "/"
+	}
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	pType := c.Input().Get("type")
+	hosts := models.ParseHostList(pType, id)
+
+	results := models.UploadFile(hosts, files, remoteFile)
+	data := &ResponseGet{code, msg,
+		results}
+	c.Data["json"] = data
+	c.ServeJSON()
+}
