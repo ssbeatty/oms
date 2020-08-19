@@ -1,9 +1,9 @@
 <header>
     <ul id="myNavHeader" class="layui-nav" lay-filter="">
-        <li class="layui-nav-item"><a href="/">主机</a></li>
-        <li class="layui-nav-item"><a href="/groupPage">组</a></li>
-        <li class="layui-nav-item"><a href="/quick">快速连接</a></li>
-        <li class="layui-nav-item mult" id="myNavHeaderChild">
+        <li class="layui-nav-item h"><a href="/">主机</a></li>
+        <li class="layui-nav-item hgroupPage"><a href="/groupPage">组</a></li>
+        <li class="layui-nav-item hquick"><a href="/quick">快速连接</a></li>
+        <li class="layui-nav-item hssh hshell hfile hbrowse" id="myNavHeaderChild">
             <a href="javascript:;">运维模式</a>
             <dl class="layui-nav-child">
                 <dd><a href="/ssh">连接主机</a></dd>
@@ -12,20 +12,11 @@
                 <dd><a href="/browse">文件浏览</a></dd>
             </dl>
         </li>
-        <li class="layui-nav-item"><a href="/about">关于</a></li>
+        <li class="layui-nav-item habout"><a href="/about">关于</a></li>
     </ul>
 </header>
 
 <script>
     var currentPage = window.location.pathname;
-    $("#myNavHeader").children().each(function () {
-        if ($(this).children("a").attr("href") === currentPage) {
-            $(this).children("a").addClass("layui-this")
-        }
-    });
-    $("#myNavHeaderChild").children("dl").children().each(function () {
-        if ($(this).children("a").attr("href") === currentPage) {
-            $("#myNavHeaderChild").addClass("layui-this")
-        }
-    })
+    $(".h" + currentPage.split("/")[1]).addClass("layui-this")
 </script>
