@@ -93,6 +93,10 @@ func (c *MainController) ShellPage() {
 }
 
 func (c *MainController) FilePage() {
+	dType := c.Input().Get("type")
+	idStr := c.Input().Get("id")
+	c.Data["dType"] = dType
+	c.Data["idStr"] = idStr
 	c.Layout = "base/layout.html"
 	c.TplName = "file.html"
 	c.Render()

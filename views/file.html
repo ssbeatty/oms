@@ -1,34 +1,62 @@
 <head>
-    <title>SHELL</title>
+    <title>文件</title>
+    <style>
+        .code {
+            width: 80%;
+            height: 600px;
+            background-color: #393D49;
+            padding: 2% 5%;
+            margin-top: 2%;
+            overflow-y: auto;
+        }
+        .hName {
+            color: #f91a55;
+            font-size: 17px
+        }
+        .hMsg {
+            color: #FFFFFF;
+            font-size: 15px
+        }
+    </style>
 </head>
-<div>
-    <form class="layui-form" enctype="multipart/form-data" id="uploadForm">
-        <div class="layui-input-inline" style="width: 42%">
-            <div class="layui-form-item">
-                <select lay-filter="dType" name="type" lay-verify="required" id="dType">
-                    <option value="">请选择类型</option>
-                    <option value="host">主机</option>
-                    <option value="tag">标签</option>
-                    <option value="group">分组</option>
-                </select>
+{{if .idStr}}
+    <div id="cmdVal" class="val" style="display: none" dType="{{.dType}}" val="{{.idStr}}"></div>
+{{else}}
+    <div id="cmdVal" style="display: none"></div>
+{{end}}
+<div style="width: 90%;margin-left: 4%">
+    <div>
+        <form class="layui-form" enctype="multipart/form-data" id="uploadForm">
+            <div class="layui-input-inline" style="width: 42%">
+                <div class="layui-form-item">
+                    <select lay-filter="dType" name="type" lay-verify="required" id="dType">
+                        <option value="">请选择类型</option>
+                        <option value="host">主机</option>
+                        <option value="tag">标签</option>
+                        <option value="group">分组</option>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="layui-input-inline" style="width: 42%">
-            <div class="layui-form-item">
-                <select lay-filter="dId" name="id" lay-verify="required" id="dId">
-                    <option value=""></option>
-                </select>
+            <div class="layui-input-inline" style="width: 42%">
+                <div class="layui-form-item">
+                    <select lay-filter="dId" name="id" lay-verify="required" id="dId">
+                        <option value=""></option>
+                    </select>
+                </div>
             </div>
-        </div>
-        <div class="layui-input-inline" style="width: 42%">
-            <input type='file' name="files" style="min-height: 30px;width: 230px;align-items: center;" multiple>
-        </div>
-        <div class="layui-input-inline" style="width: 35%">
-            <input name="remote" type="text" placeholder="请输入远程路径" autocomplete="off" class="layui-input">
-        </div>
-        <button id="upload" style="margin-left: 20px;width: 80px;min-height: 30px" type="button" class="layui-btn-sm layui-input-inline layui-btn layui-btn-primary ">上传</button>
-    </form>
+            <div class="layui-input-inline" style="width: 42%">
+                <input type='file' name="files" style="min-height: 30px;width: 230px;align-items: center;" multiple>
+            </div>
+            <div class="layui-input-inline" style="width: 35%">
+                <input name="remote" type="text" placeholder="请输入远程路径" autocomplete="off" class="layui-input">
+            </div>
+            <button id="upload" style="margin-left: 20px;width: 80px;min-height: 30px" type="button" class="layui-btn-sm layui-input-inline layui-btn layui-btn-primary ">上传</button>
+        </form>
+    </div>
+    <div class="code">
+    </div>
 </div>
+
 
 <script>
     var zhMap = {
@@ -57,6 +85,31 @@
             }
         });
     })
+    var cmdVal = $("#cmdVal");
+    layui.use('form', function() {
+        if (cmdVal.hasClass("val")) {
+            var dId = cmdVal.attr("val");
+            var dType = cmdVal.attr("dType");
+            $.ajax({
+                "url": dType,
+                "type": "get",
+                "success": callBack,
+                "error": function (err) {
+                    console.log(err)
+                }
+            });
+            function callBack(data) {
+                $("#dId").empty();
+                $("#dId").append(new Option("请选择" + zhMap[dType], ""));
+                $.each(data.data, function (index, item) {
+                    $("#dId").append(new Option(item.Name, item.Id));
+                });
+                $("#dType").val(dType);
+                $("#dId").val(dId);
+                layui.form.render("select");
+            }
+        }
+    });
 </script>
 <script>
     $("#upload").click(function () {
@@ -73,7 +126,16 @@
             }
         });
         function callBack(data) {
-
+            $(".code div").remove();
+            for(let i in data.data){
+                let item = data.data[i];
+                var reg = new RegExp('\n', 'g');
+                var tagStr = "        <div style=\"margin-top: 1em\">\n" +
+                    "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
+                    "            <p class=\"hMsg\">" + item.Msg.replace(reg, '<br/>') + "</p>\n" +
+                    "        </div>";
+                $(".code").append(tagStr);
+            }
         }
     })
 
