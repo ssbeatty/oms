@@ -15,8 +15,8 @@ func main() {
 	toolbox.StartTask()
 	defer toolbox.StopTask()
 
-	test1 := toolbox.NewTask("test1", "0 0 * * * *", tasks.Task1)
-	toolbox.AddTask("test1", test1)
+	clearCache := toolbox.NewTask("clearCache", "0 0 * * * *", tasks.ClearCache)
+	toolbox.AddTask("clearCache", clearCache)
 
 	// main func
 	beego.Run()

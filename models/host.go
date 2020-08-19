@@ -192,3 +192,14 @@ func GetHostByAddr(addr string) []*Host {
 	}
 	return hosts
 }
+
+func GetHostByKeyFile(KeyFile string) int {
+	var o = orm.NewOrm()
+	host := new(Host)
+	var hosts []*Host
+	_, err := o.QueryTable(host).Filter("KeyFile", KeyFile).All(&hosts)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	return len(hosts)
+}
