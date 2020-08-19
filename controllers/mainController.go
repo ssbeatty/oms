@@ -101,3 +101,15 @@ func (c *MainController) FilePage() {
 	c.TplName = "file.html"
 	c.Render()
 }
+
+func (c *MainController) QuickConnectPage() {
+	c.Layout = "base/layout.html"
+	c.TplName = "quick.html"
+	c.Render()
+}
+
+func (c *MainController) FileBrowsePage() {
+	c.Layout = "base/layout.html"
+	c.TplName = "browse.html"
+	c.Render()
+}
