@@ -87,10 +87,10 @@
     </div>
   </div>
   <div class="layui-form-item">
-    <label class="layui-form-label">选择框</label>
+    <label class="layui-form-label">分组</label>
     <div class="layui-input-block">
       <select name="group" lay-verify="required" id="group">
-        <option value=""></option>
+        <option value="">请选择分组</option>
         {{range .Groups}}
           <option value="{{.Id}}">{{.Name}}</option>
         {{end}}
@@ -129,11 +129,13 @@
       $("#user").val(data.User);
       $("#password").val(data.PassWord);
       $("#group").val(data.Group.Id);
-      for (var j = 0; j < data.Tags.length; j++) {
-        var unitTypeCheckbox = $('input[type=checkbox]');
-        for (var i = 0; i < unitTypeCheckbox.length; i++) {
-          if (unitTypeCheckbox[i].name == data.Tags[j].Id) {
-            unitTypeCheckbox[i].checked = true;
+      if (data.Tags != null) {
+        for (var j = 0; j < data.Tags.length; j++) {
+          var unitTypeCheckbox = $('input[type=checkbox]');
+          for (var i = 0; i < unitTypeCheckbox.length; i++) {
+            if (unitTypeCheckbox[i].name == data.Tags[j].Id) {
+              unitTypeCheckbox[i].checked = true;
+            }
           }
         }
       }

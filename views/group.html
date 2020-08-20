@@ -8,8 +8,11 @@
         }
     </style>
 </head>
-<div style="margin-left: 20%">.
-    <h3>分组</h3>
+<div style="margin-left: 20%">
+    <h3 class="layui-input-inline" style="width: 50%">分组</h3>
+    <div class="layui-input-inline">
+        <button style="width: 70px" type="button" class="edit add group layui-btn layui-btn-primary layui-btn-sm">新增</button>
+    </div>
     <table class="layui-table" style="width: 60%">
         <colgroup>
             <col width="100">
@@ -25,7 +28,6 @@
         <tr id="group{{.Id}}">
             <td>{{.Name}}</td>
             <td>
-                <a class="mButton edit group add" val="{{.Id}}">新增</a>
                 <a class="mButton edit group" val="{{.Id}}">编辑</a>
                 <a class="mButton delete group" val="{{.Id}}">删除</a>
                 <a class="mButton" href="/shell?type=group&id={{.Id}}">命令</a>
@@ -35,7 +37,10 @@
         {{end}}
         </tbody>
     </table>
-    <h3>标签</h3>
+    <h3 class="layui-input-inline" style="width: 50%">标签</h3>
+    <div class="layui-input-inline">
+        <button style="width: 70px;" type="button" class="edit add tag layui-btn layui-btn-primary layui-btn-sm">新增</button>
+    </div>
     <table class="layui-table" style="width: 60%">
         <colgroup>
             <col width="100">
@@ -52,7 +57,6 @@
         <tr id="tag{{.Id}}">
             <td>{{.Name}}</td>
             <td>
-                <a class="mButton edit tag add" val="{{.Id}}">新增</a>
                 <a class="mButton edit tag" val="{{.Id}}">编辑</a>
                 <a class="mButton delete tag" val="{{.Id}}">删除</a>
                 <a class="mButton" href="/shell?type=tag&id={{.Id}}">命令</a>
