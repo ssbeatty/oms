@@ -22,7 +22,7 @@ type Host struct {
 	Status bool `orm:"default(false)"`
 
 	Group *Group `orm:"rel(fk);null;on_delete(set_null)"`
-	Tags  []*Tag `orm:"rel(m2m);null;rel_table(Tag)"`
+	Tags  []*Tag `orm:"rel(m2m);null;rel_table(host_tag)"`
 }
 
 func GetHostById(id int) *Host {
