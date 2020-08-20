@@ -45,6 +45,7 @@
                 <th>大小</th>
                 <th>修改时间</th>
                 <th>文件名</th>
+                <th>操作</th>
             </tr>
             </thead>
             <tbody id="fileList">
@@ -95,12 +96,43 @@
                     var addr = i.isDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick=''" : "";
                     var tagStr ="<tr><td>"+ i.Size +"</td>" +
                         "<td>"+ i.ModTime +"</td>" +
-                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>";
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td>" +
+                        "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.Name + "\")'>删除</a></td>" +
+                        "</tr>";
                     $("#fileList").append(tagStr);
                 }
             }
         }
-    })
+    });
+    function deleteFunc(path) {
+        var hostId = $("#host").val();
+        layer.confirm("确认要删除吗，删除后不能恢复", {title: "删除确认"}, function (index) {
+            $.ajax({
+                "url": "/tools/delete",
+                "type": "post",
+                "data": {
+                    "id": hostId,
+                    "path": path
+                },
+                "success": callBack,
+                "error": function (err) {
+                    console.log(err)
+                }
+            });
+
+            function callBack(data) {
+                if (path.charAt(path.length-1) !== "/") {
+                    path += "/"
+                }
+                if (data.code === "200"){
+                    browseFunc(getLastPath(path));
+                }else {
+                    layer.msg("delete file error");
+                }
+                layer.close(index);
+            }
+        });
+    }
     function browseFunc(path) {
         var hostId = $("#host").val();
         $.ajax({
@@ -137,7 +169,9 @@
                     var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
                     var tagStr ="<tr><td>"+ i.Size +"</td>" +
                         "<td>"+ i.ModTime +"</td>" +
-                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>";
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td>" +
+                        "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.Name + "\")'>删除</a></td>" +
+                        "</tr>";
                     $("#fileList").append(tagStr);
                 }
             }

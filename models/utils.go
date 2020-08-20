@@ -201,3 +201,23 @@ func DownloadFile(hostId int, path string) *sftp.File {
 	}
 	return file
 }
+
+func DeleteFileOrDir(hostId int, path string) error {
+	host := GetHostById(hostId)
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		return err
+	}
+	if client.IsDir(path) {
+		err = client.RemoveDir(path)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = client.Remove(path)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -41,7 +41,7 @@ func ClearCache() error {
 		logger.Logger.Println("get upload dir error")
 		return errors.New("get upload dir error")
 	}
-	logger.Logger.Println("======================Task ClearCache stop ======================")
+	logger.Logger.Println("======================Task ClearCache stop  ======================")
 	return nil
 }
 

@@ -86,3 +86,20 @@ func (c *ToolController) DownLoadFile() {
 		c.ServeJSON()
 	}
 }
+
+func (c *ToolController) DeleteFile() {
+	var data *ResponsePost
+	path := c.Input().Get("path")
+	id, err := strconv.Atoi(c.Input().Get("id"))
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	err = models.DeleteFileOrDir(id, path)
+	if err != nil {
+		data = &ResponsePost{HttpStatusError, "remove file error"}
+	} else {
+		data = &ResponsePost{HttpStatusOk, "success"}
+	}
+	c.Data["json"] = data
+	c.ServeJSON()
+}

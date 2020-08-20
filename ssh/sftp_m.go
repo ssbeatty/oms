@@ -56,5 +56,9 @@ func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
 
 func (c *Client) GetFile(path string) (*sftp.File, error) {
 	file, err := c.SFTPClient.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 	return file, err
 }
