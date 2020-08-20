@@ -57,7 +57,10 @@ func New(cnf *Config) (client *Client, err error) {
 		if auth, err := AuthWithPrivateKeys(cnf.KeyFiles, cnf.Passphrase); err == nil {
 			clientConfig.Auth = append(clientConfig.Auth, auth)
 		}
-
+	} else if cnf.KeyText != "" {
+		if auth, err := AuthWithPrivateKeyString(cnf.KeyText, cnf.Password); err == nil {
+			clientConfig.Auth = append(clientConfig.Auth, auth)
+		}
 	} else {
 		keypath := KeyFile()
 		if FileExist(keypath) {
@@ -99,7 +102,7 @@ func New(cnf *Config) (client *Client, err error) {
 }
 
 // NewClient 根据配置
-func NewClient(host string, port int, user string, password string, keyFile string) (client *Client, err error) {
+func NewClient(host string, port int, user string, password string, keyText string) (client *Client, err error) {
 	if user == "" {
 		user = "root"
 	}
@@ -110,8 +113,8 @@ func NewClient(host string, port int, user string, password string, keyFile stri
 		Password:   password,
 		Passphrase: password,
 	}
-	if keyFile != "" {
-		config.KeyFiles = []string{keyFile}
+	if keyText != "" {
+		config.KeyText = keyText
 	}
 	return New(config)
 }

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 )
 
+// 已经废弃
 func ClearCache() error {
 	uploadDir := "static/upload"
 	logger.Logger.Println("======================Task ClearCache start======================")

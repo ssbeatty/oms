@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"oms/logger"
 	"oms/models"
 	"strconv"
@@ -19,6 +20,7 @@ func (c *HostController) Post() {
 	var msg = "success"
 	var code = HttpStatusOk
 	var tagJson []string
+	var keyText string
 	hostname := c.Input().Get("hostname")
 	user := c.Input().Get("user")
 	addr := c.Input().Get("addr")
@@ -28,23 +30,23 @@ func (c *HostController) Post() {
 	}
 	password := c.Input().Get("password")
 	groupId, _ := c.GetInt("group")
-	file, _, _ := c.GetFile("keyFile")
+	_, fh, err := c.GetFile("keyFile")
 	tags := c.Input().Get("tags")
+	if err == nil {
+		ff, _ := fh.Open()
+		fileBytes, err := ioutil.ReadAll(ff)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		keyText = string(fileBytes)
+	}
 
-	err := json.Unmarshal([]byte(tags), &tagJson)
+	err = json.Unmarshal([]byte(tags), &tagJson)
 	if err != nil {
 		logger.Logger.Println(err)
 	}
-	filePath := getFileName()
-	if file != nil {
-		defer file.Close()
-	}
-	err = c.SaveToFile("keyFile", filePath)
-	if err != nil {
-		filePath = ""
-		logger.Logger.Println(err)
-	}
-	models.InsertHost(hostname, user, addr, port, password, groupId, tagJson, filePath)
+
+	models.InsertHost(hostname, user, addr, port, password, groupId, tagJson, keyText)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()
@@ -54,6 +56,7 @@ func (c *HostController) Put() {
 	var msg = "success"
 	var code = HttpStatusOk
 	var tagJson []string
+	var keyText string
 	id, err := c.GetInt("id")
 	if err != nil {
 		logger.Logger.Println(err)
@@ -66,7 +69,16 @@ func (c *HostController) Put() {
 	port, _ := c.GetInt("port")
 	password := c.Input().Get("password")
 	groupId, _ := c.GetInt("group")
-	file, _, _ := c.GetFile("keyFile")
+	_, fh, err := c.GetFile("keyFile")
+
+	if err == nil {
+		ff, _ := fh.Open()
+		fileBytes, err := ioutil.ReadAll(ff)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		keyText = string(fileBytes)
+	}
 	tags := c.Input().Get("tags")
 
 	err = json.Unmarshal([]byte(tags), &tagJson)
@@ -75,16 +87,8 @@ func (c *HostController) Put() {
 		code = HttpStatusError
 		logger.Logger.Println(err)
 	}
-	filePath := getFileName()
-	if file != nil {
-		defer file.Close()
-	}
-	err = c.SaveToFile("keyFile", filePath)
-	if err != nil {
-		filePath = ""
-		logger.Logger.Println(err)
-	}
-	models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagJson, filePath)
+
+	models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagJson, keyText)
 	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()

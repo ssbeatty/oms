@@ -35,7 +35,7 @@ https://github.com/gorilla/websocket
 
 1. 文件浏览器的上传文件删除文件
 2. 数据库内容的导入导出
-3. 密钥存为文本
+3. ~~密钥存为文本~~
 
 ## 感谢
 https://github.com/mojocn/felix

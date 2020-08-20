@@ -12,6 +12,7 @@ type Config struct {
 	Port       int
 	Password   string
 	KeyFiles   []string
+	KeyText    string
 	Passphrase string
 
 	StickySession bool
