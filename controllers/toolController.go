@@ -79,7 +79,7 @@ func (c *ToolController) DownLoadFile() {
 		if err != nil {
 			logger.Logger.Println(err)
 		}
-		http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, file.Name(), fh.ModTime(), file)
+		http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, fh.Name(), fh.ModTime(), file)
 	} else {
 		data := &ResponsePost{HttpStatusError, "download file error"}
 		c.Data["json"] = data
