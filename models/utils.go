@@ -21,7 +21,7 @@ type FileInfo struct {
 	Name    string
 	ModTime time.Time
 	Size    int64
-	File    *sftp.File
+	IsDir   bool
 }
 
 func ParseHostList(pType string, id int) []*Host {
@@ -182,18 +182,22 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 	if err != nil {
 		return results
 	}
-	if infos == nil {
-		file, err := client.GetFile(path)
-		result := FileInfo{File: file}
-		if err != nil {
-			return results
-		}
-		results = append(results, &result)
-		return results
-	}
 	for i, _ := range infos {
-		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime()}
+		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: infos[i].IsDir()}
 		results = append(results, &info)
 	}
 	return results
+}
+
+func DownloadFile(hostId int, path string) *sftp.File {
+	host := GetHostById(hostId)
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		return nil
+	}
+	file, err := client.GetFile(path)
+	if err != nil {
+		return nil
+	}
+	return file
 }

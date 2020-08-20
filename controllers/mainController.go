@@ -109,6 +109,10 @@ func (c *MainController) QuickConnectPage() {
 }
 
 func (c *MainController) FileBrowsePage() {
+	idStr := c.Input().Get("id")
+	hosts := models.GetAllHost()
+	c.Data["Hosts"] = hosts
+	c.Data["HostId"] = idStr
 	c.Layout = "base/layout.html"
 	c.TplName = "browse.html"
 	c.Render()

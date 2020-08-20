@@ -61,18 +61,28 @@ func (c *ToolController) GetPathInfo() {
 		msg = err.Error()
 	}
 	results := models.GetPathInfo(id, path)
-	if len(results) == 1 && results[0].File != nil {
-		file := results[0].File
-		fh, err := file.Stat()
-		if err != nil {
-			logger.Logger.Println(err)
-			code = HttpStatusError
-			msg = err.Error()
-		}
-		http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, file.Name(), fh.ModTime(), file)
-	}
 	data := &ResponseGet{code, msg,
 		results}
 	c.Data["json"] = data
 	c.ServeJSON()
+}
+
+func (c *ToolController) DownLoadFile() {
+	path := c.Input().Get("path")
+	id, err := strconv.Atoi(c.Input().Get("id"))
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	file := models.DownloadFile(id, path)
+	if file != nil {
+		fh, err := file.Stat()
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, file.Name(), fh.ModTime(), file)
+	} else {
+		data := &ResponsePost{HttpStatusError, "download file error"}
+		c.Data["json"] = data
+		c.ServeJSON()
+	}
 }

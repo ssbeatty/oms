@@ -8,29 +8,135 @@
         }
     </style>
 </head>
-
+{{if .HostId}}
+    <div id="HostId" class="val" val="{{.HostId}}"></div>
+{{else}}
+    <div id="HostId"></div>
+{{end}}
 <div style="width: 80%;margin-left: 4%">
-    <table class="layui-table" lay-even lay-skin="nob">
-        <colgroup>
-            <col width="150">
-            <col width="200">
-            <col>
-        </colgroup>
-        <thead>
-        <tr>
-            <th>修改时间</th>
-            <th>大小</th>
-            <th>文件名</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td>2016-11-29</td>
-            <td>11100</td>
-            <td>
-                <a class="mButton">main.py</a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+    <div>
+        <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
+            <div class="layui-form-item">
+                <div class="layui-input-inline" style="width: 380px;min-height: 36px">
+                    <select name="host" lay-verify="required" id="host">
+                        <option value=""></option>
+                        {{range .Hosts}}
+                            <option value="{{.Id}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <button id="browse" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">浏览</button>
+            </div>
+        </form>
+    </div>
+    <div>
+        <table class="layui-table" lay-even lay-skin="nob">
+            <colgroup>
+                <col width="150">
+                <col width="200">
+                <col>
+            </colgroup>
+            <thead>
+            <tr>
+                <th>大小</th>
+                <th>修改时间</th>
+                <th>文件名</th>
+            </tr>
+            </thead>
+            <tbody id="fileList">
+            </tbody>
+        </table>
+    </div>
+
 </div>
+<script>
+    function getLastPath(path) {
+        var args = path.split("/")
+        var pathNew = ""
+        for (var i=0;i<args.length-2;i++) {
+            if (args[i] === ""){
+                continue
+            }
+            pathNew = pathNew + "/" + args[i]
+        }
+        if (pathNew === "")
+        {
+            return "/"
+        }
+        return pathNew
+    }
+    $("#browse").click(function () {
+        var hostId = $("#host").val();
+        var path = "/"
+        $.ajax({
+            "url" : "/tools/browse",
+            "type" : "get",
+            "data": {
+                "id": hostId,
+                "path": path
+            },
+            "success" : callBack,
+            "error" : function(err) {
+                console.log(err);
+            }
+        });
+        function callBack(data) {
+            if (path.charAt(path.length-1) !== "/") {
+                path += "/"
+            }
+            $("#fileList tr").remove();
+            if (data.data !== null) {
+                for(var index=0;index < data.data.length;index++){
+                    var i = data.data[index]
+                    var addr = i.isDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" onclick=''" : ""
+                    var tagStr ="<tr><td>"+ i.Size +"</td>" +
+                        "<td>"+ i.ModTime +"</td>" +
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>"
+                    $("#fileList").append(tagStr);
+                }
+            }
+        }
+    })
+    function browseFunc(path) {
+        var hostId = $("#host").val();
+        $.ajax({
+            "url" : "/tools/browse",
+            "type" : "get",
+            "data": {
+                "id": hostId,
+                "path": path
+            },
+            "success" : callBack,
+            "error" : function(err) {
+                console.log(err);
+            }
+        });
+        function callBack(data) {
+            if (data.code !== "200") {
+                layer.msg("download file error!")
+                return
+            }
+            $("#fileList tr").remove();
+            if (path.charAt(path.length-1) !== "/") {
+                path += "/"
+
+            }
+
+            var pathNew = getLastPath(path)
+            var tagStr ="<tr><td>0</td>" +
+                "<td>----</td>" +
+                "<td><a onclick='browseFunc(\"" + pathNew + "\")' class=\"mButton\">上一页</a></td></tr>"
+            $("#fileList").append(tagStr);
+            if (data.data !== null) {
+                for(var index=0;index < data.data.length;index++){
+                    var i = data.data[index]
+                    var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" onclick='' " : ""
+                    var tagStr ="<tr><td>"+ i.Size +"</td>" +
+                        "<td>"+ i.ModTime +"</td>" +
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>"
+                    $("#fileList").append(tagStr);
+                }
+            }
+        }
+    }
+</script>
