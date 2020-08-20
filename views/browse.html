@@ -6,6 +6,10 @@
             text-decoration : underline;
             font-size: 16px;
         }
+        .mButton2 {
+            cursor: pointer;
+            font-size: 16px;
+        }
     </style>
 </head>
 {{if .HostId}}
@@ -51,8 +55,8 @@
 </div>
 <script>
     function getLastPath(path) {
-        var args = path.split("/")
-        var pathNew = ""
+        var args = path.split("/");
+        var pathNew = "";
         for (var i=0;i<args.length-2;i++) {
             if (args[i] === ""){
                 continue
@@ -67,7 +71,7 @@
     }
     $("#browse").click(function () {
         var hostId = $("#host").val();
-        var path = "/"
+        var path = "/";
         $.ajax({
             "url" : "/tools/browse",
             "type" : "get",
@@ -87,11 +91,11 @@
             $("#fileList tr").remove();
             if (data.data !== null) {
                 for(var index=0;index < data.data.length;index++){
-                    var i = data.data[index]
-                    var addr = i.isDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" onclick=''" : ""
+                    var i = data.data[index];
+                    var addr = i.isDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick=''" : "";
                     var tagStr ="<tr><td>"+ i.Size +"</td>" +
                         "<td>"+ i.ModTime +"</td>" +
-                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>"
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>";
                     $("#fileList").append(tagStr);
                 }
             }
@@ -113,7 +117,7 @@
         });
         function callBack(data) {
             if (data.code !== "200") {
-                layer.msg("download file error!")
+                layer.msg("download file error!");
                 return
             }
             $("#fileList tr").remove();
@@ -122,18 +126,18 @@
 
             }
 
-            var pathNew = getLastPath(path)
+            var pathNew = getLastPath(path);
             var tagStr ="<tr><td>0</td>" +
                 "<td>----</td>" +
-                "<td><a onclick='browseFunc(\"" + pathNew + "\")' class=\"mButton\">上一页</a></td></tr>"
+                "<td><a onclick='browseFunc(\"" + pathNew + "\")' class=\"mButton\">上一页</a></td></tr>";
             $("#fileList").append(tagStr);
             if (data.data !== null) {
                 for(var index=0;index < data.data.length;index++){
-                    var i = data.data[index]
-                    var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" onclick='' " : ""
+                    var i = data.data[index];
+                    var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
                     var tagStr ="<tr><td>"+ i.Size +"</td>" +
                         "<td>"+ i.ModTime +"</td>" +
-                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>"
+                        "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td></tr>";
                     $("#fileList").append(tagStr);
                 }
             }
