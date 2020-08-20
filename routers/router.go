@@ -21,7 +21,6 @@ func init() {
 	beego.Router("/shell", &controllers.MainController{}, "get:ShellPage")
 	beego.Router("/file", &controllers.MainController{}, "get:FilePage")
 	beego.Router("/browse", &controllers.MainController{}, "get:FileBrowsePage")
-	beego.Router("/quick", &controllers.MainController{}, "get:QuickConnectPage")
 	//ws ssh
 	beego.Router("/ssh", &controllers.MainController{}, "get:SshPage")
 	beego.Router("/ws/ssh/:id", &controllers.WebSocketController{})
