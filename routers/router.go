@@ -28,4 +28,5 @@ func init() {
 	//tools
 	beego.Router("/tools/cmd", &controllers.ToolController{}, "get:RunCmd")
 	beego.Router("/tools/upload", &controllers.ToolController{}, "post:FileUpload")
+	beego.Router("/tools/browse", &controllers.ToolController{}, "get:GetPathInfo")
 }
