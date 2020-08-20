@@ -1,9 +1,11 @@
 package ssh
 
 import (
+	"github.com/pkg/sftp"
 	"io"
 	"mime/multipart"
 	"oms/logger"
+	"os"
 	"path/filepath"
 )
 
@@ -42,4 +44,17 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 
 	_, err = io.Copy(r, file)
 	return err
+}
+
+func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
+	if c.IsDir(path) {
+		info, err := c.SFTPClient.ReadDir(path)
+		return info, err
+	}
+	return nil, nil
+}
+
+func (c *Client) GetFile(path string) (*sftp.File, error) {
+	file, err := c.SFTPClient.Open(path)
+	return file, err
 }

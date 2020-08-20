@@ -2,10 +2,12 @@ package models
 
 import (
 	"github.com/astaxie/beego/orm"
+	"github.com/pkg/sftp"
 	"mime/multipart"
 	"oms/logger"
 	"oms/ssh"
 	"strings"
+	"time"
 )
 
 type Result struct {
@@ -13,6 +15,13 @@ type Result struct {
 	HostId   int
 	HostName string
 	Msg      string
+}
+
+type FileInfo struct {
+	Name    string
+	ModTime time.Time
+	Size    int64
+	File    *sftp.File
 }
 
 func ParseHostList(pType string, id int) []*Host {
@@ -160,4 +169,31 @@ func GetStatus(host *Host) bool {
 	host.Status = true
 	_, err = o.Update(host)
 	return true
+}
+
+func GetPathInfo(hostId int, path string) []*FileInfo {
+	var results []*FileInfo
+	host := GetHostById(hostId)
+	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	if err != nil {
+		return results
+	}
+	infos, err := client.ReadDir(path)
+	if err != nil {
+		return results
+	}
+	if infos == nil {
+		file, err := client.GetFile(path)
+		result := FileInfo{File: file}
+		if err != nil {
+			return results
+		}
+		results = append(results, &result)
+		return results
+	}
+	for i, _ := range infos {
+		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime()}
+		results = append(results, &info)
+	}
+	return results
 }

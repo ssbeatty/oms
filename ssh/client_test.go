@@ -26,7 +26,7 @@ func TestReadDir(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	info, err := c.SFTPClient.ReadDir("/root")
+	info, err := c.ReadDir("/root")
 	fmt.Println(info)
 
 }
