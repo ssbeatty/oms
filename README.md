@@ -1,6 +1,6 @@
 ## 项目简介
 
-​本项目使用beego和ssh、sftp开发。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
+​本项目使用beego和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
 
 #### 项目依赖
 https://github.com/astaxie/beego
@@ -33,9 +33,10 @@ https://github.com/gorilla/websocket
 
 #### 目前正在开发的
 
-1. 文件浏览器的上传文件删除文件
+1. ~~文件浏览器的上传文件删除文件~~
 2. 数据库内容的导入导出
 3. ~~密钥存为文本~~
+4. 类playbook形式的批量任务集合构思开发。
 
 ## 感谢
 https://github.com/mojocn/felix
