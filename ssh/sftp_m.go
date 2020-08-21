@@ -59,6 +59,5 @@ func (c *Client) GetFile(path string) (*sftp.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	return file, err
 }

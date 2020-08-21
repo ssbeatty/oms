@@ -30,6 +30,7 @@
                     </select>
                 </div>
                 <button id="browse" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">浏览</button>
+                <button id="upload" style="width: 110px;margin-left: 20px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">上传</button>
             </div>
         </form>
     </div>
@@ -54,7 +55,48 @@
     </div>
 
 </div>
+
+<form style="display: none" class="layui-form" enctype="multipart/form-data" id="uploadForm">
+    <div class="layui-input-inline" style="width: 42%">
+        <input onchange="uploadFile()" id="selectFile" type='file' name="files" style="min-height: 30px;width: 230px;align-items: center;" multiple>
+    </div>
+    <input id="fromRemote" name="remote" type="text" class="layui-input">
+    <input id="fromId" name="id" type="text" class="layui-input">
+    <input name="type" type="text" value="host" class="layui-input">
+</form>
+
 <script>
+    var remoteValue = $("#fromRemote")
+    function uploadFile() {
+        var hostId = $("#host").val();
+        var path = remoteValue.val()
+        $("#fromId").val(hostId);
+        var formData = new FormData($("#uploadForm")[0]);
+        $.ajax({
+            "url" : "/tools/upload",
+            "type" : "post",
+            "data" : formData,
+            "success" : callBack,
+            "contentType": false,
+            "processData": false,
+            "error" : function(err) {
+                console.log(err)
+            }
+        });
+        function callBack(data) {
+            if (path.charAt(path.length-1) !== "/") {
+                path += "/"
+            }
+            if (data.code === "200"){
+                browseFunc(path);
+            }else {
+                layer.msg("delete file error");
+            }
+        }
+    }
+    $("#upload").click(function () {
+        $("#selectFile").click()
+    })
     function getLastPath(path) {
         var args = path.split("/");
         var pathNew = "";
@@ -89,11 +131,12 @@
             if (path.charAt(path.length-1) !== "/") {
                 path += "/"
             }
+            remoteValue.val("/")
             $("#fileList tr").remove();
             if (data.data !== null) {
                 for(var index=0;index < data.data.length;index++){
                     var i = data.data[index];
-                    var addr = i.isDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick=''" : "";
+                    var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
                     var tagStr ="<tr><td>"+ i.Size +"</td>" +
                         "<td>"+ i.ModTime +"</td>" +
                         "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td>" +
@@ -157,8 +200,8 @@
                 path += "/"
 
             }
-
             var pathNew = getLastPath(path);
+            remoteValue.val(path);
             var tagStr ="<tr><td>0</td>" +
                 "<td>----</td>" +
                 "<td><a onclick='browseFunc(\"" + pathNew + "\")' class=\"mButton\">上一页</a></td></tr>";

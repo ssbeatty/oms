@@ -5,6 +5,7 @@ import (
 	"oms/logger"
 	"oms/models"
 	"strconv"
+	"time"
 )
 
 func (c *ToolController) RunCmd() {
@@ -78,8 +79,10 @@ func (c *ToolController) DownLoadFile() {
 		fh, err := file.Stat()
 		if err != nil {
 			logger.Logger.Println(err)
+			http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, "download", time.Now(), file)
+		} else {
+			http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, fh.Name(), fh.ModTime(), file)
 		}
-		http.ServeContent(c.Ctx.Output.Context.ResponseWriter, c.Ctx.Output.Context.Request, fh.Name(), fh.ModTime(), file)
 	} else {
 		data := &ResponsePost{HttpStatusError, "download file error"}
 		c.Data["json"] = data
