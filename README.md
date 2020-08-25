@@ -7,6 +7,27 @@ https://github.com/astaxie/beego
 
 https://github.com/gorilla/websocket
 
+#### 使用说明
+1. 安装编译
+```shell script
+#安装bee工具
+go get github.com/beego/bee
+
+# 打包
+bee pack -be GOOS=linux
+or
+bee pack -be GOOS=windows
+```
+
+2. 启动 修改app/app.conf 的以下内容 运行即可
+```shell script
+# 数据库配置
+mysqluser = "root"
+mysqlpass = "123456"
+mysqlurls = "127.0.0.1:3306"
+mysqldb   = "oms"
+```
+
 #### 目前已经实现的功能
 
 1. 基于websocket和xtermjs的webssh。
