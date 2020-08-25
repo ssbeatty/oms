@@ -4,7 +4,6 @@
     .host-card {
       background-color: #eeeeee;
       width: 20%;
-      float: left;
       margin-right: 4%;
       margin-bottom: 2em;
       box-shadow: darkgrey 10px 10px 20px 5px ;
@@ -23,7 +22,7 @@
     <p style="font-size: 15px;color: #FFFFFF">新增</p>
   </button>
   {{range .Hosts}}
-    <div id="{{.Id}}" class="layui-card host-card">
+    <div id="{{.Id}}" class="layui-card host-card layui-inline">
       <div class="layui-card-header">
         主机
         <a class="mButton del" style="color: red">删除</a>
