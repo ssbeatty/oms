@@ -1,10 +1,15 @@
 package controllers
 
 import (
+	"github.com/astaxie/beego"
 	"oms/logger"
 	"oms/models"
 	"strconv"
 )
+
+type GroupController struct {
+	beego.Controller
+}
 
 func (c *GroupController) Get() {
 	groups := models.GetAllGroup()

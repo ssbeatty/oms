@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"github.com/astaxie/beego/orm"
 	"github.com/pkg/sftp"
 	"mime/multipart"
@@ -22,6 +23,12 @@ type FileInfo struct {
 	ModTime time.Time
 	Size    int64
 	IsDir   bool
+}
+
+type ExportData struct {
+	Tags   []*Tag
+	Groups []*Group
+	Hosts  []*Host
 }
 
 func ParseHostList(pType string, id int) []*Host {
@@ -217,6 +224,60 @@ func DeleteFileOrDir(hostId int, path string) error {
 		err = client.Remove(path)
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func ExportDbData() ([]byte, error) {
+	data := &ExportData{}
+	groups := GetAllGroup()
+	tags := GetAllTag()
+	hosts := GetAllHost()
+	data.Tags = append(data.Tags, tags...)
+	data.Groups = append(data.Groups, groups...)
+	data.Hosts = append(data.Hosts, hosts...)
+	marshal, err := json.Marshal(data)
+	if err != nil {
+		logger.Logger.Println(err)
+		return []byte{}, err
+	}
+	return marshal, nil
+}
+
+func ImportDbData(marshal []byte) error {
+	data := &ExportData{}
+	err := json.Unmarshal(marshal, &data)
+	if err != nil {
+		logger.Logger.Println(err)
+		return err
+	}
+	for index, _ := range data.Tags {
+		tag := data.Tags[index]
+		ok := ExistedTag(tag.Name)
+		if !ok {
+			logger.Logger.Printf("Insert Tag %s", tag.Name)
+			InsertTag(tag.Name)
+		}
+	}
+	for index, _ := range data.Groups {
+		group := data.Groups[index]
+		ok := ExistedGroup(group.Name)
+		if !ok {
+			logger.Logger.Printf("Insert Group %s", group.Name)
+			InsertGroup(group.Name, group.Params, group.Mode)
+		}
+	}
+	for index, _ := range data.Hosts {
+		host := data.Hosts[index]
+		ok := ExistedHost(host.Name, host.Addr)
+		if !ok {
+			logger.Logger.Printf("Insert Host %s", host.Name)
+			tags := make([]string, 0)
+			for i, _ := range host.Tags {
+				tags = append(tags, string(host.Tags[i].Id))
+			}
+			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.Group.Id, tags, host.KeyFile)
 		}
 	}
 	return nil

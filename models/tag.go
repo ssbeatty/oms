@@ -11,10 +11,10 @@ type Tag struct {
 	Hosts []*Host `orm:"reverse(many);null" json:"-"`
 }
 
-func GetAllTag() []Tag {
+func GetAllTag() []*Tag {
 	var o = orm.NewOrm()
 	tag := new(Tag)
-	var tags []Tag
+	var tags []*Tag
 	_, err := o.QueryTable(tag).RelatedSel().All(&tags)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -30,6 +30,21 @@ func GetTagById(id int) *Tag {
 		logger.Logger.Println(err)
 	}
 	return &tag
+}
+
+func ExistedTag(name string) bool {
+	var o = orm.NewOrm()
+	tag := new(Tag)
+	var tags []*Tag
+	_, err := o.QueryTable(tag).Filter("Name", name).All(&tags)
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	if len(tags) == 0 {
+		return false
+	}
+	return true
 }
 
 func InsertTag(name string) *Tag {

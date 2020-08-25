@@ -1,0 +1,46 @@
+<head>
+    <title>关于</title>
+</head>
+<div style="width: 90%;margin-left: 4%">
+    <hr class="layui-bg-black">
+    <button id="import" style="width: 120px;min-height: 30px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">导入</button>
+    <a download href="/tools/export">
+        <button id="export" style="margin-left: 20px;width: 120px;min-height: 30px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">导出</button>
+    </a>
+    <hr class="layui-bg-black">
+</div>
+
+<div class="layui-input-inline" style="width: 42%;display: none">
+    <input onchange="uploadFile()" id="selectFile" type='file' name="files" style="min-height: 30px;width: 230px;align-items: center;">
+</div>
+
+
+<script>
+    $("#import").click(function () {
+        $("#selectFile").click()
+    })
+    function uploadFile() {
+        var dataFile = $("#selectFile")[0].files[0];
+        var formData = new FormData()
+        formData.append("dataFile", dataFile)
+        $.ajax({
+            "url" : "/tools/import",
+            "type" : "post",
+            "data" : formData,
+            "success" : callBack,
+            "contentType": false,
+            "processData": false,
+            "error" : function(err) {
+                console.log(err)
+            }
+        });
+        function callBack(data) {
+            if (data.code !== "400") {
+                layer.msg(data.msg)
+            }else {
+                layer.msg(data.msg)
+            }
+            $("#selectFile").val(null)
+        }
+    }
+</script>

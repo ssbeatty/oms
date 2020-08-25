@@ -17,7 +17,7 @@ func init() {
 
 	//page
 	beego.Router("/groupPage", &controllers.MainController{}, "get:GroupPage")
-	beego.Router("/about", &controllers.MainController{}, "get:AboutPage")
+	beego.Router("/tool", &controllers.MainController{}, "get:ToolPage")
 	beego.Router("/shell", &controllers.MainController{}, "get:ShellPage")
 	beego.Router("/file", &controllers.MainController{}, "get:FilePage")
 	beego.Router("/browse", &controllers.MainController{}, "get:FileBrowsePage")
@@ -30,4 +30,7 @@ func init() {
 	beego.Router("/tools/browse", &controllers.ToolController{}, "get:GetPathInfo")
 	beego.Router("/tools/download", &controllers.ToolController{}, "get:DownLoadFile")
 	beego.Router("/tools/delete", &controllers.ToolController{}, "post:DeleteFile")
+
+	beego.Router("/tools/export", &controllers.ToolController{}, "get:ExportData")
+	beego.Router("/tools/import", &controllers.ToolController{}, "post:ImportData")
 }

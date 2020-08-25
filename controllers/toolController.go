@@ -1,12 +1,19 @@
 package controllers
 
 import (
+	"bytes"
+	"github.com/astaxie/beego"
+	"io/ioutil"
 	"net/http"
 	"oms/logger"
 	"oms/models"
 	"strconv"
 	"time"
 )
+
+type ToolController struct {
+	beego.Controller
+}
 
 func (c *ToolController) RunCmd() {
 	var msg = "success"
@@ -103,6 +110,43 @@ func (c *ToolController) DeleteFile() {
 	} else {
 		data = &ResponsePost{HttpStatusOk, "success"}
 	}
+	c.Data["json"] = data
+	c.ServeJSON()
+}
+
+func (c *ToolController) ExportData() {
+	marshal, err := models.ExportDbData()
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+	file := bytes.NewReader(marshal)
+	c.Ctx.ResponseWriter.Header().Set("content-type", "application/json")
+	http.ServeContent(c.Ctx.ResponseWriter, c.Ctx.Request, "export", time.Now(), file)
+}
+
+func (c *ToolController) ImportData() {
+	var msg = "success"
+	var code = HttpStatusOk
+	_, fh, err := c.GetFile("dataFile")
+	if err == nil {
+		ff, _ := fh.Open()
+		fileBytes, err := ioutil.ReadAll(ff)
+		if err != nil {
+			logger.Logger.Println(err)
+			msg = err.Error()
+			code = HttpStatusError
+		}
+		err = models.ImportDbData(fileBytes)
+		if err != nil {
+			logger.Logger.Println(err)
+			msg = err.Error()
+			code = HttpStatusError
+		}
+	} else {
+		msg = err.Error()
+		code = HttpStatusError
+	}
+	data := &ResponsePost{code, msg}
 	c.Data["json"] = data
 	c.ServeJSON()
 }

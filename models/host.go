@@ -37,6 +37,21 @@ func GetHostById(id int) *Host {
 	return &host
 }
 
+func ExistedHost(name string, addr string) bool {
+	var o = orm.NewOrm()
+	host := new(Host)
+	var hosts []*Host
+	_, err := o.QueryTable(host).Filter("Name", name).Filter("Addr", addr).All(&hosts)
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	if len(hosts) == 0 {
+		return false
+	}
+	return true
+}
+
 func DeleteHostById(id int) bool {
 	o := orm.NewOrm()
 	host := Host{Id: id}

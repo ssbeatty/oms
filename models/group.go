@@ -13,10 +13,10 @@ type Group struct {
 	Params string  `orm:"null"`
 }
 
-func GetAllGroup() []Group {
+func GetAllGroup() []*Group {
 	var o = orm.NewOrm()
 	group := new(Group)
-	var groups []Group
+	var groups []*Group
 	_, err := o.QueryTable(group).RelatedSel().All(&groups)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -32,6 +32,21 @@ func GetGroupById(id int) *Group {
 		logger.Logger.Println(err)
 	}
 	return &group
+}
+
+func ExistedGroup(name string) bool {
+	var o = orm.NewOrm()
+	group := new(Group)
+	var groups []*Group
+	_, err := o.QueryTable(group).Filter("Name", name).All(&groups)
+	if err != nil {
+		logger.Logger.Println(err)
+		return false
+	}
+	if len(groups) == 0 {
+		return false
+	}
+	return true
 }
 
 func InsertGroup(name string, params string, mode int) *Group {

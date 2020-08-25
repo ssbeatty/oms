@@ -2,11 +2,16 @@ package controllers
 
 import (
 	"encoding/json"
+	"github.com/astaxie/beego"
 	"io/ioutil"
 	"oms/logger"
 	"oms/models"
 	"strconv"
 )
+
+type HostController struct {
+	beego.Controller
+}
 
 func (c *HostController) Get() {
 	hosts := models.GetAllHost()

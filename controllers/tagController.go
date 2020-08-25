@@ -1,10 +1,15 @@
 package controllers
 
 import (
+	"github.com/astaxie/beego"
 	"oms/logger"
 	"oms/models"
 	"strconv"
 )
+
+type TagController struct {
+	beego.Controller
+}
 
 func (c *TagController) Get() {
 	tags := models.GetAllTag()

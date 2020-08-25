@@ -25,24 +25,6 @@ type MainController struct {
 	beego.Controller
 }
 
-// resources
-type GroupController struct {
-	beego.Controller
-}
-
-type HostController struct {
-	beego.Controller
-}
-
-type TagController struct {
-	beego.Controller
-}
-
-//tools
-type ToolController struct {
-	beego.Controller
-}
-
 // 首页主机页
 func (c *MainController) Get() {
 	hosts := models.GetAllHost()
@@ -76,9 +58,9 @@ func (c *MainController) SshPage() {
 	c.Render()
 }
 
-func (c *MainController) AboutPage() {
+func (c *MainController) ToolPage() {
 	c.Layout = "base/layout.html"
-	c.TplName = "about.html"
+	c.TplName = "tool.html"
 	c.Render()
 }
 

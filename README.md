@@ -15,7 +15,7 @@ https://github.com/gorilla/websocket
 ![image](./images/file.png)
 3. 批量执行命令。
 ![image](./images/shell.png)
-4. 主机文件的浏览和下载。
+4. 主机文件的浏览和下载，删除和上传。
 ![image](./images/browse.png)
 5. 主机的curd管理。
 ![image](./images/hosts.png)
@@ -30,13 +30,11 @@ https://github.com/gorilla/websocket
 以上匹配都只针对主机的addr
 ```
 7. 后台定时任务判断主机的状态。
+8. 数据库内容的导入导出
 
 #### 目前正在开发的
 
-1. ~~文件浏览器的上传文件删除文件~~
-2. 数据库内容的导入导出
-3. ~~密钥存为文本~~
-4. 类playbook形式的批量任务集合构思开发。
+1. 类playbook形式的批量任务集合构思开发。
 
 ## 感谢
 https://github.com/mojocn/felix
