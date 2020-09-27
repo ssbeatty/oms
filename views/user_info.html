@@ -1,0 +1,112 @@
+<head>
+    <title>个人主页</title>
+</head>
+<div class="layui-body">
+    <!-- 内容主体区域 -->
+    <div style="padding: 15px;">
+
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 50px;">
+            <legend><b>用户主页</b></legend>
+        </fieldset>
+        <form id="pushdate" class="layui-form" action="" method=""  lay-filter="example">
+            <div class="layui-form-item" style="width: 50%">
+                <label class="layui-form-label">用户标识</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input id="UserId" disabled="disabled" type="text" name="UserId" lay-verify="" autocomplete="" placeholder="{{ .user_model.Id }}"
+                           class="layui-input">
+                </div>
+                <br>
+                <label class="layui-form-label">用户名称</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input type="text" name="Name" lay-verify="" autocomplete="off" placeholder="{{ .user_model.Name }}"
+                           class="layui-input">
+                </div>
+                <br>
+                <label class="layui-form-label">用户别名</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input type="text" name="NickName" lay-verify="" autocomplete="" placeholder="{{ .user_model.NickName }}"
+                           class="layui-input">
+                </div>
+                <br>
+
+                <label class="layui-form-label">联系电话</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input type="text" name="Phone" lay-verify="phone" autocomplete="" placeholder="{{ .user_model.Phone }}"
+                           class="layui-input">
+                </div>
+                <br>
+                <label class="layui-form-label">邮箱地址</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input type="text" name="Emil" lay-verify="" autocomplete="" placeholder="{{ .user_model.Emil }}"
+                           class="layui-input">
+                </div>
+                <br>
+                <label class="layui-form-label">重置密码</label>
+                <div class="layui-input-block" style="width: 50%">
+                    <input type="password" name="UserPassword" lay-verify="pass" autocomplete="" placeholder="输入新密码"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button id="submit" type="button" class="layui-btn" lay-submit="" lay-filter="demo1">提交修改信息</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="../static/js/layui.js"></script>
+
+
+<script>
+    //JavaScript代码区域
+    layui.use('element', function(){
+        var element = layui.element;
+
+    });
+    //center 区域数据
+    layui.use('form', function() {
+        var form = layui.form;
+        //自定义验证规则
+    });
+
+    layui.use('layer', function(){
+        var $ = layui.jquery, layer = layui.layer;
+        $('#submit').on('click', function(){
+            var x = $("#pushdate").serialize()
+            $.ajax({
+                url : '/edit_user',
+                data : x,
+                dataType :'json',
+                type: 'post',
+                success : function (result) {
+                    console.log(result)
+                    if(result.code === "200"){
+                        layer.alert(result.msg+"稍后重新登录", {
+                            skin: 'layui-layer-lan'
+                            ,closeBtn: 0
+                            ,anim: 4 //动画类型
+                        });
+                        setTimeout(function () { window.location.href = "/login" ; }, 2000);
+                    }else {
+                        layer.alert(result.msg, {
+                            skin: 'layui-layer-lan'
+                            ,closeBtn: 0
+                            ,anim: 4 //动画类型
+                        });
+                    }
+                },
+                error : function (err) {
+                    layer.alert("未成功,请联系管理员", {
+                        skin: 'layui-layer-lan'
+                        ,closeBtn: 0
+                        ,anim: 4 //动画类型
+                    });
+                }
+            })
+
+        });
+    });
+
+</script>

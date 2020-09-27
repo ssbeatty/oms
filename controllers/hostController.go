@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"github.com/astaxie/beego"
 	"io/ioutil"
 	"oms/logger"
 	"oms/models"
@@ -10,7 +9,7 @@ import (
 )
 
 type HostController struct {
-	beego.Controller
+	BashController
 }
 
 func (c *HostController) Get() {

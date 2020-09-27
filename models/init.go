@@ -21,7 +21,10 @@ func init() {
 	orm.RegisterDataBase("default", "mysql", dataSource, 30)
 
 	// register model
-	orm.RegisterModel(new(Host), new(Group), new(Tag))
+	orm.RegisterModel(new(Host), new(Group), new(Tag), new(User))
+
+	// print sql lin
+	orm.Debug = true
 
 	// create table
 	orm.RunSyncdb("default", false, true)
