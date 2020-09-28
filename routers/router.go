@@ -33,4 +33,9 @@ func init() {
 
 	beego.Router("/tools/export", &controllers.ToolController{}, "get:ExportData")
 	beego.Router("/tools/import", &controllers.ToolController{}, "post:ImportData")
+
+    //user
+    beego.Router("/login", &controllers.LoginController{})
+	beego.Router("/edit_user", &controllers.LoginController{}, "get:GetUser;post:EditUser")
+	beego.Router("/logout", &controllers.LoginController{}, "get:LogOut")
 }

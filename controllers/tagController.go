@@ -1,14 +1,13 @@
 package controllers
 
 import (
-	"github.com/astaxie/beego"
 	"oms/logger"
 	"oms/models"
 	"strconv"
 )
 
 type TagController struct {
-	beego.Controller
+	BashController
 }
 
 func (c *TagController) Get() {

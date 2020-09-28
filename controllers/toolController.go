@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"bytes"
-	"github.com/astaxie/beego"
 	"io/ioutil"
 	"net/http"
 	"oms/logger"
@@ -12,7 +11,7 @@ import (
 )
 
 type ToolController struct {
-	beego.Controller
+	BashController
 }
 
 func (c *ToolController) RunCmd() {

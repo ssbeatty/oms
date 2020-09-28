@@ -1,7 +1,6 @@
 package controllers
 
-import (
-	"github.com/astaxie/beego"
+import  (
 	"oms/models"
 )
 
@@ -22,7 +21,7 @@ type ResponsePost struct {
 }
 
 type MainController struct {
-	beego.Controller
+	BashController
 }
 
 // 首页主机页

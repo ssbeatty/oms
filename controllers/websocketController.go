@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"bytes"
-	"github.com/astaxie/beego"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"oms/logger"
@@ -20,7 +19,7 @@ var upGrader = websocket.Upgrader{
 }
 
 type WebSocketController struct {
-	beego.Controller
+	BashController
 }
 
 func (c *WebSocketController) Get() {
