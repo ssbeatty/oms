@@ -10,74 +10,74 @@ type LoginController struct {
 	beego.Controller
 }
 
-func (c *LoginController) Get(){
+func (c *LoginController) Get() {
 	username := c.GetSession("user")
 	if username != nil {
-		c.Ctx.Redirect(302,"/")
+		c.Ctx.Redirect(302, "/")
 	}
 	c.TplName = "login.html"
 	c.Render()
 }
 
-func (c *LoginController) Post(){
+func (c *LoginController) Post() {
 	var msg = "verify password failed"
 	var code = HttpStatusError
-	input_phone := c.Input().Get("phone")
-	input_password := c.Input().Get("password")
-	user := models.GetUserPhone(input_phone)
+	inputPhone := c.Input().Get("phone")
+	inputPassword := c.Input().Get("password")
+	user := models.GetUserPhone(inputPhone)
 	// verify password
-	if utils.NewMd5(input_password) == user.UserPassword {
+	if utils.NewMd5(inputPassword) == user.UserPassword {
 		msg = "success"
 		code = HttpStatusOk
 		c.SetSession("user", user.Name)
-		c.SetSession("user_model",*user)
+		c.SetSession("user_model", *user)
 	}
 	data := &ResponseGet{code, msg, user}
 	c.Data["json"] = data
 	c.ServeJSON()
 }
 
-func (c *LoginController) GetUser(){
+func (c *LoginController) GetUser() {
 	c.Data["user_model"] = c.GetSession("user_model").(models.User)
 	c.Layout = "base/layout.html"
 	c.TplName = "user_info.html"
 	c.Render()
 }
 
-func (c *LoginController) EditUser(){
+func (c *LoginController) EditUser() {
 	msg := "user update failed"
 	code := HttpStatusError
 	user := models.User{}
-	update_map := map[string]interface{}{}
-	get_name := c.Input().Get("Name")
-	if len(get_name)!= 0 {
-		user.Name = get_name
-		update_map["name"] = get_name
+	updateMap := map[string]interface{}{}
+	getName := c.Input().Get("Name")
+	if len(getName) != 0 {
+		user.Name = getName
+		updateMap["name"] = getName
 	}
-	get_nickname := c.Input().Get("NickName")
-	if len(get_nickname)!= 0 {
-		user.NickName = get_nickname
-		update_map["nick_name"] = get_nickname
+	getNickname := c.Input().Get("NickName")
+	if len(getNickname) != 0 {
+		user.NickName = getNickname
+		updateMap["nick_name"] = getNickname
 	}
-	get_phone := c.Input().Get("Phone")
-	if len(get_phone)!= 0 && len(get_phone) == 11 {
-		user.Phone = get_phone
-		update_map["phone"] = get_phone
+	getPhone := c.Input().Get("Phone")
+	if len(getPhone) != 0 && len(getPhone) == 11 {
+		user.Phone = getPhone
+		updateMap["phone"] = getPhone
 	}
-	get_emil := c.Input().Get("Emil")
-	if len(get_emil)!= 0 {
-		user.Emil = get_emil
-		update_map["emil"] = get_emil
+	getEmil := c.Input().Get("Emil")
+	if len(getEmil) != 0 {
+		user.Emil = getEmil
+		updateMap["emil"] = getEmil
 	}
-	get_pass1 := c.Input().Get("UserPassword")
-	if len(get_pass1)!= 0 {
-		user.UserPassword = utils.NewMd5(get_pass1)
-		update_map["user_password"] = utils.NewMd5(get_pass1)
+	getPass1 := c.Input().Get("UserPassword")
+	if len(getPass1) != 0 {
+		user.UserPassword = utils.NewMd5(getPass1)
+		updateMap["user_password"] = utils.NewMd5(getPass1)
 	}
-	err := models.UpdateUser(update_map)
+	err := models.UpdateUser(updateMap)
 	if err != nil {
 		c.SetSession("user", user.Name)
-		c.SetSession("user_model",user)
+		c.SetSession("user_model", user)
 		data := &ResponseGet{code, msg, user}
 		c.Data["json"] = data
 		c.ServeJSON()
@@ -91,8 +91,8 @@ func (c *LoginController) EditUser(){
 	c.ServeJSON()
 }
 
-func (c *LoginController) LogOut(){
+func (c *LoginController) LogOut() {
 	c.DelSession("user")
 	c.DelSession("user_model")
-	c.Ctx.Redirect(302,"/login")
+	c.Ctx.Redirect(302, "/login")
 }
