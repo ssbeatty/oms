@@ -1,0 +1,41 @@
+name: Go
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-2016
+    steps:
+
+      - name: Setup Go v1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+        id: go
+
+      - name: Check out code into current branch
+        uses: actions/checkout@v2
+
+      - name: Build for windows
+        run: |
+          go build -o ./build/oms.exe main.go
+
+      - name: Build for linux
+        run: |
+          go build -o ./build/oms main.go
+        env:
+          GOARCH: amd64
+          GOOS: linux
+          CGO_ENABLED: 0
+
+      - name: Draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: Test for action
+          tag_name: v0.1.1
+          files: |
+            ./build/oms.exe
+            ./build/oms
