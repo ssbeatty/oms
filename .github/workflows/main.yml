@@ -22,7 +22,7 @@ jobs:
       - name: Build for windows
         run: |
           $env:Path="$pwd\utils;$env:Path"
-         packr build
+          packr build
 
       - name: Build for linux
         run: |
