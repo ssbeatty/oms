@@ -24,12 +24,12 @@ jobs:
 
       - name: Build for windows
         run: |
-          $env:Path="$pwd\utils;$env:Path"
+          go get -u github.com/gobuffalo/packr/packr
           packr build
 
       - name: Build for linux
         run: |
-          $env:Path="$pwd\utils;$env:Path"
+          go get -u github.com/gobuffalo/packr/packr
           packr build
         env:
           GOARCH: amd64
