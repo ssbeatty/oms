@@ -21,11 +21,13 @@ jobs:
 
       - name: Build for windows
         run: |
-          go build -o ./build/oms.exe main.go
+          $env:Path="$pwd\utils;$env:Path"
+         packr build
 
       - name: Build for linux
         run: |
-          go build -o ./build/oms main.go
+          $env:Path="$pwd\utils;$env:Path"
+          packr build
         env:
           GOARCH: amd64
           GOOS: linux
