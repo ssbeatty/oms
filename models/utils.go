@@ -2,10 +2,9 @@ package models
 
 import (
 	"encoding/json"
-	"github.com/astaxie/beego/orm"
 	"github.com/pkg/sftp"
+	"log"
 	"mime/multipart"
-	"oms/logger"
 	"oms/ssh"
 	"strings"
 	"time"
@@ -31,33 +30,38 @@ type ExportData struct {
 	Hosts  []*Host
 }
 
+// @ fixme debug orm
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
-	var o = orm.NewOrm()
 	if pType == "host" {
-		host := Host{Id: id}
-		err := o.Read(&host)
-		if err != nil {
-			logger.Logger.Println(err)
+		host := Host{}
+		result := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host)
+		if result.Error != nil {
+			log.Println(result.Error)
 		}
 		hosts = append(hosts, &host)
 	} else if pType == "tag" {
-		host := new(Host)
-		_, err := o.QueryTable(host).Filter("Tags__Tag__Id", id).All(&hosts)
+		tag := Tag{}
+		result := db.Where("id = ?", id).First(&tag)
+		if result.Error != nil {
+			log.Println(result.Error)
+		}
+		err := db.Model(&tag).Association("Hosts").Find(&hosts)
+
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 		}
 	} else {
-		group := Group{Id: id}
-		err := o.Read(&group)
-		if err != nil {
-			logger.Logger.Println(err)
+		group := Group{}
+		result := db.Where("id = ?", id).First(&group)
+
+		if result.Error != nil {
+			log.Println(result.Error)
 		}
 		if group.Mode == 0 {
-			host := new(Host)
-			_, err = o.QueryTable(host).Filter("Group__Id", id).All(&hosts)
-			if err != nil {
-				logger.Logger.Println(err)
+			result := db.Where("group_id = ?", id).Preload("Tags").Preload("Group").Find(&hosts)
+			if result.Error != nil {
+				log.Println(result.Error)
 			}
 		} else {
 			args := strings.Split(group.Params, " ")
@@ -148,7 +152,7 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 	for i, _ := range files {
 		err = client.UploadFileOne(files[i], remote)
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		} else {
 			result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: "success"}
@@ -159,22 +163,21 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 }
 
 func GetStatus(host *Host) bool {
-	var o = orm.NewOrm()
 	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
 	if err != nil {
 		host.Status = false
-		_, err = o.Update(host)
+		_ = db.Omit("GroupId").Save(&host)
 		return false
 	}
 	session, err := client.SSHClient.NewSession()
 	if err != nil {
 		host.Status = false
-		_, err = o.Update(host)
+		_ = db.Omit("GroupId").Save(&host)
 		return false
 	}
 	defer session.Close()
 	host.Status = true
-	_, err = o.Update(host)
+	_ = db.Omit("GroupId").Save(&host)
 	return true
 }
 
@@ -239,7 +242,7 @@ func ExportDbData() ([]byte, error) {
 	data.Hosts = append(data.Hosts, hosts...)
 	marshal, err := json.Marshal(data)
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		return []byte{}, err
 	}
 	return marshal, nil
@@ -249,14 +252,14 @@ func ImportDbData(marshal []byte) error {
 	data := &ExportData{}
 	err := json.Unmarshal(marshal, &data)
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		return err
 	}
 	for index, _ := range data.Tags {
 		tag := data.Tags[index]
 		ok := ExistedTag(tag.Name)
 		if !ok {
-			logger.Logger.Printf("Insert Tag %s", tag.Name)
+			log.Printf("Insert Tag %s", tag.Name)
 			InsertTag(tag.Name)
 		}
 	}
@@ -264,7 +267,7 @@ func ImportDbData(marshal []byte) error {
 		group := data.Groups[index]
 		ok := ExistedGroup(group.Name)
 		if !ok {
-			logger.Logger.Printf("Insert Group %s", group.Name)
+			log.Printf("Insert Group %s", group.Name)
 			InsertGroup(group.Name, group.Params, group.Mode)
 		}
 	}
@@ -272,12 +275,12 @@ func ImportDbData(marshal []byte) error {
 		host := data.Hosts[index]
 		ok := ExistedHost(host.Name, host.Addr)
 		if !ok {
-			logger.Logger.Printf("Insert Host %s", host.Name)
+			log.Printf("Insert Host %s", host.Name)
 			tags := make([]string, 0)
 			for i, _ := range host.Tags {
 				tags = append(tags, string(host.Tags[i].Id))
 			}
-			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.Group.Id, tags, host.KeyFile)
+			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
 		}
 	}
 	return nil

@@ -39,5 +39,6 @@ jobs:
           files: |
             ./build/oms.exe
             ./build/oms
+            ./conf/config.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

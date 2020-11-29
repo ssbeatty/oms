@@ -1,0 +1,11 @@
+app:
+  name: oms
+  addr: 127.0.0.1
+  port: 8080
+  mode: dev
+
+mysql:
+  user: root
+  password: 123456
+  urls: 127.0.0.1:3306
+  db: oms2

@@ -1,6 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh">
 <head>
     <title>分组</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/static/css/layui.css">
+    <script src="/static/js/layui.js"></script>
+    <script src="/static/js/jquery-3.5.1.min.js"></script>
     <style>
+        body {
+            background-color: #f2f1f1;
+            background-repeat:no-repeat;
+            background-attachment:fixed
+
+        }
+        .global-body {
+            width: 100%;
+            margin: 2% 4%;
+        }
         .mButton {
             font-size: 14px;
             cursor: pointer;
@@ -8,267 +25,280 @@
         }
     </style>
 </head>
-<div style="margin-left: 20%">
-    <h3 class="layui-input-inline" style="width: 50%">分组</h3>
-    <div class="layui-input-inline">
-        <button style="width: 70px" type="button" class="edit add group layui-btn layui-btn-primary layui-btn-sm">新增</button>
-    </div>
-    <table class="layui-table" style="width: 60%">
-        <colgroup>
-            <col width="100">
-        </colgroup>
-        <thead>
-        <tr>
-            <th>名字</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{range .Groups}}
-        <tr id="group{{.Id}}">
-            <td>{{.Name}}</td>
-            <td>
-                <a class="mButton edit group" val="{{.Id}}">编辑</a>
-                <a class="mButton delete group" val="{{.Id}}">删除</a>
-                <a class="mButton" href="/shell?type=group&id={{.Id}}">命令</a>
-                <a class="mButton" href="/file?type=group&id={{.Id}}">文件分发</a>
-            </td>
-        </tr>
-        {{end}}
-        </tbody>
-    </table>
-    <h3 class="layui-input-inline" style="width: 50%">标签</h3>
-    <div class="layui-input-inline">
-        <button style="width: 70px;" type="button" class="edit add tag layui-btn layui-btn-primary layui-btn-sm">新增</button>
-    </div>
-    <table class="layui-table" style="width: 60%">
-        <colgroup>
-            <col width="100">
-            <col>
-        </colgroup>
-        <thead>
-        <tr>
-            <th>名字</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{range .Tags}}
-        <tr id="tag{{.Id}}">
-            <td>{{.Name}}</td>
-            <td>
-                <a class="mButton edit tag" val="{{.Id}}">编辑</a>
-                <a class="mButton delete tag" val="{{.Id}}">删除</a>
-                <a class="mButton" href="/shell?type=tag&id={{.Id}}">命令</a>
-                <a class="mButton" href="/file?type=tag&id={{.Id}}">文件分发</a>
-            </td>
-        </tr>
-        {{end}}
-        </tbody>
-    </table>
-</div>
-<form class="layui-form" id="editFromGroup" style="display:none;margin:50px 50px 0 0">
-    <div class="layui-form-item">
-        <label class="layui-form-label">名字</label>
-        <div class="layui-input-block">
-            <input type="text" name="title" required  lay-verify="required" placeholder="请输入名字" autocomplete="on" class="layui-input" id="groupName" style="width: 200px">
+{{template "header" .}}
+<body>
+<div class="global-body">
+    <div style="margin-left: 20%">
+        <h3 class="layui-input-inline" style="width: 50%">分组</h3>
+        <div class="layui-input-inline">
+            <button style="width: 70px" type="button" class="edit add group layui-btn layui-btn-primary layui-btn-sm">新增</button>
         </div>
-    </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">选择框</label>
-        <div class="layui-input-block">
-            <select name="group" lay-verify="required" id="groupMode">
-                <option value=""></option>
-                <option value="0">主机模式</option>
-                <option value="1">规则模式</option>
-            </select>
+        <table class="layui-table" style="width: 60%">
+            <colgroup>
+                <col width="100">
+            </colgroup>
+            <thead>
+            <tr>
+                <th>名字</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Groups}}
+                <tr id="group{{.Id}}">
+                    <td>{{.Name}}</td>
+                    <td>
+                        <a class="mButton edit group" val="{{.Id}}">编辑</a>
+                        <a class="mButton delete group" val="{{.Id}}">删除</a>
+                        <a class="mButton" href="/shell?type=group&id={{.Id}}">命令</a>
+                        <a class="mButton" href="/file?type=group&id={{.Id}}">文件分发</a>
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+        <h3 class="layui-input-inline" style="width: 50%">标签</h3>
+        <div class="layui-input-inline">
+            <button style="width: 70px;" type="button" class="edit add tag layui-btn layui-btn-primary layui-btn-sm">新增</button>
         </div>
+        <table class="layui-table" style="width: 60%">
+            <colgroup>
+                <col width="100">
+                <col>
+            </colgroup>
+            <thead>
+            <tr>
+                <th>名字</th>
+                <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Tags}}
+                <tr id="tag{{.Id}}">
+                    <td>{{.Name}}</td>
+                    <td>
+                        <a class="mButton edit tag" val="{{.Id}}">编辑</a>
+                        <a class="mButton delete tag" val="{{.Id}}">删除</a>
+                        <a class="mButton" href="/shell?type=tag&id={{.Id}}">命令</a>
+                        <a class="mButton" href="/file?type=tag&id={{.Id}}">文件分发</a>
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
     </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">规则</label>
-        <div class="layui-input-block">
-            <input type="text" name="title" required  lay-verify="required" placeholder="没有则留空" autocomplete="on" class="layui-input" id="groupParams">
+    <form class="layui-form" id="editFromGroup" style="display:none;margin:50px 50px 0 0">
+        <div class="layui-form-item">
+            <label class="layui-form-label">名字</label>
+            <div class="layui-input-block">
+                <input type="text" name="title" required  lay-verify="required" placeholder="请输入名字" autocomplete="on" class="layui-input" id="groupName" style="width: 200px">
+            </div>
         </div>
-    </div>
-</form>
-<form class="layui-form" id="editFromTag" style="display:none;margin:50px 50px 0 0">
-    <div class="layui-form-item">
-        <label class="layui-form-label">名字</label>
-        <div class="layui-input-block">
-            <input type="text" name="title" required  lay-verify="required" placeholder="请输入名字" autocomplete="on" class="layui-input" id="tagName" style="width: 200px">
+        <div class="layui-form-item">
+            <label class="layui-form-label">选择框</label>
+            <div class="layui-input-block">
+                <select name="group" lay-verify="required" id="groupMode">
+                    <option value=""></option>
+                    <option value="0">主机模式</option>
+                    <option value="1">规则模式</option>
+                </select>
+            </div>
         </div>
-    </div>
-</form>
-<script>
-    // put request
-    function editGroupPut(index, layero, sid, dType="put") {
-        var name = $("#groupName").val();
-        var params = $("#groupParams").val();
-        var mode = $("#groupMode").val();
+        <div class="layui-form-item">
+            <label class="layui-form-label">规则</label>
+            <div class="layui-input-block">
+                <input type="text" name="title" required  lay-verify="required" placeholder="没有则留空" autocomplete="on" class="layui-input" id="groupParams">
+            </div>
+        </div>
+    </form>
+    <form class="layui-form" id="editFromTag" style="display:none;margin:50px 50px 0 0">
+        <div class="layui-form-item">
+            <label class="layui-form-label">名字</label>
+            <div class="layui-input-block">
+                <input type="text" name="title" required  lay-verify="required" placeholder="请输入名字" autocomplete="on" class="layui-input" id="tagName" style="width: 200px">
+            </div>
+        </div>
+    </form>
+    <script>
+        // put request
+        function editGroupPut(index, layero, sid, dType="put") {
+            var name = $("#groupName").val();
+            var params = $("#groupParams").val();
+            var mode = $("#groupMode").val();
 
-        var formData = new FormData();
-        formData.append("id", sid);
-        formData.append("name", name);
-        formData.append("params", params);
-        formData.append("mode", mode);
-        $.ajax({
-            "url" : "/group",
-            "type" : dType,
-            "data": formData,
-            "processData" : false,
-            "contentType" : false,
-            "success" : callBack,
-            "error" : function(err) {
-                layer.msg(err);
-            }
-        });
-        function callBack(data) {
-            location.reload();
-            layer.close(index);
-        }
-    }
-    function editTagPut(index, layero, sid, dType="put") {
-        var name = $("#tagName").val();
-        var formData = new FormData();
-        formData.append("id", sid);
-        formData.append("name", name);
-        $.ajax({
-            "url" : "/tag",
-            "type" : dType,
-            "data": formData,
-            "processData" : false,
-            "contentType" : false,
-            "success" : callBack,
-            "error" : function(err) {
-                layer.msg(err);
-            }
-        });
-        function callBack(data) {
-            location.reload();
-            layer.close(index);
-        }
-    }
-
-    // edit fill
-    function fillTagOrGroup(sid, t) {
-        $.ajax({
-            "url" : "/" + t + "/" + sid,
-            "type" : "get",
-            "success" : callBack,
-            "error" : function(err) {
-                console.log(err)
-            }
-        });
-        function callBack(data) {
-            data = data.data;
-            if (t === "tag") {
-                $("#tagName").val(data.Name);
-            }else {
-                $("#groupName").val(data.Name);
-                $("#groupMode").val(data.Mode);
-                $("#groupParams").val(data.Params);
-            }
-            layui.form.render();
-
-        }
-    }
-
-    // edit button
-    layui.use('layer', function() {
-        $('.edit').click(function () {
-            var dType;
-            var title ;
-            var editForm;
-            var editPutfunc;
-            var width = '400px';
-            var sid = $(this).attr('val');
-            if ($(this).hasClass("tag")) {
-                title = "编辑标签";
-                width = '250px';
-                editForm = "#editFromTag";
-                editPutfunc = editTagPut
-                if ($(this).hasClass("add")) {
-                    title = "新增标签";
-                    dType = "post"
-                    $(editForm)[0].reset();
-                    layui.form.render();
-                }else {
-                    fillTagOrGroup(sid, "tag")
+            var formData = new FormData();
+            formData.append("id", sid);
+            formData.append("name", name);
+            formData.append("params", params);
+            formData.append("mode", mode);
+            $.ajax({
+                "url" : "/group",
+                "type" : dType,
+                "data": formData,
+                "processData" : false,
+                "contentType" : false,
+                "success" : callBack,
+                "error" : function(err) {
+                    layer.msg(err);
                 }
-            }else {
-                title = "编辑组";
-                editForm = "#editFromGroup";
-                editPutfunc = editGroupPut
-                if ($(this).hasClass("add")) {
-                    title = "新增组";
-                    dType = "post"
-                    $(editForm)[0].reset();
-                    layui.form.render();
-                }else {
-                    fillTagOrGroup(sid, "group")
-                }
-            }
-            layer.open({
-                type: 1,
-                area: ['550px', width],
-                title: title
-                , content: $(editForm),
-                shade: 0,
-                btn: ['提交', '重置']
-                , btn1: function (index, layero) {
-                    editPutfunc(index, layero, sid, dType)
-                },
-                btn2: function (index, layero) {
-                    $(editForm)[0].reset();
-                    layui.form.render();
-                    return false;
-                },
-                cancel: function (layero, index) {
-                    layer.closeAll();
-                }
-
             });
-        })
-    });
+            function callBack(data) {
+                location.reload();
+                layer.close(index);
+            }
+        }
+        function editTagPut(index, layero, sid, dType="put") {
+            var name = $("#tagName").val();
+            var formData = new FormData();
+            formData.append("id", sid);
+            formData.append("name", name);
+            $.ajax({
+                "url" : "/tag",
+                "type" : dType,
+                "data": formData,
+                "processData" : false,
+                "contentType" : false,
+                "success" : callBack,
+                "error" : function(err) {
+                    layer.msg(err);
+                }
+            });
+            function callBack(data) {
+                location.reload();
+                layer.close(index);
+            }
+        }
 
-    // delete
-    layui.use('layer', function(){
-        var $ = layui.jquery;
-        // 删除操作
-        $('a.delete').click(function() {
-            var url;
-            var sid = $(this).attr('val');
-            if ($(this).hasClass("tag")) {
-                url = "tag"
+        // edit fill
+        function fillTagOrGroup(sid, t) {
+            $.ajax({
+                "url" : "/" + t + "/" + sid,
+                "type" : "get",
+                "success" : callBack,
+                "error" : function(err) {
+                    console.log(err)
+                }
+            });
+            function callBack(data) {
+                data = data.data;
+                if (t === "tag") {
+                    $("#tagName").val(data.Name);
+                }else {
+                    $("#groupName").val(data.Name);
+                    $("#groupMode").val(data.Mode);
+                    $("#groupParams").val(data.Params);
+                }
+                layui.form.render();
+
             }
-            else {
-                url = "group"
-            }
-            layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
-                $.ajax({
-                    "url" : url,
-                    "type" : "post",
-                    "data" : {
-                        "id": sid,
-                        "_method": "DELETE"
+        }
+
+        // edit button
+        layui.use('layer', function() {
+            $('.edit').click(function () {
+                var dType;
+                var title ;
+                var editForm;
+                var editPutfunc;
+                var width = '400px';
+                var sid = $(this).attr('val');
+                if ($(this).hasClass("tag")) {
+                    title = "编辑标签";
+                    width = '250px';
+                    editForm = "#editFromTag";
+                    editPutfunc = editTagPut
+                    if ($(this).hasClass("add")) {
+                        title = "新增标签";
+                        dType = "post"
+                        $(editForm)[0].reset();
+                        layui.form.render();
+                    }else {
+                        fillTagOrGroup(sid, "tag")
+                    }
+                }else {
+                    title = "编辑组";
+                    editForm = "#editFromGroup";
+                    editPutfunc = editGroupPut
+                    if ($(this).hasClass("add")) {
+                        title = "新增组";
+                        dType = "post"
+                        $(editForm)[0].reset();
+                        layui.form.render();
+                    }else {
+                        fillTagOrGroup(sid, "group")
+                    }
+                }
+                layer.open({
+                    type: 1,
+                    area: ['550px', width],
+                    title: title
+                    , content: $(editForm),
+                    shade: 0,
+                    btn: ['提交', '重置']
+                    , btn1: function (index, layero) {
+                        editPutfunc(index, layero, sid, dType)
                     },
-                    "success" : callBack,
-                    "error" : function(err) {
-                        console.log(err)
+                    btn2: function (index, layero) {
+                        $(editForm)[0].reset();
+                        layui.form.render();
+                        return false;
+                    },
+                    cancel: function (layero, index) {
+                        layer.closeAll();
+                    }
+
+                });
+            })
+        });
+
+        // delete
+        layui.use('layer', function(){
+            var $ = layui.jquery;
+            // 删除操作
+            $('a.delete').click(function() {
+                var url;
+                var sid = $(this).attr('val');
+                if ($(this).hasClass("tag")) {
+                    url = "tag"
+                }
+                else {
+                    url = "group"
+                }
+                layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
+                    $.ajax({
+                        "url" : url + "/" + sid,
+                        "type" : "delete",
+                        "success" : callBack,
+                        "error" : function(err) {
+                            console.log(err)
+                        }
+                    });
+                    function callBack(data) {
+                        if (data.code === "200") {
+
+                            $("#"+url+sid).remove()
+                        }else {
+                            layer.msg("delete error")
+                        }
+                        layer.close(index);
                     }
                 });
-                function callBack(data) {
-                    if (data.code === "200") {
 
-                        $("#"+url+sid).remove()
-                    }else {
-                        layer.msg("delete error")
-                    }
-                    layer.close(index);
-                }
-            });
+            })
+        });
 
-        })
+    </script>
+
+</div>
+<script>
+    //注意：导航 依赖 element 模块，否则无法进行功能性操作
+    layui.use('element', function(){
+        var element = layui.element;
     });
-
+    //From
+    layui.use('form', function(){
+        var form = layui.form;
+    });
 </script>
+</body>
+</html>
