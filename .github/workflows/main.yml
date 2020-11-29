@@ -24,11 +24,11 @@ jobs:
 
       - name: Build for windows
         run: |
-          go build main.go
+          go build -mod=mod main.go
 
       - name: Build for linux
         run: |
-          go build main.go
+          go build -mod=mod main.go
         env:
           GOARCH: amd64
           GOOS: linux
