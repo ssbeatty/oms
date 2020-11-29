@@ -24,13 +24,11 @@ jobs:
 
       - name: Build for windows
         run: |
-          go get -u github.com/gobuffalo/packr/packr
-          packr build
+          go build main.go
 
       - name: Build for linux
         run: |
-          go get -u github.com/gobuffalo/packr/packr
-          packr build
+          go build main.go
         env:
           GOARCH: amd64
           GOOS: linux
