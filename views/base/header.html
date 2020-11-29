@@ -1,3 +1,4 @@
+{{define "header"}}
 <header>
     <ul id="myNavHeader" class="layui-nav" lay-filter="">
         <li class="layui-nav-item h"><a href="/">主机</a></li>
@@ -19,3 +20,4 @@
     var currentPage = window.location.pathname;
     $(".h" + currentPage.split("/")[1]).addClass("layui-this")
 </script>
+{{end}}

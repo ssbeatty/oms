@@ -1,90 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
 <head>
     <title>SSH</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/static/css/layui.css">
+    <script src="/static/js/layui.js"></script>
+    <script src="/static/js/jquery-3.5.1.min.js"></script>
     <link href="/static/css/xterm.min.css" rel="stylesheet" type="text/css"/>
     <style>
+        body {
+            background-color: #f2f1f1;
+            background-repeat:no-repeat;
+            background-attachment:fixed
+
+        }
+        .global-body {
+            width: 100%;
+            margin: 2% 4%;
+        }
         #terms {
             width: 80%;
         }
     </style>
 </head>
-<div style="margin-left: 4%">
-    <div>
-        <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
-            <div class="layui-form-item">
-                <div class="layui-input-inline" style="width: 380px;min-height: 36px">
-                    <select name="host" lay-verify="required" id="host">
-                        <option value=""></option>
-                        {{range .Hosts}}
-                            <option value="{{.Id}}">{{.Name}}</option>
-                        {{end}}
-                    </select>
+{{template "header" .}}
+<body>
+<div class="global-body">
+    <div style="margin-left: 4%">
+        <div>
+            <form class="layui-form" id="editFrom" style="margin-bottom: 20px">
+                <div class="layui-form-item">
+                    <div class="layui-input-inline" style="width: 380px;min-height: 36px">
+                        <select name="host" lay-verify="required" id="host">
+                            <option value=""></option>
+                            {{range .Hosts}}
+                                <option value="{{.Id}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <button id="connect" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">连接</button>
                 </div>
-                <button id="connect" style="width: 110px" type="button" class="layui-input-inline layui-btn layui-btn-primary ">连接</button>
-            </div>
-        </form>
+            </form>
 
+        </div>
+        {{if .HostId}}
+            <div id="HostId" class="val" val="{{.HostId}}"></div>
+        {{else}}
+            <div id="HostId"></div>
+        {{end}}
+        <div id="terms"></div>
     </div>
-    {{if .HostId}}
-        <div id="HostId" class="val" val="{{.HostId}}"></div>
-    {{else}}
-        <div id="HostId"></div>
-    {{end}}
-    <div id="terms"></div>
+
+    <script src="/static/js/xterm.min.js"></script>
+    <script>
+        var socket;
+        var term;
+        var isInit = $("#HostId").hasClass("val");
+        layui.use('form', function() {
+            if (isInit) {
+                $("#host").val($("#HostId").attr("val"));
+                layui.form.render();
+                $('button#connect').click()
+            }
+        });
+
+        $('button#connect').click(function() {
+            if (socket !== undefined && socket.readyState === socket.OPEN){
+                socket.close();
+            }
+            var hostId = $("#host").val();
+            socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=800&rows=40");
+
+            socket.onopen = function () {
+                term = new Terminal({
+                    cols: 800,
+                    rows: 40,
+                    cursorBlink: true,
+                    tabStopWidth: 4
+                });
+                term.open(document.getElementById('terms'));
+
+                term.on('data', function (data) {
+                    socket.send(data);
+                });
+                // term.on('resize', function (size) {
+                //     socket.send(JSON.stringify({
+                //         type: "resize",
+                //         rows: size.rows,
+                //         cols: size.cols,
+                //     }));
+                // });
+
+                socket.onmessage = function (msg) {
+                    term.write(msg.data);
+                };
+                socket.onerror = function (e) {
+                    layer.msg("connect error");
+                    console.log(e);
+                };
+
+                socket.onclose = function (e) {
+                    layer.msg("connect close");
+                    term.destroy();
+                };
+            };
+        });
+
+    </script>
 </div>
-
-<script src="/static/js/xterm.min.js"></script>
 <script>
-    var socket;
-    var term;
-    var isInit = $("#HostId").hasClass("val");
-    layui.use('form', function() {
-        if (isInit) {
-            $("#host").val($("#HostId").attr("val"));
-            layui.form.render();
-            $('button#connect').click()
-        }
+    //注意：导航 依赖 element 模块，否则无法进行功能性操作
+    layui.use('element', function(){
+        var element = layui.element;
     });
-
-    $('button#connect').click(function() {
-        if (socket !== undefined && socket.readyState === socket.OPEN){
-            socket.close();
-        }
-        var hostId = $("#host").val();
-        socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=800&rows=40");
-
-        socket.onopen = function () {
-            term = new Terminal({
-                cols: 800,
-                rows: 40,
-                cursorBlink: true,
-                tabStopWidth: 4
-            });
-            term.open(document.getElementById('terms'));
-
-            term.on('data', function (data) {
-                socket.send(data);
-            });
-            // term.on('resize', function (size) {
-            //     socket.send(JSON.stringify({
-            //         type: "resize",
-            //         rows: size.rows,
-            //         cols: size.cols,
-            //     }));
-            // });
-
-            socket.onmessage = function (msg) {
-                term.write(msg.data);
-            };
-            socket.onerror = function (e) {
-                layer.msg("connect error");
-                console.log(e);
-            };
-
-            socket.onclose = function (e) {
-                layer.msg("connect close");
-                term.destroy();
-            };
-        };
+    //From
+    layui.use('form', function(){
+        var form = layui.form;
     });
-
 </script>
+</body>
+</html>
