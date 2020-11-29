@@ -3,9 +3,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - dev-simple
 
 jobs:
   build:
@@ -38,10 +35,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: Test for action
-          tag_name: v0.1.1
+          tag_name: v0.1.2
           files: |
-            ./build/oms.exe
-            ./build/oms
+            oms.exe
+            oms
             ./conf/config.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
