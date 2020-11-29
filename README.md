@@ -11,12 +11,12 @@ https://github.com/gorilla/websocket
 1. 安装编译
 ```shell script
 #安装bee工具
-go get github.com/beego/bee
+go get -u github.com/gobuffalo/packr/packr
 
 # 打包
-bee pack -be GOOS=linux
+packr build
 or
-bee pack -be GOOS=windows
+GOOS=windows GOARCH=amd64 packr build
 ```
 
 2. 启动 修改app/app.conf 的以下内容 运行即可
