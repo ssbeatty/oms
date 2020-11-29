@@ -13,7 +13,7 @@ jobs:
       - name: Setup Go v1.15
         uses: actions/setup-go@v1
         with:
-          go-version: 1.15
+          go-version: 1.14
         id: go
 
       - name: Check out code into current branch
@@ -21,13 +21,11 @@ jobs:
 
       - name: Build for windows
         run: |
-          $env:Path="$pwd\utils;$env:Path"
-          packr build
+          go build -mod=mod main.go
 
       - name: Build for linux
         run: |
-          $env:Path="$pwd\utils;$env:Path"
-          packr build
+          go build -mod=mod main.go
         env:
           GOARCH: amd64
           GOOS: linux
@@ -37,10 +35,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: Test for action
-          tag_name: v0.1.1
+          tag_name: v0.1.2
           files: |
-            ./build/oms.exe
-            ./build/oms
+            oms.exe
+            oms
             ./conf/config.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
