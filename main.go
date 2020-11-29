@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "oms/conf"
 	"oms/routers"
 	"oms/services/tasks"
 )

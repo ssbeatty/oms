@@ -2,27 +2,29 @@ package models
 
 import (
 	"fmt"
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/orm"
+	"log"
+	"oms/conf"
 
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func init() {
+var db *gorm.DB
 
-	userName := beego.AppConfig.String("mysqluser")
-	passWord := beego.AppConfig.String("mysqlpass")
-	mysqlUrl := beego.AppConfig.String("mysqlurls")
-	dbName := beego.AppConfig.String("mysqldb")
+func init() {
+	var err error
+	userName := conf.DefaultConf.MysqlConf.UserName
+	passWord := conf.DefaultConf.MysqlConf.PassWord
+	mysqlUrl := conf.DefaultConf.MysqlConf.Urls
+	dbName := conf.DefaultConf.MysqlConf.DbName
 
 	dataSource := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", userName, passWord, mysqlUrl, dbName)
 
-	// set default database
-	orm.RegisterDataBase("default", "mysql", dataSource, 30)
-
-	// register model
-	orm.RegisterModel(new(Host), new(Group), new(Tag))
-
-	// create table
-	orm.RunSyncdb("default", false, true)
+	db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+	if err != nil {
+		log.Panicf("dataSource load error! exit! err: %v", err)
+	}
+	if err = db.AutoMigrate(new(Tag), new(Group), new(Host)); err != nil {
+		log.Printf("Migrate error! err: %v", err)
+	}
 }

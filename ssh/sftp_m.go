@@ -3,8 +3,8 @@ package ssh
 import (
 	"github.com/pkg/sftp"
 	"io"
+	"log"
 	"mime/multipart"
-	"oms/logger"
 	"os"
 	"path/filepath"
 )
@@ -12,7 +12,7 @@ import (
 func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error {
 	file, err := fileH.Open()
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	var remoteFile, remoteDir string
 	if remote[len(remote)-1] == '/' {
@@ -27,14 +27,14 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 		if rsum != "" {
 			lsum, _ := Md5File2(file)
 			if lsum == rsum {
-				logger.Logger.Println("sftp: 文件与本地一致，跳过上传！", fileH.Filename)
+				log.Println("sftp: 文件与本地一致，跳过上传！", fileH.Filename)
 				return nil
 			}
-			logger.Logger.Println("sftp: 正在上传 ", fileH.Filename)
+			log.Println("sftp: 正在上传 ", fileH.Filename)
 		}
 	}
 	if _, err := c.SFTPClient.Stat(remoteDir); err != nil {
-		logger.Logger.Println("sftp: Mkdir all", remoteDir)
+		log.Println("sftp: Mkdir all", remoteDir)
 		c.MkdirAll(remoteDir)
 	}
 	r, err := c.SFTPClient.Create(remoteFile)

@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"oms/logger"
+	"log"
 	"sync"
 	"time"
 )
@@ -117,7 +117,7 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 			//read websocket msg
 			_, wsData, err := wsConn.ReadMessage()
 			if err != nil {
-				logger.Logger.Println("reading webSocket message failed")
+				log.Println("reading webSocket message failed")
 				return
 			}
 			//unmashal bytes into struct
@@ -135,7 +135,7 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 				//handle xterm.js size change
 				if msgObj.Cols > 0 && msgObj.Rows > 0 {
 					if err := ssConn.Session.WindowChange(msgObj.Rows, msgObj.Cols); err != nil {
-						logger.Logger.Println("ssh pty change windows size failed")
+						log.Println("ssh pty change windows size failed")
 					}
 				}
 			case wsMsgCmd:
@@ -143,14 +143,14 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 				//decodeBytes, err := base64.StdEncoding.DecodeString(msgObj.Cmd)
 				decodeBytes := wsData
 				if err != nil {
-					logger.Logger.Println("websock cmd string base64 decoding failed")
+					log.Println("websock cmd string base64 decoding failed")
 				}
 				if _, err := ssConn.StdinPipe.Write(decodeBytes); err != nil {
-					logger.Logger.Println("ws cmd bytes write to ssh.stdin pipe failed")
+					log.Println("ws cmd bytes write to ssh.stdin pipe failed")
 				}
 				//write input cmd to log buffer
 				if _, err := logBuff.Write(decodeBytes); err != nil {
-					logger.Logger.Println("write received cmd into log buffer failed")
+					log.Println("write received cmd into log buffer failed")
 				}
 			}
 		}
@@ -169,7 +169,7 @@ func (ssConn *SshConn) SendComboOutput(wsConn *websocket.Conn, exitCh chan bool)
 		case <-tick.C:
 			//write combine output bytes into websocket response
 			if err := flushComboOutput(ssConn.ComboOutput, wsConn); err != nil {
-				logger.Logger.Println("ssh sending combo output to webSocket failed")
+				log.Println("ssh sending combo output to webSocket failed")
 				return
 			}
 		case <-exitCh:
@@ -180,7 +180,7 @@ func (ssConn *SshConn) SendComboOutput(wsConn *websocket.Conn, exitCh chan bool)
 
 func (ssConn *SshConn) SessionWait(quitChan chan bool) {
 	if err := ssConn.Session.Wait(); err != nil {
-		logger.Logger.Println("ssh session wait failed")
+		log.Println("ssh session wait failed")
 		setQuit(quitChan)
 	}
 }

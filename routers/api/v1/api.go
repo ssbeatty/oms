@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"oms/logger"
 	"oms/models"
 	"strconv"
 )
@@ -71,14 +71,14 @@ func PostHost(c *gin.Context) {
 		ff, _ := fh.Open()
 		fileBytes, err := ioutil.ReadAll(ff)
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 		}
 		keyText = string(fileBytes)
 	}
 
 	err = json.Unmarshal([]byte(tags), &tagJson)
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 
 	models.InsertHost(hostname, user, addr, port, password, groupId, tagJson, keyText)
@@ -94,7 +94,7 @@ func PutHost(c *gin.Context) {
 	var keyText string
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		msg = "can't get param id"
 		code = HttpStatusError
 	}
@@ -110,7 +110,7 @@ func PutHost(c *gin.Context) {
 		ff, _ := fh.Open()
 		fileBytes, err := ioutil.ReadAll(ff)
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 		}
 		keyText = string(fileBytes)
 	}
@@ -120,7 +120,7 @@ func PutHost(c *gin.Context) {
 	if err != nil {
 		msg = "can't get param tags"
 		code = HttpStatusError
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 
 	models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagJson, keyText)
@@ -188,7 +188,7 @@ func PutGroup(c *gin.Context) {
 	var code = HttpStatusOk
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		msg = "can't get param id"
 		code = HttpStatusError
 	}
@@ -260,7 +260,7 @@ func PutTag(c *gin.Context) {
 	var code = HttpStatusOk
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		msg = "can't get param id"
 		code = HttpStatusError
 	}

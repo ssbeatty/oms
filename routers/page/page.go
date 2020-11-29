@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
-	"oms/logger"
 	"oms/models"
 	"oms/ssh"
 	"strconv"
@@ -92,13 +92,13 @@ func GetWebsocket(c *gin.Context) {
 	id, _ := strconv.Atoi(idStr)
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	defer wsConn.Close()
 	host := models.GetHostById(id)
 	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	ssConn, err := ssh.NewSshConn(cols, rows, client.SSHClient)
 	defer ssConn.Close()
@@ -109,5 +109,5 @@ func GetWebsocket(c *gin.Context) {
 	go ssConn.SessionWait(quitChan)
 
 	<-quitChan
-	logger.Logger.Println("websocket finished")
+	log.Println("websocket finished")
 }

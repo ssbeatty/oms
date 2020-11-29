@@ -1,46 +1,41 @@
 package models
 
 import (
-	"github.com/astaxie/beego/orm"
-	"oms/logger"
+	"log"
 )
 
 type Group struct {
 	Id     int
-	Name   string  `orm:"size(100)"`
-	Mode   int     `orm:"default(0)"` //0.Default mode & use Host, 1.Use other func
-	Host   []*Host `orm:"reverse(many);null" json:"-"`
-	Params string  `orm:"null"`
+	Name   string `gorm:"size:256;not null"`
+	Mode   int    `gorm:"default:0;not null"` //0.Default mode & use Host, 1.Use other func
+	Host   []Host `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Params string
 }
 
 func GetAllGroup() []*Group {
-	var o = orm.NewOrm()
-	group := new(Group)
 	var groups []*Group
-	_, err := o.QueryTable(group).RelatedSel().All(&groups)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Find(&groups)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return groups
 }
 
 func GetGroupById(id int) *Group {
-	var o = orm.NewOrm()
-	group := Group{Id: id}
-	err := o.Read(&group)
-	if err != nil {
-		logger.Logger.Println(err)
+	group := Group{}
+	result := db.Where("id = ?", id).First(&group)
+
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &group
 }
 
 func ExistedGroup(name string) bool {
-	var o = orm.NewOrm()
-	group := new(Group)
 	var groups []*Group
-	_, err := o.QueryTable(group).Filter("Name", name).All(&groups)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where("name = ?", name).Find(&groups)
+	if result.Error != nil {
+		log.Println(result.Error)
 		return false
 	}
 	if len(groups) == 0 {
@@ -50,25 +45,23 @@ func ExistedGroup(name string) bool {
 }
 
 func InsertGroup(name string, params string, mode int) *Group {
-	var o = orm.NewOrm()
 	group := Group{
 		Name:   name,
 		Params: params,
 		Mode:   mode,
 	}
-	_, err := o.Insert(&group)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Create(&group)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &group
 }
 
 func UpdateGroup(id int, name string, params string, mode int) *Group {
-	var o = orm.NewOrm()
-	group := Group{Id: id}
-	err := o.Read(&group)
-	if err != nil {
-		logger.Logger.Println(err)
+	group := Group{}
+	result := db.Where("id = ?", id).First(&group)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	if name != "" {
 		group.Name = name
@@ -77,19 +70,17 @@ func UpdateGroup(id int, name string, params string, mode int) *Group {
 		group.Params = params
 	}
 	group.Mode = mode
-	_, err = o.Update(&group)
-	if err != nil {
-		logger.Logger.Println(err)
+	result = db.Save(&group)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &group
 }
 
 func DeleteGroupById(id int) bool {
-	o := orm.NewOrm()
-	tag := Group{Id: id}
-	_, err := o.Delete(&tag)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Delete(&Group{}, id)
+	if result.Error != nil {
+		log.Println(result.Error)
 		return false
 	}
 	return true

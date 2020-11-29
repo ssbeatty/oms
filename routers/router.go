@@ -1,11 +1,13 @@
 package routers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"html/template"
 	"io/ioutil"
+	"oms/conf"
 	v1 "oms/routers/api/v1"
 	"oms/routers/page"
 )
@@ -62,7 +64,8 @@ func InitGinServer() {
 		apiV1.DELETE("/tag/:id", v1.DeleteTag)
 	}
 
-	r.Run(":8080")
+	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)
+	r.Run(addr)
 }
 
 // @TODO same name template

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"oms/logger"
 	"oms/models"
 	"strconv"
 	"time"
@@ -32,7 +32,7 @@ func RunCmd(c *gin.Context) {
 	var code = HttpStatusOk
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	pType := c.Query("type")
 	cmd := c.Query("cmd")
@@ -58,7 +58,7 @@ func FileUpload(c *gin.Context) {
 		remoteFile = remote + "/"
 	}
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	pType := c.PostForm("type")
 	hosts := models.ParseHostList(pType, id)
@@ -74,7 +74,7 @@ func GetPathInfo(c *gin.Context) {
 	path := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 		code = HttpStatusError
 		msg = err.Error()
 	}
@@ -87,13 +87,13 @@ func DownLoadFile(c *gin.Context) {
 	path := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	file := models.DownloadFile(id, path)
 	if file != nil {
 		fh, err := file.Stat()
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 			http.ServeContent(c.Writer, c.Request, "download", time.Now(), file)
 		} else {
 			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
@@ -109,7 +109,7 @@ func DeleteFile(c *gin.Context) {
 	path := c.PostForm("path")
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	err = models.DeleteFileOrDir(id, path)
 	if err != nil {
@@ -123,7 +123,7 @@ func DeleteFile(c *gin.Context) {
 func ExportData(c *gin.Context) {
 	marshal, err := models.ExportDbData()
 	if err != nil {
-		logger.Logger.Println(err)
+		log.Println(err)
 	}
 	file := bytes.NewReader(marshal)
 	c.Writer.Header().Set("content-type", "application/json")
@@ -138,13 +138,13 @@ func ImportData(c *gin.Context) {
 		ff, _ := fh.Open()
 		fileBytes, err := ioutil.ReadAll(ff)
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 			msg = err.Error()
 			code = HttpStatusError
 		}
 		err = models.ImportDbData(fileBytes)
 		if err != nil {
-			logger.Logger.Println(err)
+			log.Println(err)
 			msg = err.Error()
 			code = HttpStatusError
 		}

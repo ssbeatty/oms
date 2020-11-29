@@ -1,9 +1,11 @@
 ## 项目简介
 
-​本项目使用beego和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
+​本项目使用gin、gorm和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
 
 #### 项目依赖
-https://github.com/astaxie/beego
+github.com/gin-gonic/gin
+
+gorm.io/gorm
 
 https://github.com/gorilla/websocket
 
@@ -19,13 +21,14 @@ or
 GOOS=windows GOARCH=amd64 packr build
 ```
 
-2. 启动 修改app/app.conf 的以下内容 运行即可
+2. 启动 创建config.yaml在可执行文件同级 运行即可(例如conf/conf.yaml.example)
 ```shell script
 # 数据库配置
-mysqluser = "root"
-mysqlpass = "123456"
-mysqlurls = "127.0.0.1:3306"
-mysqldb   = "oms"
+mysql:
+  user: root
+  password: 123456
+  urls: 127.0.0.1:3306
+  db: oms
 ```
 
 #### 目前已经实现的功能
@@ -54,8 +57,9 @@ mysqldb   = "oms"
 8. 数据库内容的导入导出
 
 #### 目前正在开发的
-
+0. 修复BUG
 1. 类playbook形式的批量任务集合构思开发。
+2. ssh、sftp转换为websocket形式。
 
 ## 感谢
 https://github.com/mojocn/felix

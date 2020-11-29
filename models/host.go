@@ -1,9 +1,7 @@
 package models
 
 import (
-	"fmt"
-	"github.com/astaxie/beego/orm"
-	"oms/logger"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,38 +10,34 @@ import (
 // Model Struct
 type Host struct {
 	Id       int
-	Name     string `orm:"size(100)"`
-	User     string `orm:"null"`
-	Addr     string `orm:"null"`
-	Port     int    `orm:"default(22)"`
-	PassWord string `orm:"null"`
-	KeyFile  string `orm:"null;type(text)"`
+	Name     string `gorm:"size:100;not null"`
+	User     string `gorm:"size:128;not null"`
+	Addr     string `gorm:"size:128;not null"`
+	Port     int    `gorm:"default:22"`
+	PassWord string `gorm:"size:128;not null"`
+	KeyFile  string `gorm:"type:text"`
 
-	Status bool `orm:"default(false)"`
+	Status bool `gorm:"default:false"`
 
-	Group *Group `orm:"rel(fk);null;on_delete(set_null)"`
-	Tags  []*Tag `orm:"rel(m2m);null;rel_table(host_tag)"`
+	GroupId int
+	Group   Group
+	Tags    []Tag `gorm:"many2many:host_tag"`
 }
 
 func GetHostById(id int) *Host {
-	var o = orm.NewOrm()
-	host := Host{Id: id}
-	err := o.Read(&host)
-	o.LoadRelated(&host, "Tags")
-	o.LoadRelated(&host, "Group")
-	if err != nil {
-		logger.Logger.Println(err)
+	host := Host{}
+	result := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &host
 }
 
 func ExistedHost(name string, addr string) bool {
-	var o = orm.NewOrm()
-	host := new(Host)
 	var hosts []*Host
-	_, err := o.QueryTable(host).Filter("Name", name).Filter("Addr", addr).All(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where(&Host{Name: name, Addr: addr}).Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 		return false
 	}
 	if len(hosts) == 0 {
@@ -53,28 +47,30 @@ func ExistedHost(name string, addr string) bool {
 }
 
 func DeleteHostById(id int) bool {
-	o := orm.NewOrm()
-	host := Host{Id: id}
-	m2m := o.QueryM2M(&host, "Tags")
-	_, err := m2m.Clear()
-	if err != nil {
-		logger.Logger.Println(err)
+	host := Host{}
+	result := db.Where("id = ?", id).First(&host)
+	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
+		log.Println("clear association error for tags and host.")
+	}
+	result = db.Delete(&host)
+	if result.Error != nil {
+		log.Println(result.Error)
 		return false
 	}
-	_, err = o.Delete(&host)
-	if err != nil {
-		logger.Logger.Println(err)
-		return false
-	}
+
 	return true
 }
 
 func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) *Host {
-	var o = orm.NewOrm()
-	group := Group{Id: groupId}
-	err := o.Read(&group)
-	if err != nil {
-		logger.Logger.Println(err)
+	var tagObjs []Tag
+	for _, tagIdStr := range tags {
+		tagId, _ := strconv.Atoi(tagIdStr)
+		tag := Tag{}
+		err := db.Where("id = ?", tagId).First(&tag)
+		tagObjs = append(tagObjs, tag)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	host := Host{
 		Name:     hostname,
@@ -82,38 +78,40 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 		Addr:     addr,
 		Port:     port,
 		PassWord: password,
-		Group:    &group,
 		KeyFile:  keyText,
+		Tags:     tagObjs,
 	}
-	_, err = o.Insert(&host)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Omit("GroupId").Create(&host)
+	if groupId != 0 {
+		host.GroupId = groupId
+		db.Save(&host)
 	}
-	m2m := o.QueryM2M(&host, "Tags")
-	for _, tagIdStr := range tags {
-		tagId, _ := strconv.Atoi(tagIdStr)
-		tag := Tag{Id: tagId}
-		err := o.Read(&tag)
-		_, err = m2m.Add(tag)
-		if err != nil {
-			logger.Logger.Println(err)
-		}
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &host
 }
 
 func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) *Host {
-	var o = orm.NewOrm()
-	group := Group{Id: groupId}
-	err := o.Read(&group)
-	if err != nil {
-		logger.Logger.Println(err)
-	}
 	host := Host{Id: id}
-	err = o.Read(&host)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where("id = ?", id).First(&host)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
+	var tagObjs []Tag
+	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
+		log.Println("clear association error for tags and host.")
+	}
+	for _, tagIdStr := range tags {
+		tagId, _ := strconv.Atoi(tagIdStr)
+		tag := Tag{}
+		result := db.Where("id = ?", tagId).First(&tag)
+		tagObjs = append(tagObjs, tag)
+		if result.Error != nil {
+			log.Println(result.Error)
+		}
+	}
+	host.Tags = tagObjs
 	if hostname != "" {
 		host.Name = hostname
 	}
@@ -133,63 +131,46 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 		host.KeyFile = keyText
 	}
 	if groupId != 0 {
-		host.Group = &group
+		host.GroupId = groupId
+		result = db.Save(&host)
+	} else {
+		//@TODO delete group
+		result = db.Omit("GroupId").Save(&host)
 	}
-	_, err = o.Update(&host)
-	if err != nil {
-		logger.Logger.Println(err)
-	}
-	m2m := o.QueryM2M(&host, "Tags")
-	_, err = m2m.Clear()
-	for _, tagIdStr := range tags {
-		tagId, _ := strconv.Atoi(tagIdStr)
-		tag := Tag{Id: tagId}
-		err := o.Read(&tag)
-		_, err = m2m.Add(tag)
-		if err != nil {
-			logger.Logger.Println(err)
-		}
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return &host
 }
 
 func GetAllHost() []*Host {
-	var o = orm.NewOrm()
-	host := new(Host)
 	var hosts []*Host
-	_, err := o.QueryTable(host).RelatedSel().All(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Preload("Tags").Preload("Group").Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
-	// 获取tags
-	for i := 0; i < len(hosts); i++ {
-		o.LoadRelated(hosts[i], "Tags")
-	}
+
 	return hosts
 }
 
 func GetHostByGlob(glob string) []*Host {
-	var o = orm.NewOrm()
 	var hosts []*Host
 	glob = strings.Replace(glob, "*", "%", -1)
-	sql := fmt.Sprintf("SELECT * FROM host WHERE addr LIKE '%s'", glob)
-	_, err := o.Raw(sql).QueryRows(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where("addr LIKE ?", glob).Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return hosts
 }
 
 func GetHostByReg(regStr string) []*Host {
-	var o = orm.NewOrm()
-	host := new(Host)
 	var hosts []*Host
 	var hostsR []*Host
-	num, err := o.QueryTable(host).All(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
-	for i := 0; i < int(num); i++ {
+	for i := 0; i < len(hosts); i++ {
 		match, _ := regexp.MatchString(regStr, hosts[i].Addr)
 		if match {
 			hostsR = append(hostsR, hosts[i])
@@ -200,23 +181,19 @@ func GetHostByReg(regStr string) []*Host {
 }
 
 func GetHostByAddr(addr string) []*Host {
-	var o = orm.NewOrm()
-	host := new(Host)
 	var hosts []*Host
-	_, err := o.QueryTable(host).Filter("Addr", addr).All(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where("addr = ?", addr).Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return hosts
 }
 
 func GetHostByKeyFile(KeyFile string) int {
-	var o = orm.NewOrm()
-	host := new(Host)
 	var hosts []*Host
-	_, err := o.QueryTable(host).Filter("KeyFile", KeyFile).All(&hosts)
-	if err != nil {
-		logger.Logger.Println(err)
+	result := db.Where("key_file = ?", KeyFile).Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
 	}
 	return len(hosts)
 }
