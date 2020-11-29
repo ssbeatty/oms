@@ -21,11 +21,11 @@ jobs:
 
       - name: Build for windows
         run: |
-          go build -mod=mod main.go
+          go build -o oms.exe -mod=mod main.go
 
       - name: Build for linux
         run: |
-          go build -mod=mod main.go
+          go build -o oms -mod=mod main.go
         env:
           GOARCH: amd64
           GOOS: linux
@@ -37,8 +37,8 @@ jobs:
           body: Test for action
           tag_name: v0.1.2
           files: |
-            oms.exe
-            oms
+            ./oms.exe
+            ./oms
             ./conf/config.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
