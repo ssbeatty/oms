@@ -2,15 +2,13 @@ package main
 
 import (
 	"oms/routers"
+	"oms/services/tasks"
 )
 
 func main() {
-	//@TODO task
-	//toolbox.StartTask()
-	//defer toolbox.StopTask()
-	//
-	//getHostStatus := toolbox.NewTask("getHostStatus", "0 */5 * * * *", tasks.GetHostStatus)
-	//toolbox.AddTask("getHostStatus", getHostStatus)
+	// add init tasks
+	taskService := tasks.NewTaskService()
+	taskService.Start()
 
 	routers.InitGinServer()
 }

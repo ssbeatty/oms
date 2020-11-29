@@ -1,3 +1,4 @@
 /.idea
 /static/upload
 *.log
+conf/app.conf

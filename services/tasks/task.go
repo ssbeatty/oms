@@ -45,13 +45,12 @@ func ClearCache() error {
 	return nil
 }
 
-func GetHostStatus() (err error) {
+func GetHostStatus() {
 	logger.Logger.Println("======================Task GetHostStatus start======================")
-	err = nil
 	var o = orm.NewOrm()
 	host := new(models.Host)
 	var hosts []*models.Host
-	_, err = o.QueryTable(host).All(&hosts)
+	_, err := o.QueryTable(host).All(&hosts)
 	if err != nil {
 		logger.Logger.Println("======================Task GetHostStatus end ======================")
 		return
