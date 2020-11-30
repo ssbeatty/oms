@@ -8,4 +8,4 @@ mysql:
   user: root
   password: 123456
   urls: 127.0.0.1:3306
-  db: oms2
+  db: oms

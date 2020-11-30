@@ -51,7 +51,7 @@ func init() {
 		}
 	} else {
 		box := packr.NewBox("./")
-		yamlFile, err = box.Find("config.yaml")
+		yamlFile, err = box.Find("config.yaml.example")
 	}
 
 	err = yaml.Unmarshal(yamlFile, DefaultConf)
