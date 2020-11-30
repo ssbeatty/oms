@@ -54,12 +54,16 @@ mysql:
 以上匹配都只针对主机的addr
 ```
 7. 后台定时任务判断主机的状态。
-8. 数据库内容的导入导出
+8. 数据库内容的导入导出。
 
 #### 目前正在开发的
-0. 修复BUG
+0. 修复BUG。
 1. 类playbook形式的批量任务集合构思开发。
 2. ssh、sftp转换为websocket形式。
+3. 使用react或vue开发前端。
+4. 组件service化，比如ssh/sftp的websocket。
+5. 类似saltstack的agent开发。
+(ps: 当然上述都是我个人主观意愿，是否完成有赖于能力是否提升到足以完成。)
 
 ## 感谢
 https://github.com/mojocn/felix
@@ -69,6 +73,8 @@ https://github.com/pytool/ssh
 https://github.com/hequan2017/go-webssh
 
 ## 最后
-因为时间紧促且自己学习go时间比较短, 所以代码写的比较烂, 之后会持续开发修复BUG, 如果感兴趣的可以给个star, 也可联系我共同学习
+因为时间紧促且自己学习go时间比较短，所以代码写的比较烂，之后会持续开发修复BUG，如果感兴趣的可以给个star，也可联系我共同学习
+
+因为确实个人能力有限，希望有能力的人可以帮助一下，不胜感激
 
 email & qq: 918562230@qq.com
