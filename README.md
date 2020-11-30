@@ -3,16 +3,16 @@
 ​本项目使用gin、gorm和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
 
 #### 项目依赖
-github.com/gin-gonic/gin
+https://github.com/gin-gonic/gin
 
-gorm.io/gorm
+https://gorm.io/gorm
 
 https://github.com/gorilla/websocket
 
 #### 使用说明
 1. 安装编译
 ```shell script
-#安装bee工具
+#安装packr工具
 go get -u github.com/gobuffalo/packr/packr
 
 # 打包
@@ -21,7 +21,7 @@ or
 GOOS=windows GOARCH=amd64 packr build
 ```
 
-2. 启动 创建config.yaml在可执行文件同级 运行即可(例如conf/conf.yaml.example)
+2. 启动 创建config.yaml在可执行文件同级 运行即可(例如conf/conf.yaml)
 ```shell script
 # 数据库配置
 mysql:

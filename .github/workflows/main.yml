@@ -21,11 +21,13 @@ jobs:
 
       - name: Build for windows
         run: |
-          go build -o oms.exe -mod=mod main.go
+          $env:Path="$pwd\lib;$env:Path"
+          packr build -o oms.exe -mod=mod main.go
 
       - name: Build for linux
         run: |
-          go build -o oms -mod=mod main.go
+          $env:Path="$pwd\lib;$env:Path"
+          packr build -o oms -mod=mod main.go
         env:
           GOARCH: amd64
           GOOS: linux
@@ -35,7 +37,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: Test for action
-          tag_name: v0.1.2
+          tag_name: v0.1.3
           files: |
             ./oms.exe
             ./oms
