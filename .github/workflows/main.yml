@@ -1,8 +1,8 @@
 name: Go
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -36,8 +36,7 @@ jobs:
       - name: Draft release
         uses: softprops/action-gh-release@v1
         with:
-          body: Test for action
-          tag_name: v0.1.3
+          body: Release for new version
           files: |
             ./oms.exe
             ./oms
