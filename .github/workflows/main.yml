@@ -22,12 +22,12 @@ jobs:
       - name: Build for windows
         run: |
           $env:Path="$pwd\lib;$env:Path"
-          packr build -o oms.exe -mod=mod main.go
+          packr build -o oms.exe main.go
 
       - name: Build for linux
         run: |
           $env:Path="$pwd\lib;$env:Path"
-          packr build -o oms -mod=mod main.go
+          packr build -o oms main.go
         env:
           GOARCH: amd64
           GOOS: linux
