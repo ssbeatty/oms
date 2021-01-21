@@ -41,8 +41,13 @@ func GetWebSocketShell(c *gin.Context) {
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	pType := c.Query("type")
+	if pType == "" {
+		log.Println("shell_ws can't found params type")
+		return
+	}
 	hosts := models.ParseHostList(pType, id)
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {

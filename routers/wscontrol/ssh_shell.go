@@ -1,6 +1,7 @@
 package wscontrol
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"log"
 	"oms/models"
@@ -11,6 +12,13 @@ type WebSocketShellClient struct {
 	Hosts       []*models.Host
 	chanSshResp chan *models.Result
 	chanQuit    chan bool
+}
+
+type WsResponse struct {
+	Name   string `json:"name"`
+	Msg    string `json:"msg"`
+	Err    string `json:"err"`
+	Status bool   `json:"status"`
 }
 
 func NewWebSocketShellClient(WsConn *websocket.Conn, Hosts []*models.Host, chanQuit chan bool) *WebSocketShellClient {
@@ -50,7 +58,9 @@ func (ws WebSocketShellClient) WriteWsMsg() {
 			log.Println("WriteWsMsg Recv quit chan, exit!")
 			return
 		case sshResp := <-ws.chanSshResp:
-			if err := ws.WsConn.WriteMessage(websocket.TextMessage, []byte(sshResp.Msg)); err != nil {
+			// TODO err msg
+			wsResp, _ := json.Marshal(WsResponse{Name: sshResp.HostName, Status: sshResp.Status, Msg: sshResp.Msg, Err: ""})
+			if err := ws.WsConn.WriteMessage(websocket.TextMessage, wsResp); err != nil {
 				log.Printf("Ws WriteMessage err: %v", err)
 			}
 		}

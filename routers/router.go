@@ -26,6 +26,7 @@ func InitGinServer() {
 	r.GET("/groupPage", page.GetGroupPage)
 	r.GET("/tool", page.GetToolPage)
 	r.GET("/shell", page.GetShellPage)
+	r.GET("/shell_ws", page.GetShellWsPage)
 	r.GET("/file", page.GetFilePage)
 	r.GET("/browse", page.GetFileBrowsePage)
 	r.GET("/ssh", page.GetSshPage)
