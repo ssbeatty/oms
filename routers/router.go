@@ -31,7 +31,8 @@ func InitGinServer() {
 	r.GET("/ssh", page.GetSshPage)
 
 	// websocket
-	r.GET("/ws/ssh/:id", page.GetWebsocket)
+	r.GET("/ws/ssh/:id", page.GetWebsocketSsh)
+	r.GET("/ws/shell", page.GetWebSocketShell)
 
 	// tools
 	r.GET("/tools/cmd", page.RunCmd)

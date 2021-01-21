@@ -1,14 +1,10 @@
 package page
 
 import (
-	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"log"
 	"net/http"
 	"oms/models"
-	"oms/ssh"
-	"strconv"
 )
 
 var upGrader = websocket.Upgrader{
@@ -83,31 +79,4 @@ func GetSshPage(c *gin.Context) {
 		"HostId": HostId,
 		"Hosts":  hosts,
 	})
-}
-
-func GetWebsocket(c *gin.Context) {
-	idStr := c.Param("id")
-	cols, _ := strconv.Atoi(c.Query("cols"))
-	rows, _ := strconv.Atoi(c.Query("rows"))
-	id, _ := strconv.Atoi(idStr)
-	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println(err)
-	}
-	defer wsConn.Close()
-	host := models.GetHostById(id)
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
-	if err != nil {
-		log.Println(err)
-	}
-	ssConn, err := ssh.NewSshConn(cols, rows, client.SSHClient)
-	defer ssConn.Close()
-	quitChan := make(chan bool, 3)
-	var logBuff = new(bytes.Buffer)
-	go ssConn.ReceiveWsMsg(wsConn, logBuff, quitChan)
-	go ssConn.SendComboOutput(wsConn, quitChan)
-	go ssConn.SessionWait(quitChan)
-
-	<-quitChan
-	log.Println("websocket finished")
 }
