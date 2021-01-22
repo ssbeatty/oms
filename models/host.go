@@ -134,7 +134,9 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 		host.GroupId = groupId
 		result = db.Save(&host)
 	} else {
-		//@TODO delete group
+		if err := db.Model(&host).Association("Group").Clear(); err != nil {
+			log.Println(err)
+		}
 		result = db.Omit("GroupId").Save(&host)
 	}
 	if result.Error != nil {
@@ -196,4 +198,26 @@ func GetHostByKeyFile(KeyFile string) int {
 		log.Println(result.Error)
 	}
 	return len(hosts)
+}
+
+func GetHostsByTag(tag *Tag) []*Host {
+	var hosts []*Host
+	err := db.Model(&tag).Association("Hosts").Find(&hosts)
+	if err != nil {
+		log.Println(err)
+	}
+	return hosts
+}
+
+func GetHostsByGroup(group *Group) []*Host {
+	var hosts []*Host
+	result := db.Where("group_id = ?", group.Id).Preload("Tags").Preload("Group").Find(&hosts)
+	if result.Error != nil {
+		log.Println(result.Error)
+	}
+	return hosts
+}
+
+func UpdateHostStatus(host *Host) {
+	_ = db.Omit("GroupId").Save(&host)
 }

@@ -7,7 +7,7 @@ import (
 type Group struct {
 	Id     int
 	Name   string `gorm:"size:256;not null"`
-	Mode   int    `gorm:"default:0;not null"` //0.Default mode & use Host, 1.Use other func
+	Mode   int    `gorm:"default:0;not null"` //0.主机模式, 1.其他匹配模式主机不生效
 	Host   []Host `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Params string
 }

@@ -17,7 +17,6 @@ type WebSocketShellClient struct {
 type WsResponse struct {
 	Name   string `json:"name"`
 	Msg    string `json:"msg"`
-	Err    string `json:"err"`
 	Status bool   `json:"status"`
 }
 
@@ -58,8 +57,7 @@ func (ws WebSocketShellClient) WriteWsMsg() {
 			log.Println("WriteWsMsg Recv quit chan, exit!")
 			return
 		case sshResp := <-ws.chanSshResp:
-			// TODO err msg
-			wsResp, _ := json.Marshal(WsResponse{Name: sshResp.HostName, Status: sshResp.Status, Msg: sshResp.Msg, Err: ""})
+			wsResp, _ := json.Marshal(WsResponse{Name: sshResp.HostName, Status: sshResp.Status, Msg: sshResp.Msg})
 			if err := ws.WsConn.WriteMessage(websocket.TextMessage, wsResp); err != nil {
 				log.Printf("Ws WriteMessage err: %v", err)
 			}

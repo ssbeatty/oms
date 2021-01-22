@@ -44,7 +44,7 @@ func InitGinServer() {
 	r.GET("/tools/export", page.ExportData)
 	r.POST("/tools/import", page.ImportData)
 
-	// @TODO api v1
+	// @TODO api v1 开发前端时解决
 	apiV1 := r.Group("/")
 	{
 		apiV1.GET("/host", v1.GetHosts)
@@ -70,7 +70,7 @@ func InitGinServer() {
 	r.Run(addr)
 }
 
-// @TODO same name template
+// @TODO same name template 开发前端时解决
 func loadTemplate() (*template.Template, error) {
 	box := packr.NewBox("../views")
 	t := template.New("")

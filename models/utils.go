@@ -6,6 +6,7 @@ import (
 	"log"
 	"mime/multipart"
 	"oms/ssh"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -30,39 +31,18 @@ type ExportData struct {
 	Hosts  []*Host
 }
 
-// @ fixme debug orm
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
 	if pType == "host" {
-		host := Host{}
-		result := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host)
-		if result.Error != nil {
-			log.Println(result.Error)
-		}
-		hosts = append(hosts, &host)
+		host := GetHostById(id)
+		hosts = append(hosts, host)
 	} else if pType == "tag" {
-		tag := Tag{}
-		result := db.Where("id = ?", id).First(&tag)
-		if result.Error != nil {
-			log.Println(result.Error)
-		}
-		err := db.Model(&tag).Association("Hosts").Find(&hosts)
-
-		if err != nil {
-			log.Println(err)
-		}
+		tag := GetTagById(id)
+		hosts = GetHostsByTag(tag)
 	} else {
-		group := Group{}
-		result := db.Where("id = ?", id).First(&group)
-
-		if result.Error != nil {
-			log.Println(result.Error)
-		}
+		group := GetGroupById(id)
 		if group.Mode == 0 {
-			result := db.Where("group_id = ?", id).Preload("Tags").Preload("Group").Find(&hosts)
-			if result.Error != nil {
-				log.Println(result.Error)
-			}
+			hosts = GetHostsByGroup(group)
 		} else {
 			args := strings.Split(group.Params, " ")
 			switch args[0] {
@@ -166,18 +146,18 @@ func GetStatus(host *Host) bool {
 	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
 	if err != nil {
 		host.Status = false
-		_ = db.Omit("GroupId").Save(&host)
+		UpdateHostStatus(host)
 		return false
 	}
 	session, err := client.SSHClient.NewSession()
 	if err != nil {
 		host.Status = false
-		_ = db.Omit("GroupId").Save(&host)
+		UpdateHostStatus(host)
 		return false
 	}
 	defer session.Close()
 	host.Status = true
-	_ = db.Omit("GroupId").Save(&host)
+	UpdateHostStatus(host)
 	return true
 }
 
@@ -278,7 +258,7 @@ func ImportDbData(marshal []byte) error {
 			log.Printf("Insert Host %s", host.Name)
 			tags := make([]string, 0)
 			for i, _ := range host.Tags {
-				tags = append(tags, string(host.Tags[i].Id))
+				tags = append(tags, strconv.Itoa(host.Tags[i].Id))
 			}
 			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
 		}
