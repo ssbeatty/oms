@@ -58,10 +58,15 @@ mysql:
 
 #### 目前正在开发的
 0. 修复BUG。
+
 1. 类playbook形式的批量任务集合构思开发。
+
 ~~2. ssh、sftp转换为websocket形式。~~ 
+
 3. 使用react或vue开发前端。
+
 ~~4. 组件service化，比如ssh/sftp的websocket。~~ 
+
 5. 类似saltstack的agent开发。
 
 ## 感谢
