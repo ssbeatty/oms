@@ -47,7 +47,7 @@ func (ts *TaskServices) Init() {
 
 }
 
-func (ts *TaskServices) AddByID(id string, spec string, cmd cron.Job) error {
+func (ts *TaskServices) AddByJob(id string, spec string, cmd cron.Job) error {
 	ts.mutex.Lock()
 	defer ts.mutex.Unlock()
 
