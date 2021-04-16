@@ -1,0 +1,26 @@
+name: Go
+on:
+  watch:
+    types: started
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Setup Go v1.15
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+        id: go
+
+      - name: Check out code into current branch
+        uses: actions/checkout@v2
+
+      - name: Code Cover
+        run: |
+          go test -race -coverprofile=coverage.txt -covermode=atomic
+          bash <(curl -s https://codecov.io/bash)
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

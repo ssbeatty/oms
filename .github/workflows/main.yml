@@ -33,13 +33,6 @@ jobs:
           GOOS: linux
           CGO_ENABLED: 0
 
-      - name: Code Cover
-        run: |
-          go test -race -coverprofile=coverage.txt -covermode=atomic
-          bash <(curl -s https://codecov.io/bash)
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Draft release
         uses: softprops/action-gh-release@v1
         with:
