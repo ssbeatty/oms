@@ -3,6 +3,9 @@ on:
   watch:
     types: started
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build:
