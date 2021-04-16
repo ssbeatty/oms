@@ -1,4 +1,4 @@
-name: Go
+name: GO BUILD
 on:
   push:
     tags:

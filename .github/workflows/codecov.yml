@@ -1,7 +1,8 @@
-name: Go
+name: 代码覆盖率
 on:
   watch:
     types: started
+  workflow_dispatch:
 
 jobs:
   build:
