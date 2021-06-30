@@ -2,25 +2,32 @@ package models
 
 import (
 	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"log"
 	"oms/conf"
-
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 var db *gorm.DB
 
 func init() {
 	var err error
+	var dataSource string
+
 	userName := conf.DefaultConf.MysqlConf.UserName
 	passWord := conf.DefaultConf.MysqlConf.PassWord
 	mysqlUrl := conf.DefaultConf.MysqlConf.Urls
 	dbName := conf.DefaultConf.MysqlConf.DbName
 
-	dataSource := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", userName, passWord, mysqlUrl, dbName)
+	if conf.DefaultConf.DbDriver == "mysql" {
+		dataSource = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", userName, passWord, mysqlUrl, dbName)
+		db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+	} else {
+		dataSource = "oms.db"
+		db, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
+	}
 
-	db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
 	if err != nil {
 		log.Panicf("dataSource load error! exit! err: %v", err)
 	}

@@ -11,6 +11,7 @@ import (
 type Conf struct {
 	MysqlConf MysqlConfig `yaml:"mysql"`
 	AppConf   AppConfig   `yaml:"app"`
+	DbDriver  string      `yaml:"db_driver"`
 }
 
 type MysqlConfig struct {

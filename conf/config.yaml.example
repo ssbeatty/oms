@@ -4,6 +4,8 @@ app:
   port: 8080
   mode: dev
 
+db_driver: sqlite
+
 mysql:
   user: root
   password: 123456
