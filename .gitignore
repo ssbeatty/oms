@@ -2,3 +2,5 @@
 /static/upload
 *.log
 config.yaml
+
+*.db
