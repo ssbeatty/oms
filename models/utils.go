@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
+	"io/fs"
 	"mime/multipart"
-	"oms/ssh"
 	"oms/transport"
 	"strconv"
 	"strings"
@@ -31,6 +31,10 @@ type ExportData struct {
 	Groups []*Group
 	Hosts  []*Host
 }
+
+const (
+	ModeSymbolLink = fs.FileMode(134218239)
+)
 
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
@@ -119,7 +123,7 @@ func UploadFile(hosts []*Host, files []*multipart.FileHeader, remotePath string)
 
 func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result) {
 	var result *Result
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
@@ -140,7 +144,7 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 }
 
 func GetStatus(host *Host) bool {
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		host.Status = false
 		UpdateHostStatus(host)
@@ -161,7 +165,7 @@ func GetStatus(host *Host) bool {
 func GetPathInfo(hostId int, path string) []*FileInfo {
 	var results []*FileInfo
 	host := GetHostById(hostId)
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return results
 	}
@@ -170,7 +174,8 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 		return results
 	}
 	for i, _ := range infos {
-		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: infos[i].IsDir()}
+		isDir := infos[i].IsDir() || infos[i].Mode() == ModeSymbolLink
+		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: isDir}
 		results = append(results, &info)
 	}
 	return results
@@ -178,7 +183,7 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 
 func DownloadFile(hostId int, path string) *sftp.File {
 	host := GetHostById(hostId)
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return nil
 	}
@@ -191,7 +196,7 @@ func DownloadFile(hostId int, path string) *sftp.File {
 
 func DeleteFileOrDir(hostId int, path string) error {
 	host := GetHostById(hostId)
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
 	}

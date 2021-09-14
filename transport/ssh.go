@@ -2,12 +2,16 @@ package transport
 
 import (
 	"errors"
+	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 	"io"
+	"mime/multipart"
 	"net"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -26,7 +30,8 @@ type Config struct {
 }
 
 type Client struct {
-	SSHClient *ssh.Client
+	SSHClient  *ssh.Client
+	SftpClient *sftp.Client
 }
 
 type Session struct {
@@ -151,6 +156,18 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 	return New(config)
 }
 
+func NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
+	client, err := NewClient(host, port, user, password, KeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	err = client.NewSftpClient()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
 // New 创建SSH client
 func New(cnf *Config) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
@@ -185,4 +202,107 @@ func New(cnf *Config) (client *Client, err error) {
 	}
 
 	return &Client{SSHClient: sshClient}, nil
+}
+
+func (c *Client) NewSftpClient() error {
+	cli, err := sftp.NewClient(c.SSHClient)
+	if err != nil {
+		return err
+	}
+	c.SftpClient = cli
+	return nil
+}
+
+func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error {
+	file, err := fileH.Open()
+	if err != nil {
+		return err
+	}
+	var remoteFile, remoteDir string
+	if remote[len(remote)-1] == '/' {
+		remoteFile = filepath.ToSlash(filepath.Join(remote, filepath.Base(fileH.Filename)))
+		remoteDir = remote
+	} else {
+		remoteFile = remote
+		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
+	}
+	if _, err := c.SftpClient.Stat(remoteDir); err != nil {
+		log.Println("sftp: Mkdir all", remoteDir)
+		c.MkdirAll(remoteDir)
+	}
+	r, err := c.SftpClient.Create(remoteFile)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(r, file)
+	return err
+}
+
+func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
+	if c.IsDir(path) {
+		info, err := c.SftpClient.ReadDir(path)
+		return info, err
+	}
+	return nil, nil
+}
+
+func (c *Client) GetFile(path string) (*sftp.File, error) {
+	file, err := c.SftpClient.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return file, err
+}
+
+func (c *Client) IsDir(path string) bool {
+	// 检查远程是文件还是目录
+	info, err := c.SftpClient.Stat(path)
+	if err == nil && info.IsDir() {
+		return true
+	}
+	return false
+}
+
+func (c *Client) MkdirAll(dirPath string) error {
+
+	parentDir := filepath.ToSlash(filepath.Dir(dirPath))
+	_, err := c.SftpClient.Stat(parentDir)
+	if err != nil {
+		// log.Println(err)
+		if err.Error() == "file does not exist" {
+			err := c.MkdirAll(parentDir)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	err = c.SftpClient.Mkdir(filepath.ToSlash(dirPath))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) Remove(path string) error {
+	return c.SftpClient.Remove(path)
+}
+
+func (c *Client) RemoveDir(remoteDir string) error {
+	remoteFiles, err := c.SftpClient.ReadDir(remoteDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range remoteFiles {
+		subRemovePath := path.Join(remoteDir, file.Name())
+		if file.IsDir() {
+			c.RemoveDir(subRemovePath)
+		} else {
+			c.Remove(subRemovePath)
+		}
+	}
+	c.SftpClient.RemoveDirectory(remoteDir)
+	return nil
 }
