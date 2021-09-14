@@ -24,19 +24,6 @@ type SSHSession struct {
 	*transport.Session
 }
 
-type WSConnect struct {
-	*websocket.Conn
-}
-
-func (w *WSConnect) Write(p []byte) (int, error) {
-	log.Println(string(p))
-	err := w.WriteMessage(websocket.TextMessage, p)
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
-}
-
 func NewSshConn(cols, rows int, sshClient *transport.Client) (*SSHSession, error) {
 	sshSession, err := sshClient.NewSessionWithPty(cols, rows)
 	if err != nil {

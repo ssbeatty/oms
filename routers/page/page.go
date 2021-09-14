@@ -2,18 +2,9 @@ package page
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"oms/models"
 )
-
-var upGrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024 * 1024 * 10,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 func GetIndexPage(c *gin.Context) {
 	hosts := models.GetAllHost()

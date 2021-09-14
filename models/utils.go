@@ -3,9 +3,10 @@ package models
 import (
 	"encoding/json"
 	"github.com/pkg/sftp"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"mime/multipart"
 	"oms/ssh"
+	"oms/transport"
 	"strconv"
 	"strings"
 	"time"
@@ -70,23 +71,19 @@ func ParseHostList(pType string, id int) []*Host {
 	return hosts
 }
 
-func RunCmdOne(host *Host, cmd string) ([]byte, error) {
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
-	if err != nil {
-		return nil, err
-	}
-	return client.Output(cmd)
-}
-
 func RunCmdOneAsync(host *Host, cmd string, ch chan *Result) {
 	var result *Result
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
 	}
-	msg, err := client.Output(cmd)
+	session, err := client.NewSession()
+	if err != nil {
+		log.Errorf("create new session failed, err: %v", err)
+	}
+	msg, err := session.Output(cmd)
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 	} else {

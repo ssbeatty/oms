@@ -2,12 +2,35 @@ package page
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 	"oms/models"
 	"oms/routers/wscontrol"
 	"oms/transport"
 	"strconv"
 )
+
+var upGrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024 * 1024 * 10,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func GetWebsocketIndex(c *gin.Context) {
+	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Errorf("upgrade websocket failed, err: %v", err)
+	}
+	ws := wscontrol.NewWSConnect(wsConn)
+	ws.InitHandlers()
+	ws.Serve()
+
+	defer ws.Close()
+
+}
 
 func GetWebsocketSsh(c *gin.Context) {
 	idStr := c.Param("id")
@@ -28,7 +51,10 @@ func GetWebsocketSsh(c *gin.Context) {
 	}
 
 	ssConn, err := wscontrol.NewSshConn(cols, rows, client)
-	ws := &wscontrol.WSConnect{Conn: wsConn}
+	if err != nil {
+		log.Errorf("new ssh connect failed, err: %v", err)
+	}
+	ws := wscontrol.NewWSConnect(wsConn)
 	ssConn.SetOutput(ws)
 	defer ssConn.Close()
 

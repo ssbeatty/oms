@@ -36,7 +36,7 @@ func (ts *TaskServices) Start() {
 	ts.Init()
 }
 
-func (ts *TaskServices) Stop() {
+func (ts *TaskServices) Close() {
 	ts.inner.Stop()
 }
 

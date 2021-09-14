@@ -59,6 +59,22 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	}, nil
 }
 
+func (c *Client) NewSession() (*Session, error) {
+	session, err := c.SSHClient.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		log.Debugf("get stdin pipe error, %v", err)
+		return nil, err
+	}
+	return &Session{
+		SSHSession: session,
+		Stdin:      stdin,
+	}, nil
+}
+
 func (s *Session) Kill() error {
 	// kill signal
 	if _, err := s.Stdin.Write([]byte("0x09")); err != nil {
@@ -78,6 +94,10 @@ func (s *Session) WindowChange(h, w int) error {
 
 func (s *Session) Wait() error {
 	return s.SSHSession.Wait()
+}
+
+func (s *Session) Output(cmd string) ([]byte, error) {
+	return s.SSHSession.Output(cmd)
 }
 
 // AuthWithAgent use already authed user
