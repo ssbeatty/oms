@@ -3,11 +3,9 @@ package wscontrol
 import (
 	"bytes"
 	"github.com/gorilla/websocket"
-	"golang.org/x/crypto/ssh"
-	"io"
 	"log"
+	"oms/transport"
 	"sync"
-	"time"
 )
 
 // copy data from WebSocket to ssh server
@@ -41,11 +39,19 @@ type wsMsg struct {
 
 // connect to ssh server using ssh session.
 type SshConn struct {
-	// calling Write() to write data into ssh server
-	StdinPipe io.WriteCloser
-	// Write() be called to receive data from ssh server
-	ComboOutput *wsBufferWriter
-	Session     *ssh.Session
+	Session *transport.Session
+}
+
+type WSConnect struct {
+	*websocket.Conn
+}
+
+func (w *WSConnect) Write(p []byte) (int, error) {
+	err := w.WriteMessage(websocket.TextMessage, p)
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
 }
 
 //flushComboOutput flush ssh.session combine output into websocket response
@@ -63,39 +69,15 @@ func flushComboOutput(w *wsBufferWriter, wsConn *websocket.Conn) error {
 // setup ssh shell session
 // set Session and StdinPipe here,
 // and the Session.Stdout and Session.Sdterr are also set.
-func NewSshConn(cols, rows int, sshClient *ssh.Client) (*SshConn, error) {
-	sshSession, err := sshClient.NewSession()
+func NewSshConn(cols, rows int, sshClient *transport.Client) (*SshConn, error) {
+	sshSession, err := sshClient.NewSessionWithPty(cols, rows)
 	if err != nil {
 		return nil, err
 	}
-
-	// we set stdin, then we can write data to ssh server via this stdin.
-	// but, as for reading data from ssh server, we can set Session.Stdout and Session.Stderr
-	// to receive data from ssh server, and write back to somewhere.
-	stdinP, err := sshSession.StdinPipe()
-	if err != nil {
+	if err := sshSession.SSHSession.Shell(); err != nil {
 		return nil, err
 	}
-
-	comboWriter := new(wsBufferWriter)
-	//ssh.stdout and stderr will write output into comboWriter
-	sshSession.Stdout = comboWriter
-	sshSession.Stderr = comboWriter
-
-	modes := ssh.TerminalModes{
-		ssh.ECHO:          1,     // disable echo
-		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	}
-	// Request pseudo terminal
-	if err := sshSession.RequestPty("xterm", rows, cols, modes); err != nil {
-		return nil, err
-	}
-	// Start remote shell
-	if err := sshSession.Shell(); err != nil {
-		return nil, err
-	}
-	return &SshConn{StdinPipe: stdinP, ComboOutput: comboWriter, Session: sshSession}, nil
+	return &SshConn{Session: sshSession}, nil
 }
 
 func (s *SshConn) Close() {
@@ -131,13 +113,6 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 			//	logrus.WithError(err).WithField("wsData", string(wsData)).Error("unmarshal websocket message failed")
 			//}
 			switch msgObj.Type {
-			case wsMsgResize:
-				//handle xterm.js size change
-				if msgObj.Cols > 0 && msgObj.Rows > 0 {
-					if err := ssConn.Session.WindowChange(msgObj.Rows, msgObj.Cols); err != nil {
-						log.Println("ssh pty change windows size failed")
-					}
-				}
 			case wsMsgCmd:
 				//handle xterm.js stdin
 				//decodeBytes, err := base64.StdEncoding.DecodeString(msgObj.Cmd)
@@ -145,41 +120,15 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 				if err != nil {
 					log.Println("websock cmd string base64 decoding failed")
 				}
-				if _, err := ssConn.StdinPipe.Write(decodeBytes); err != nil {
+				if _, err := ssConn.Session.Stdin.Write(decodeBytes); err != nil {
 					log.Println("ws cmd bytes write to ssh.stdin pipe failed")
 				}
-				//write input cmd to log buffer
-				if _, err := logBuff.Write(decodeBytes); err != nil {
-					log.Println("write received cmd into log buffer failed")
-				}
 			}
 		}
 	}
 }
-func (ssConn *SshConn) SendComboOutput(wsConn *websocket.Conn, exitCh chan bool) {
-	//tells other go routine quit
-	defer setQuit(exitCh)
-
-	//every 120ms write combine output bytes into websocket response
-	tick := time.NewTicker(time.Millisecond * time.Duration(120))
-	//for range time.Tick(120 * time.Millisecond){}
-	defer tick.Stop()
-	for {
-		select {
-		case <-tick.C:
-			//write combine output bytes into websocket response
-			if err := flushComboOutput(ssConn.ComboOutput, wsConn); err != nil {
-				log.Println("ssh sending combo output to webSocket failed")
-				return
-			}
-		case <-exitCh:
-			return
-		}
-	}
-}
-
 func (ssConn *SshConn) SessionWait(quitChan chan bool) {
-	if err := ssConn.Session.Wait(); err != nil {
+	if err := ssConn.Session.SSHSession.Wait(); err != nil {
 		log.Println("ssh session wait failed")
 		setQuit(quitChan)
 	}

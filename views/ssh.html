@@ -70,11 +70,11 @@
                 socket.close();
             }
             var hostId = $("#host").val();
-            socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=800&rows=40");
+            socket = new WebSocket('ws://' + window.location.host + '/ws/ssh/' + hostId + "?cols=150&rows=40");
 
             socket.onopen = function () {
                 term = new Terminal({
-                    cols: 800,
+                    cols: 150,
                     rows: 40,
                     cursorBlink: true,
                     tabStopWidth: 4

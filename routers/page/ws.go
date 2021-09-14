@@ -6,7 +6,7 @@ import (
 	"log"
 	"oms/models"
 	"oms/routers/wscontrol"
-	"oms/ssh"
+	"oms/transport"
 	"strconv"
 )
 
@@ -21,16 +21,20 @@ func GetWebsocketSsh(c *gin.Context) {
 	}
 	defer wsConn.Close()
 	host := models.GetHostById(id)
-	client, err := ssh.NewClient(host.Addr, host.Port, host.User, host.PassWord, host.KeyFile)
+	ws := &wscontrol.WSConnect{Conn: wsConn}
+	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		log.Println(err)
 	}
-	ssConn, err := wscontrol.NewSshConn(cols, rows, client.SSHClient)
+	ssConn, err := wscontrol.NewSshConn(cols, rows, client)
+
+	ssConn.Session.SSHSession.Stderr = ws
+	ssConn.Session.SSHSession.Stdout = ws
 	defer ssConn.Close()
-	quitChan := make(chan bool, 3)
+	quitChan := make(chan bool)
 	var logBuff = new(bytes.Buffer)
 	go ssConn.ReceiveWsMsg(wsConn, logBuff, quitChan)
-	go ssConn.SendComboOutput(wsConn, quitChan)
+	//go ssConn.SendComboOutput(wsConn, quitChan)
 	go ssConn.SessionWait(quitChan)
 
 	<-quitChan

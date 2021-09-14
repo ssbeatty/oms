@@ -40,6 +40,8 @@ github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.10
 ## explicit
 github.com/json-iterator/go
+# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+github.com/konsorten/go-windows-terminal-sequences
 # github.com/kr/fs v0.1.0
 github.com/kr/fs
 # github.com/leodido/go-urn v1.2.0
@@ -72,6 +74,9 @@ github.com/robfig/cron/v3
 github.com/rogpeppe/go-internal/modfile
 github.com/rogpeppe/go-internal/module
 github.com/rogpeppe/go-internal/semver
+# github.com/sirupsen/logrus v1.4.2
+## explicit
+github.com/sirupsen/logrus
 # github.com/ugorji/go/codec v1.1.7
 github.com/ugorji/go/codec
 # golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392

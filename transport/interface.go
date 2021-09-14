@@ -3,6 +3,7 @@ package transport
 import "io"
 
 /*
+TODO 还没有定义
 Transport 用来跟agent或者ssh通讯的接口
 */
 

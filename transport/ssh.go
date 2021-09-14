@@ -2,8 +2,10 @@ package transport
 
 import (
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -24,16 +26,50 @@ type Config struct {
 }
 
 type Client struct {
-	sshClient *ssh.Client
-	config    *Config
+	SSHClient *ssh.Client
 }
 
-func (c *Client) NewSession() (ISession, error) {
-	session, err := c.sshClient.NewSession()
+type Session struct {
+	SSHSession *ssh.Session
+	Stdin      io.WriteCloser
+}
+
+func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
+	session, err := c.SSHClient.NewSession()
 	if err != nil {
 		return nil, err
 	}
-	return session, nil
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		log.Debugf("get stdin pipe error, %v", err)
+		return nil, err
+	}
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          1,     // disable echo
+		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+		ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+	}
+	// Request pseudo terminal
+	if err := session.RequestPty("xterm", rows, cols, modes); err != nil {
+		return nil, err
+	}
+	return &Session{
+		SSHSession: session,
+		Stdin:      stdin,
+	}, nil
+}
+
+func (s *Session) Kill() error {
+	// kill signal
+	if _, err := s.Stdin.Write([]byte("0x09")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Session) Close() error {
+	defer s.Kill()
+	return s.SSHSession.Close()
 }
 
 // AuthWithAgent use already authed user
@@ -70,7 +106,7 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 	return ssh.PublicKeys(signer), nil
 }
 
-func NewClient(host string, port int, user string, password string, KeyBytes []byte) (client IClient, err error) {
+func NewClient(host string, port int, user string, password string, KeyBytes []byte) (client *Client, err error) {
 	if user == "" {
 		user = "root"
 	}
@@ -88,7 +124,7 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 }
 
 // New 创建SSH client
-func New(cnf *Config) (client IClient, err error) {
+func New(cnf *Config) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
 		User:            cnf.User,
 		Timeout:         DefaultTimeout,
@@ -120,5 +156,5 @@ func New(cnf *Config) (client IClient, err error) {
 		return client, errors.New("Failed to dial ssh: " + err.Error())
 	}
 
-	return &Client{sshClient: sshClient}, nil
+	return &Client{SSHClient: sshClient}, nil
 }
