@@ -93,6 +93,7 @@
                 // });
 
                 socket.onmessage = function (msg) {
+                    console.log(msg)
                     term.write(msg.data);
                 };
                 socket.onerror = function (e) {

@@ -72,6 +72,14 @@ func (s *Session) Close() error {
 	return s.SSHSession.Close()
 }
 
+func (s *Session) WindowChange(h, w int) error {
+	return s.SSHSession.WindowChange(h, w)
+}
+
+func (s *Session) Wait() error {
+	return s.SSHSession.Wait()
+}
+
 // AuthWithAgent use already authed user
 func AuthWithAgent() (ssh.AuthMethod, error) {
 	sock := os.Getenv("SSH_AUTH_SOCK")

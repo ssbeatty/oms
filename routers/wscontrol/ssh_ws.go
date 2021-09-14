@@ -1,29 +1,11 @@
 package wscontrol
 
 import (
-	"bytes"
 	"github.com/gorilla/websocket"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"io"
 	"oms/transport"
-	"sync"
 )
-
-// copy data from WebSocket to ssh server
-// and copy data from ssh server to WebSocket
-
-// write data to WebSocket
-// the data comes from ssh server.
-type wsBufferWriter struct {
-	buffer bytes.Buffer
-	mu     sync.Mutex
-}
-
-// implement Write interface to write bytes from ssh server into bytes.Buffer.
-func (w *wsBufferWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.buffer.Write(p)
-}
 
 const (
 	wsMsgCmd    = "cmd"
@@ -37,9 +19,9 @@ type wsMsg struct {
 	Rows int    `json:"rows"`
 }
 
-// connect to ssh server using ssh session.
-type SshConn struct {
-	Session *transport.Session
+// SSHSession connect to ssh server using ssh session.
+type SSHSession struct {
+	*transport.Session
 }
 
 type WSConnect struct {
@@ -47,6 +29,7 @@ type WSConnect struct {
 }
 
 func (w *WSConnect) Write(p []byte) (int, error) {
+	log.Println(string(p))
 	err := w.WriteMessage(websocket.TextMessage, p)
 	if err != nil {
 		return 0, err
@@ -54,22 +37,7 @@ func (w *WSConnect) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-//flushComboOutput flush ssh.session combine output into websocket response
-func flushComboOutput(w *wsBufferWriter, wsConn *websocket.Conn) error {
-	if w.buffer.Len() != 0 {
-		err := wsConn.WriteMessage(websocket.TextMessage, w.buffer.Bytes())
-		if err != nil {
-			return err
-		}
-		w.buffer.Reset()
-	}
-	return nil
-}
-
-// setup ssh shell session
-// set Session and StdinPipe here,
-// and the Session.Stdout and Session.Sdterr are also set.
-func NewSshConn(cols, rows int, sshClient *transport.Client) (*SshConn, error) {
+func NewSshConn(cols, rows int, sshClient *transport.Client) (*SSHSession, error) {
 	sshSession, err := sshClient.NewSessionWithPty(cols, rows)
 	if err != nil {
 		return nil, err
@@ -77,18 +45,23 @@ func NewSshConn(cols, rows int, sshClient *transport.Client) (*SshConn, error) {
 	if err := sshSession.SSHSession.Shell(); err != nil {
 		return nil, err
 	}
-	return &SshConn{Session: sshSession}, nil
+	return &SSHSession{Session: sshSession}, nil
 }
 
-func (s *SshConn) Close() {
+func (s *SSHSession) Close() {
 	if s.Session != nil {
 		s.Session.Close()
 	}
 
 }
 
+func (s *SSHSession) SetOutput(closer io.WriteCloser) {
+	s.Session.SSHSession.Stderr = closer
+	s.Session.SSHSession.Stdout = closer
+}
+
 //ReceiveWsMsg  receive websocket msg do some handling then write into ssh.session.stdin
-func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffer, exitCh chan bool) {
+func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 	//tells other go routine quit
 	defer setQuit(exitCh)
 	for {
@@ -99,37 +72,40 @@ func (ssConn *SshConn) ReceiveWsMsg(wsConn *websocket.Conn, logBuff *bytes.Buffe
 			//read websocket msg
 			_, wsData, err := wsConn.ReadMessage()
 			if err != nil {
-				log.Println("reading webSocket message failed")
+				log.Errorf("reading webSocket message failed, err: %v", err)
 				return
 			}
-			//unmashal bytes into struct
+			// 按照字符发送的，所以用json代价太大了。。
+			// unmarshal bytes into struct
 			msgObj := wsMsg{
 				Type: "cmd",
 				Cmd:  "",
 				Rows: 40,
 				Cols: 180,
 			}
-			//if err := json.Unmarshal(wsData, &msgObj); err != nil {
-			//	logrus.WithError(err).WithField("wsData", string(wsData)).Error("unmarshal websocket message failed")
-			//}
+
 			switch msgObj.Type {
+			case wsMsgResize:
+				if msgObj.Cols > 0 && msgObj.Rows > 0 {
+					if err := s.Session.WindowChange(msgObj.Rows, msgObj.Cols); err != nil {
+						log.Errorf("ssh pty change windows size failed, err: %v", err)
+					}
+				}
 			case wsMsgCmd:
-				//handle xterm.js stdin
-				//decodeBytes, err := base64.StdEncoding.DecodeString(msgObj.Cmd)
 				decodeBytes := wsData
 				if err != nil {
-					log.Println("websock cmd string base64 decoding failed")
+					log.Errorf("websocket cmd string base64 decoding failed, err: %v", err)
 				}
-				if _, err := ssConn.Session.Stdin.Write(decodeBytes); err != nil {
-					log.Println("ws cmd bytes write to ssh.stdin pipe failed")
+				if _, err := s.Session.Stdin.Write(decodeBytes); err != nil {
+					log.Errorf("ws cmd bytes write to ssh.stdin pipe failed, err: %v", err)
 				}
 			}
 		}
 	}
 }
-func (ssConn *SshConn) SessionWait(quitChan chan bool) {
-	if err := ssConn.Session.SSHSession.Wait(); err != nil {
-		log.Println("ssh session wait failed")
+func (s *SSHSession) SessionWait(quitChan chan bool) {
+	if err := s.Session.Wait(); err != nil {
+		log.Errorf("ssh session wait failed, err: %v", err)
 		setQuit(quitChan)
 	}
 }

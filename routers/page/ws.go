@@ -1,9 +1,8 @@
 package page
 
 import (
-	"bytes"
 	"github.com/gin-gonic/gin"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"oms/models"
 	"oms/routers/wscontrol"
 	"oms/transport"
@@ -12,33 +11,33 @@ import (
 
 func GetWebsocketSsh(c *gin.Context) {
 	idStr := c.Param("id")
+	// get pty windows size
 	cols, _ := strconv.Atoi(c.Query("cols"))
 	rows, _ := strconv.Atoi(c.Query("rows"))
 	id, _ := strconv.Atoi(idStr)
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("upgrade websocket failed, err: %v", err)
 	}
 	defer wsConn.Close()
+
 	host := models.GetHostById(id)
-	ws := &wscontrol.WSConnect{Conn: wsConn}
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
-		log.Println(err)
+		log.Errorf("transport new client failed, err: %v", err)
 	}
-	ssConn, err := wscontrol.NewSshConn(cols, rows, client)
 
-	ssConn.Session.SSHSession.Stderr = ws
-	ssConn.Session.SSHSession.Stdout = ws
+	ssConn, err := wscontrol.NewSshConn(cols, rows, client)
+	ws := &wscontrol.WSConnect{Conn: wsConn}
+	ssConn.SetOutput(ws)
 	defer ssConn.Close()
+
 	quitChan := make(chan bool)
-	var logBuff = new(bytes.Buffer)
-	go ssConn.ReceiveWsMsg(wsConn, logBuff, quitChan)
-	//go ssConn.SendComboOutput(wsConn, quitChan)
+	go ssConn.ReceiveWsMsg(wsConn, quitChan)
 	go ssConn.SessionWait(quitChan)
 
 	<-quitChan
-	log.Println("websocket ssh finished")
+	log.Infoln("websocket ssh finished")
 }
 
 func GetWebSocketShell(c *gin.Context) {
@@ -53,9 +52,9 @@ func GetWebSocketShell(c *gin.Context) {
 		return
 	}
 	hosts := models.ParseHostList(pType, id)
-	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println(err)
+	wsConn, err1 := upGrader.Upgrade(c.Writer, c.Request, nil)
+	if err1 != nil {
+		log.Println(err1)
 	}
 	defer wsConn.Close()
 
@@ -64,5 +63,5 @@ func GetWebSocketShell(c *gin.Context) {
 	wsClient.Start()
 
 	<-quitChan
-	log.Println("websocket shell finished")
+	log.Infoln("websocket shell finished")
 }
