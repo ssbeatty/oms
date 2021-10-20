@@ -18,6 +18,7 @@ import (
 
 const (
 	DefaultTimeout = 30 * time.Second
+	KillSignal     = "0x09"
 )
 
 type Config struct {
@@ -30,17 +31,17 @@ type Config struct {
 }
 
 type Client struct {
-	SSHClient  *ssh.Client
-	SftpClient *sftp.Client
+	sshClient  *ssh.Client
+	sftpClient *sftp.Client
 }
 
 type Session struct {
-	SSHSession *ssh.Session
-	Stdin      io.WriteCloser
+	sshSession *ssh.Session
+	stdin      io.WriteCloser
 }
 
 func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
-	session, err := c.SSHClient.NewSession()
+	session, err := c.sshClient.NewSession()
 	if err != nil {
 		return nil, err
 	}
@@ -59,13 +60,13 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 		return nil, err
 	}
 	return &Session{
-		SSHSession: session,
-		Stdin:      stdin,
+		sshSession: session,
+		stdin:      stdin,
 	}, nil
 }
 
 func (c *Client) NewSession() (*Session, error) {
-	session, err := c.SSHClient.NewSession()
+	session, err := c.sshClient.NewSession()
 	if err != nil {
 		return nil, err
 	}
@@ -75,34 +76,73 @@ func (c *Client) NewSession() (*Session, error) {
 		return nil, err
 	}
 	return &Session{
-		SSHSession: session,
-		Stdin:      stdin,
+		sshSession: session,
+		stdin:      stdin,
 	}, nil
 }
 
 func (s *Session) Kill() error {
 	// kill signal
-	if _, err := s.Stdin.Write([]byte("0x09")); err != nil {
+	if _, err := s.stdin.Write([]byte(KillSignal)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *Session) Close() error {
-	defer s.Kill()
-	return s.SSHSession.Close()
+	defer s.sshSession.Close()
+	return s.Kill()
 }
 
 func (s *Session) WindowChange(h, w int) error {
-	return s.SSHSession.WindowChange(h, w)
+	return s.sshSession.WindowChange(h, w)
+}
+
+func (s *Session) Start(cmd string) error {
+	return s.sshSession.Start(cmd)
 }
 
 func (s *Session) Wait() error {
-	return s.SSHSession.Wait()
+	return s.sshSession.Wait()
 }
 
+func (s *Session) Run(cmd string) error {
+	return s.sshSession.Run(cmd)
+}
+
+func (s *Session) Shell() error {
+	return s.sshSession.Shell()
+}
+
+func (s *Session) SetStderr(stderr io.Writer) {
+	s.sshSession.Stderr = stderr
+}
+
+func (s *Session) SetStdout(stdout io.Writer) {
+	s.sshSession.Stdout = stdout
+}
+
+func (s *Session) Write(b []byte) (int, error) {
+	return s.stdin.Write(b)
+}
+
+// Output run done and return output
 func (s *Session) Output(cmd string) ([]byte, error) {
-	return s.SSHSession.Output(cmd)
+	return s.sshSession.Output(cmd)
+}
+
+func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool) {
+	go func(c string) {
+		err := s.sshSession.Run(c)
+		if err != nil {
+			log.Errorf("RunTaskWithQuit run task error, %v", err)
+		}
+	}(cmd)
+
+	select {
+	case <-quitCh:
+		s.Close()
+	}
 }
 
 // AuthWithAgent use already authed user
@@ -201,15 +241,15 @@ func New(cnf *Config) (client *Client, err error) {
 		return client, errors.New("Failed to dial ssh: " + err.Error())
 	}
 
-	return &Client{SSHClient: sshClient}, nil
+	return &Client{sshClient: sshClient}, nil
 }
 
 func (c *Client) NewSftpClient() error {
-	cli, err := sftp.NewClient(c.SSHClient)
+	cli, err := sftp.NewClient(c.sshClient)
 	if err != nil {
 		return err
 	}
-	c.SftpClient = cli
+	c.sftpClient = cli
 	return nil
 }
 
@@ -226,11 +266,11 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 		remoteFile = remote
 		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
 	}
-	if _, err := c.SftpClient.Stat(remoteDir); err != nil {
+	if _, err := c.sftpClient.Stat(remoteDir); err != nil {
 		log.Println("sftp: Mkdir all", remoteDir)
 		c.MkdirAll(remoteDir)
 	}
-	r, err := c.SftpClient.Create(remoteFile)
+	r, err := c.sftpClient.Create(remoteFile)
 	if err != nil {
 		return err
 	}
@@ -241,14 +281,14 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 
 func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
 	if c.IsDir(path) {
-		info, err := c.SftpClient.ReadDir(path)
+		info, err := c.sftpClient.ReadDir(path)
 		return info, err
 	}
 	return nil, nil
 }
 
 func (c *Client) GetFile(path string) (*sftp.File, error) {
-	file, err := c.SftpClient.Open(path)
+	file, err := c.sftpClient.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +297,7 @@ func (c *Client) GetFile(path string) (*sftp.File, error) {
 
 func (c *Client) IsDir(path string) bool {
 	// 检查远程是文件还是目录
-	info, err := c.SftpClient.Stat(path)
+	info, err := c.sftpClient.Stat(path)
 	if err == nil && info.IsDir() {
 		return true
 	}
@@ -267,7 +307,7 @@ func (c *Client) IsDir(path string) bool {
 func (c *Client) MkdirAll(dirPath string) error {
 
 	parentDir := filepath.ToSlash(filepath.Dir(dirPath))
-	_, err := c.SftpClient.Stat(parentDir)
+	_, err := c.sftpClient.Stat(parentDir)
 	if err != nil {
 		// log.Println(err)
 		if err.Error() == "file does not exist" {
@@ -279,7 +319,7 @@ func (c *Client) MkdirAll(dirPath string) error {
 			return err
 		}
 	}
-	err = c.SftpClient.Mkdir(filepath.ToSlash(dirPath))
+	err = c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
 	if err != nil {
 		return err
 	}
@@ -287,11 +327,11 @@ func (c *Client) MkdirAll(dirPath string) error {
 }
 
 func (c *Client) Remove(path string) error {
-	return c.SftpClient.Remove(path)
+	return c.sftpClient.Remove(path)
 }
 
 func (c *Client) RemoveDir(remoteDir string) error {
-	remoteFiles, err := c.SftpClient.ReadDir(remoteDir)
+	remoteFiles, err := c.sftpClient.ReadDir(remoteDir)
 	if err != nil {
 		return err
 	}
@@ -303,6 +343,6 @@ func (c *Client) RemoveDir(remoteDir string) error {
 			c.Remove(subRemovePath)
 		}
 	}
-	c.SftpClient.RemoveDirectory(remoteDir)
+	c.sftpClient.RemoveDirectory(remoteDir)
 	return nil
 }

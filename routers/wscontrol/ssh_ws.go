@@ -29,7 +29,7 @@ func NewSshConn(cols, rows int, sshClient *transport.Client) (*SSHSession, error
 	if err != nil {
 		return nil, err
 	}
-	if err := sshSession.SSHSession.Shell(); err != nil {
+	if err := sshSession.Shell(); err != nil {
 		return nil, err
 	}
 	return &SSHSession{Session: sshSession}, nil
@@ -43,8 +43,8 @@ func (s *SSHSession) Close() {
 }
 
 func (s *SSHSession) SetOutput(closer io.WriteCloser) {
-	s.Session.SSHSession.Stderr = closer
-	s.Session.SSHSession.Stdout = closer
+	s.Session.SetStderr(closer)
+	s.Session.SetStdout(closer)
 }
 
 //ReceiveWsMsg  receive websocket msg do some handling then write into ssh.session.stdin
@@ -83,7 +83,7 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 				if err != nil {
 					log.Errorf("websocket cmd string base64 decoding failed, err: %v", err)
 				}
-				if _, err := s.Session.Stdin.Write(decodeBytes); err != nil {
+				if _, err := s.Session.Write(decodeBytes); err != nil {
 					log.Errorf("ws cmd bytes write to ssh.stdin pipe failed, err: %v", err)
 				}
 			}

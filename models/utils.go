@@ -150,7 +150,7 @@ func GetStatus(host *Host) bool {
 		UpdateHostStatus(host)
 		return false
 	}
-	session, err := client.SSHClient.NewSession()
+	session, err := client.NewSession()
 	if err != nil {
 		host.Status = false
 		UpdateHostStatus(host)

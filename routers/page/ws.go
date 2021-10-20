@@ -65,29 +65,3 @@ func GetWebsocketSsh(c *gin.Context) {
 	<-quitChan
 	log.Infoln("websocket ssh finished")
 }
-
-func GetWebSocketShell(c *gin.Context) {
-	id, err := strconv.Atoi(c.Query("id"))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	pType := c.Query("type")
-	if pType == "" {
-		log.Println("shell_ws can't found params type")
-		return
-	}
-	hosts := models.ParseHostList(pType, id)
-	wsConn, err1 := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err1 != nil {
-		log.Println(err1)
-	}
-	defer wsConn.Close()
-
-	quitChan := make(chan bool, 2)
-	wsClient := wscontrol.NewWebSocketShellClient(wsConn, hosts, quitChan)
-	wsClient.Start()
-
-	<-quitChan
-	log.Infoln("websocket shell finished")
-}

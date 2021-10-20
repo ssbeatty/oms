@@ -16,12 +16,14 @@ func InitGinServer() {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
+	// static files
 	box := packr.NewBox("../static")
 	r.StaticFS("/static", box)
-
 	t, _ := loadTemplate()
 	r.SetHTMLTemplate(t)
 
+	// common api
 	r.GET("/", page.GetIndexPage)
 	r.GET("/groupPage", page.GetGroupPage)
 	r.GET("/tool", page.GetToolPage)
@@ -34,7 +36,6 @@ func InitGinServer() {
 	// websocket
 	r.GET("ws/index", page.GetWebsocketIndex)
 	r.GET("/ws/ssh/:id", page.GetWebsocketSsh)
-	r.GET("/ws/shell", page.GetWebSocketShell)
 
 	// tools
 	r.GET("/tools/cmd", page.RunCmd)
@@ -45,6 +46,7 @@ func InitGinServer() {
 	r.GET("/tools/export", page.ExportData)
 	r.POST("/tools/import", page.ImportData)
 
+	// restapi
 	// @TODO api v1 开发前端时解决
 	apiV1 := r.Group("/")
 	{

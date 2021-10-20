@@ -4,7 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	_ "oms/conf"
 	"oms/routers"
-	"oms/services/tasks"
+	"oms/schedule"
 )
 
 func init() {
@@ -14,8 +14,12 @@ func init() {
 
 func main() {
 	// add init tasks
-	taskService := tasks.NewTaskService()
+	taskService := schedule.NewSchedule()
 	taskService.Start()
+
+	if err := taskService.AddByFunc("loop-status", "*/5 * * * *", schedule.GetHostStatus); err != nil {
+		log.Println("init loop-status error!", err)
+	}
 
 	routers.InitGinServer()
 }
