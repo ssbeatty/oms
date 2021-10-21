@@ -45,6 +45,6 @@ jobs:
           files: |
             ./oms.exe
             ./oms
-            ./config.yaml.example
+            ./conf/config.yaml.example
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
