@@ -9,6 +9,7 @@ import (
 	"oms/transport"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -75,7 +76,7 @@ func ParseHostList(pType string, id int) []*Host {
 	return hosts
 }
 
-func RunCmdOneAsync(host *Host, cmd string, ch chan *Result) {
+func RunCmdOneAsync(host *Host, cmd string, ch chan *Result, wg *sync.WaitGroup) {
 	var result *Result
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -95,15 +96,20 @@ func RunCmdOneAsync(host *Host, cmd string, ch chan *Result) {
 	}
 
 	ch <- result
+	wg.Done()
 }
 
 func RunCmd(hosts []*Host, cmd string) []*Result {
 	var results []*Result
-	channel := make(chan *Result, 20)
+	channel := make(chan *Result, len(hosts))
+	defer close(channel)
+	wg := sync.WaitGroup{}
 	for _, host := range hosts {
-		go RunCmdOneAsync(host, cmd, channel)
+		wg.Add(1)
+		go RunCmdOneAsync(host, cmd, channel, &wg)
 	}
-	for _, _ = range hosts {
+	wg.Wait()
+	for i := 0; i < len(hosts); i++ {
 		results = append(results, <-channel)
 	}
 	return results
@@ -111,17 +117,21 @@ func RunCmd(hosts []*Host, cmd string) []*Result {
 
 func UploadFile(hosts []*Host, files []*multipart.FileHeader, remotePath string) []*Result {
 	var results []*Result
-	channel := make(chan *Result, 20)
+	channel := make(chan *Result, len(hosts))
+	defer close(channel)
+	wg := sync.WaitGroup{}
 	for _, host := range hosts {
-		go UploadFileOneAsync(host, remotePath, files, channel)
+		wg.Add(1)
+		go UploadFileOneAsync(host, remotePath, files, channel, &wg)
 	}
-	for _, _ = range hosts {
+	wg.Wait()
+	for i := 0; i < len(hosts); i++ {
 		results = append(results, <-channel)
 	}
 	return results
 }
 
-func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result) {
+func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result, wg *sync.WaitGroup) {
 	var result *Result
 	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -130,7 +140,7 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 		return
 	}
 	// do upload
-	for i, _ := range files {
+	for i := 0; i < len(files); i++ {
 		err = client.UploadFileOne(files[i], remote)
 		if err != nil {
 			log.Println(err)
@@ -141,6 +151,7 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 	}
 
 	ch <- result
+	wg.Done()
 }
 
 func GetStatus(host *Host) bool {
@@ -173,7 +184,7 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 	if err != nil {
 		return results
 	}
-	for i, _ := range infos {
+	for i := 0; i < len(infos); i++ {
 		isDir := infos[i].IsDir() || infos[i].Mode() == ModeSymbolLink
 		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: isDir}
 		results = append(results, &info)
@@ -237,7 +248,7 @@ func ImportDbData(marshal []byte) error {
 		log.Println(err)
 		return err
 	}
-	for index, _ := range data.Tags {
+	for index := 0; index < len(data.Tags); index++ {
 		tag := data.Tags[index]
 		ok := ExistedTag(tag.Name)
 		if !ok {
@@ -245,7 +256,7 @@ func ImportDbData(marshal []byte) error {
 			InsertTag(tag.Name)
 		}
 	}
-	for index, _ := range data.Groups {
+	for index := 0; index < len(data.Groups); index++ {
 		group := data.Groups[index]
 		ok := ExistedGroup(group.Name)
 		if !ok {
@@ -253,13 +264,13 @@ func ImportDbData(marshal []byte) error {
 			InsertGroup(group.Name, group.Params, group.Mode)
 		}
 	}
-	for index, _ := range data.Hosts {
+	for index := 0; index < len(data.Hosts); index++ {
 		host := data.Hosts[index]
 		ok := ExistedHost(host.Name, host.Addr)
 		if !ok {
 			log.Printf("Insert Host %s", host.Name)
 			tags := make([]string, 0)
-			for i, _ := range host.Tags {
+			for i := 0; i < len(host.Tags); i++ {
 				tags = append(tags, strconv.Itoa(host.Tags[i].Id))
 			}
 			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
