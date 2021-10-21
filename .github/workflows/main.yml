@@ -16,14 +16,14 @@ jobs:
           go-version: 1.16
         id: go
 
-      - name: Check out code into current branch
-        uses: actions/checkout@v2
-
       - name: Set Go Path && Build tool
         run: |
           go env -w GO111MODULE=on
           go env -w GOPATH=$GOROOT
           go get -u github.com/gobuffalo/packr/packr
+
+      - name: Check out code into current branch
+        uses: actions/checkout@v2
 
       - name: Build for linux
         run: |
