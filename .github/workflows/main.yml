@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: windows-2016
+    runs-on: ubuntu-latest
     steps:
 
       - name: Setup Go v1.16
@@ -19,18 +19,22 @@ jobs:
       - name: Check out code into current branch
         uses: actions/checkout@v2
 
-      - name: Build for windows
+      - name: Set Go Path && Build tool
         run: |
-          $env:Path="$pwd\lib;$env:Path"
-          packr build -o oms.exe main.go
+          go env -w GO111MODULE=on
+          go env -w GOPATH=$GOROOT
+          go get -u github.com/gobuffalo/packr/packr
 
       - name: Build for linux
         run: |
-          $env:Path="$pwd\lib;$env:Path"
           packr build -o oms main.go
+
+      - name: Build for windows
+        run: |
+          packr build -o oms.exe main.go
         env:
           GOARCH: amd64
-          GOOS: linux
+          GOOS: windows
           CGO_ENABLED: 0
 
       - name: Draft release
