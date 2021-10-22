@@ -181,7 +181,7 @@ func PutHost(c *gin.Context) {
 }
 
 func DeleteHost(c *gin.Context) {
-	idRaw := c.PostForm("id")
+	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
 		log.Errorf("DeleteHost error when Atoi idRaw, idRaw: %s, err: %v", idRaw, err)
