@@ -18,21 +18,25 @@ type Host struct {
 }
 
 var host Host
+var client *Client
 
 func init() {
 	data, err := ioutil.ReadFile("./hosts")
 	if err != nil {
-		panic(err)
+		return
 	}
 	err = json.Unmarshal(data, &host)
 	if err != nil {
-		panic(err)
+		return
+	}
+
+	client, err = NewClient(host.Addr, host.Port, host.User, host.PassWord, nil)
+	if err != nil {
+		return
 	}
 }
 
 func TestSampleCmd(t *testing.T) {
-	client, err := NewClient(host.Addr, host.Port, host.User, host.PassWord, nil)
-	assert.Nil(t, err)
 
 	session, err := client.NewSessionWithPty(20, 20)
 	assert.Nil(t, err)
@@ -44,8 +48,6 @@ func TestSampleCmd(t *testing.T) {
 }
 
 func TestLongTimeCmd(t *testing.T) {
-	client, err := NewClient(host.Addr, host.Port, host.User, host.PassWord, nil)
-	assert.Nil(t, err)
 
 	session, err := client.NewSessionWithPty(20, 20)
 	assert.Nil(t, err)
@@ -60,5 +62,13 @@ func TestLongTimeCmd(t *testing.T) {
 		quitCh <- true
 	}()
 
-	session.RunTaskWithQuit("sleep 300", quitCh)
+	session.RunTaskWithQuit("sleep 60", quitCh)
+}
+
+func TestConnectionPing(t *testing.T) {
+	_, err := client.NewSession()
+	assert.Nil(t, err)
+
+	client.NewSession()
+	time.Sleep(5 * time.Second)
 }

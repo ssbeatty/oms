@@ -83,15 +83,14 @@ func (c *Client) NewSession() (*Session, error) {
 
 func (s *Session) Kill() error {
 	// kill signal
-	if _, err := s.stdin.Write([]byte(KillSignal)); err != nil {
-		return err
-	}
+	//if _, err := s.Write([]byte(KillSignal)); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
 func (s *Session) Close() error {
-	defer s.sshSession.Close()
-	return s.Kill()
+	return s.sshSession.Close()
 }
 
 func (s *Session) WindowChange(h, w int) error {
@@ -141,7 +140,13 @@ func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool) {
 
 	select {
 	case <-quitCh:
-		s.Close()
+		// 理论上pty下不需要kill
+		if err := s.Kill(); err != nil {
+			return
+		}
+		if err := s.Close(); err != nil {
+			return
+		}
 	}
 }
 
