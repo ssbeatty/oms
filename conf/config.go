@@ -2,9 +2,9 @@ package conf
 
 import (
 	"github.com/gobuffalo/packr"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -45,7 +45,7 @@ func init() {
 	var yamlFile []byte
 	var err error
 	DefaultConf = new(Conf)
-	if ok, _ := PathExists("config.yaml"); ok == true {
+	if ok, _ := PathExists("config.yaml"); ok {
 		yamlFile, err = ioutil.ReadFile("config.yaml")
 		if err != nil {
 			log.Printf("yamlFile.Get err #%v ", err)
@@ -53,6 +53,9 @@ func init() {
 	} else {
 		box := packr.NewBox("./")
 		yamlFile, err = box.Find("config.yaml.example")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	err = yaml.Unmarshal(yamlFile, DefaultConf)
