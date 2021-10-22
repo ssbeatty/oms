@@ -42,16 +42,6 @@ func GetShellPage(c *gin.Context) {
 	})
 }
 
-func GetShellWsPage(c *gin.Context) {
-	dType := c.Query("type")
-	idStr := c.Query("id")
-
-	c.HTML(http.StatusOK, "shell_ws.html", gin.H{
-		"dType": dType,
-		"idStr": idStr,
-	})
-}
-
 func GetFilePage(c *gin.Context) {
 	dType := c.Query("type")
 	idStr := c.Query("id")

@@ -50,8 +50,8 @@
                     <td>
                         <a class="mButton edit group" val="{{.Id}}">编辑</a>
                         <a class="mButton delete group" val="{{.Id}}">删除</a>
-                        <a class="mButton" href="/shell?type=group&id={{.Id}}">命令</a>
-                        <a class="mButton" href="/file?type=group&id={{.Id}}">文件分发</a>
+                        <a class="mButton" href="/page/shell?type=group&id={{.Id}}">命令</a>
+                        <a class="mButton" href="/page/file?type=group&id={{.Id}}">文件分发</a>
                     </td>
                 </tr>
             {{end}}
@@ -79,8 +79,8 @@
                     <td>
                         <a class="mButton edit tag" val="{{.Id}}">编辑</a>
                         <a class="mButton delete tag" val="{{.Id}}">删除</a>
-                        <a class="mButton" href="/shell?type=tag&id={{.Id}}">命令</a>
-                        <a class="mButton" href="/file?type=tag&id={{.Id}}">文件分发</a>
+                        <a class="mButton" href="/page/shell?type=tag&id={{.Id}}">命令</a>
+                        <a class="mButton" href="/page/file?type=tag&id={{.Id}}">文件分发</a>
                     </td>
                 </tr>
             {{end}}
@@ -120,6 +120,9 @@
         </div>
     </form>
     <script>
+        const apiPrefix = "/api/v1"
+        const groupUrl = apiPrefix + "/group/"
+        const tagUrl = apiPrefix + "/tag/"
         // put request
         function editGroupPut(index, layero, sid, dType="put") {
             var name = $("#groupName").val();
@@ -132,7 +135,7 @@
             formData.append("params", params);
             formData.append("mode", mode);
             $.ajax({
-                "url" : "/group",
+                "url" : groupUrl,
                 "type" : dType,
                 "data": formData,
                 "processData" : false,
@@ -153,7 +156,7 @@
             formData.append("id", sid);
             formData.append("name", name);
             $.ajax({
-                "url" : "/tag",
+                "url" : tagUrl,
                 "type" : dType,
                 "data": formData,
                 "processData" : false,
@@ -172,7 +175,7 @@
         // edit fill
         function fillTagOrGroup(sid, t) {
             $.ajax({
-                "url" : "/" + t + "/" + sid,
+                "url" : apiPrefix + "/" + t + "/" + sid,
                 "type" : "get",
                 "success" : callBack,
                 "error" : function(err) {
@@ -266,7 +269,7 @@
                 }
                 layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
                     $.ajax({
-                        "url" : url + "/" + sid,
+                        "url" : apiPrefix + "/" + url + "/" + sid,
                         "type" : "delete",
                         "success" : callBack,
                         "error" : function(err) {

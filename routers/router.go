@@ -25,16 +25,15 @@ func InitGinServer() {
 
 	// common api
 	r.GET("/", page.GetIndexPage)
-	r.GET("/groupPage", page.GetGroupPage)
-	r.GET("/tool", page.GetToolPage)
-	r.GET("/shell", page.GetShellPage)
-	r.GET("/shell_ws", page.GetShellWsPage)
-	r.GET("/file", page.GetFilePage)
-	r.GET("/browse", page.GetFileBrowsePage)
-	r.GET("/ssh", page.GetSshPage)
+	r.GET("/page/groupPage", page.GetGroupPage)
+	r.GET("/page/tool", page.GetToolPage)
+	r.GET("/page/shell", page.GetShellPage)
+	r.GET("/page/file", page.GetFilePage)
+	r.GET("/page/browse", page.GetFileBrowsePage)
+	r.GET("/page/ssh", page.GetSshPage)
 
 	// websocket
-	r.GET("ws/index", page.GetWebsocketIndex)
+	r.GET("/ws/index", page.GetWebsocketIndex)
 	r.GET("/ws/ssh/:id", page.GetWebsocketSsh)
 
 	// tools
@@ -47,8 +46,7 @@ func InitGinServer() {
 	r.POST("/tools/import", page.ImportData)
 
 	// restapi
-	// @TODO api v1 开发前端时解决
-	apiV1 := r.Group("/")
+	apiV1 := r.Group("/api/v1")
 	{
 		apiV1.GET("/host", v1.GetHosts)
 		apiV1.GET("/host/:id", v1.GetOneHost)
@@ -70,16 +68,20 @@ func InitGinServer() {
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)
-	r.Run(addr)
+	if err := r.Run(addr); err != nil {
+		panic(err)
+	}
 }
 
-// @TODO same name template 开发前端时解决
 func loadTemplate() (*template.Template, error) {
 	box := packr.NewBox("../views")
 	t := template.New("")
 	if err := box.Walk(
 		func(name string, file packd.File) error {
 			h, err := ioutil.ReadAll(file)
+			if err != nil {
+				return err
+			}
 			t, err = t.New(name).Parse(string(h))
 			if err != nil {
 				return err

@@ -50,7 +50,7 @@
                     主机
                     <a class="mButton del" style="color: red">删除</a>
                     <a class="mButton edit hostForm">编辑</a>
-                    <a href="/ssh/?id={{.Id}}" class="mButton">命令</a>
+                    <a href="/page/ssh/?id={{.Id}}" class="mButton">命令</a>
                 </div>
                 <div class="layui-card-body">
                     主机名: <a href="">{{.Name}}</a><br>
@@ -63,13 +63,13 @@
                     地址: {{.Addr}}<br>
                     端口: {{.Port}}<br>
                     {{if .Group}}
-                        组: <a href="/shell?type=group&id={{.Id}}">{{.Group.Name}}</a><br>
+                        组: <a href="/page/shell?type=group&id={{.Id}}">{{.Group.Name}}</a><br>
                     {{else}}
                         组: 无<br>
                     {{end}}
                     标签:
                     {{range .Tags}}
-                        <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="/shell?type=tag&id={{.Id}}">{{.Name}}</a>
+                        <a style="font-size: 11px; color: blue; float: right;margin-right: 10px" href="/page/shell?type=tag&id={{.Id}}">{{.Name}}</a>
                     {{end}}
                     <br>
                 </div>
@@ -134,9 +134,11 @@
     </form>
 
     <script>
+        const apiPrefix = "/api/v1"
+        const hostUrl = apiPrefix + "/host/"
         function fillHost(sid) {
             $.ajax({
-                "url" : "/host/" + sid,
+                "url" : hostUrl + sid,
                 "type" : "get",
                 "success" : callBack,
                 "error" : function(err) {
@@ -173,7 +175,7 @@
                 var sid = $(this).parent().parent().attr('id');
                 layer.confirm("确认要删除吗，删除后不能恢复", { title: "删除确认" }, function (index) {
                     $.ajax({
-                        "url" : "/host/" + sid,
+                        "url" : hostUrl + sid,
                         "type" : "delete",
                         "success" : callBack,
                         "error" : function(err) {
@@ -238,7 +240,7 @@
                         formData.append("keyFile", keyFile);
                         formData.append("tags", JSON.stringify(tags));
                         $.ajax({
-                            "url" : "/host",
+                            "url" : hostUrl,
                             "type" : funcStr,
                             "data": formData,
                             "processData" : false,

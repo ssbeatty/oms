@@ -78,13 +78,14 @@
             "tag": "标签",
             "group": "分组",
         };
+        const apiPrefix = "/api/v1"
         var cmdVal = $("#cmdVal");
         layui.use('form', function() {
             if (cmdVal.hasClass("val")) {
                 var dId = cmdVal.attr("val");
                 var dType = cmdVal.attr("dType");
                 $.ajax({
-                    "url": dType,
+                    "url": apiPrefix + "/" + dType,
                     "type": "get",
                     "success": callBack,
                     "error": function (err) {
@@ -133,7 +134,7 @@
             layui.form.on('select(dType)', function (data) {
                 var _dType = data.value;
                 $.ajax({
-                    "url" : data.value,
+                    "url" : apiPrefix + "/" +data.value,
                     "type" : "get",
                     "success" : callBack,
                     "error" : function(err) {
