@@ -20,7 +20,7 @@ type Host struct {
 	Status bool `gorm:"default:false"`
 
 	GroupId int
-	Group   Group
+	Group   Group `gorm:"constraint:OnDelete:SET NULL;"`
 	Tags    []Tag `gorm:"many2many:host_tag"`
 }
 
