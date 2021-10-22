@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
+	log "github.com/sirupsen/logrus"
 	"html/template"
 	"io/ioutil"
 	"oms/conf"
@@ -12,9 +13,28 @@ import (
 	"oms/routers/page"
 )
 
+func CORS(ctx *gin.Context) {
+	method := ctx.Request.Method
+
+	// set response header
+	ctx.Header("Access-Control-Allow-Origin", ctx.Request.Header.Get("Origin"))
+	ctx.Header("Access-Control-Allow-Credentials", "true")
+	ctx.Header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
+	ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+
+	// 默认过滤这两个请求,使用204(No Content)这个特殊的http status code
+	if method == "OPTIONS" || method == "HEAD" {
+		ctx.AbortWithStatus(204)
+		return
+	}
+
+	ctx.Next()
+}
+
 func InitGinServer() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	r.Use(gin.Logger())
+	//r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
 	// static files
@@ -37,13 +57,13 @@ func InitGinServer() {
 	r.GET("/ws/ssh/:id", page.GetWebsocketSsh)
 
 	// tools
-	r.GET("/tools/cmd", page.RunCmd)
-	r.POST("/tools/upload", page.FileUpload)
-	r.GET("/tools/browse", page.GetPathInfo)
-	r.GET("/tools/download", page.DownLoadFile)
-	r.POST("/tools/delete", page.DeleteFile)
-	r.GET("/tools/export", page.ExportData)
-	r.POST("/tools/import", page.ImportData)
+	r.GET("/tools/cmd", v1.RunCmd)
+	r.POST("/tools/upload", v1.FileUpload)
+	r.GET("/tools/browse", v1.GetPathInfo)
+	r.GET("/tools/download", v1.DownLoadFile)
+	r.POST("/tools/delete", v1.DeleteFile)
+	r.GET("/tools/export", v1.ExportData)
+	r.POST("/tools/import", v1.ImportData)
 
 	// restapi
 	apiV1 := r.Group("/api/v1")
@@ -68,6 +88,7 @@ func InitGinServer() {
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)
+	log.Infof("Listening and serving HTTP on %s", addr)
 	if err := r.Run(addr); err != nil {
 		panic(err)
 	}

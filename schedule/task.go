@@ -7,10 +7,12 @@ import (
 
 func GetHostStatus() {
 	log.Println("======================Task GetHostStatus start======================")
-	hosts := models.GetAllHost()
-	for i, _ := range hosts {
+	hosts, err := models.GetAllHost()
+	if err != nil {
+		log.Errorf("GetHostStatus error when GetAllHost, err: %v", err)
+	}
+	for i := 0; i < len(hosts); i++ {
 		go models.GetStatus(hosts[i])
 	}
 	log.Println("======================Task GetHostStatus end ======================")
-	return
 }

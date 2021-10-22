@@ -2,10 +2,10 @@ package models
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"log"
 	"oms/conf"
 )
 
@@ -32,6 +32,6 @@ func init() {
 		log.Panicf("dataSource load error! exit! err: %v", err)
 	}
 	if err = db.AutoMigrate(new(Tag), new(Group), new(Host)); err != nil {
-		log.Printf("Migrate error! err: %v", err)
+		log.Errorf("Migrate error! err: %v", err)
 	}
 }

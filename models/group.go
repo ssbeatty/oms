@@ -12,23 +12,23 @@ type Group struct {
 	Params string
 }
 
-func GetAllGroup() []*Group {
+func GetAllGroup() ([]*Group, error) {
 	var groups []*Group
-	result := db.Find(&groups)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Find(&groups).Error
+	if err != nil {
+		return nil, err
 	}
-	return groups
+	return groups, nil
 }
 
-func GetGroupById(id int) *Group {
+func GetGroupById(id int) (*Group, error) {
 	group := Group{}
-	result := db.Where("id = ?", id).First(&group)
+	err := db.Where("id = ?", id).First(&group).Error
 
-	if result.Error != nil {
-		log.Println(result.Error)
+	if err != nil {
+		return nil, err
 	}
-	return &group
+	return &group, nil
 }
 
 func ExistedGroup(name string) bool {
@@ -44,24 +44,24 @@ func ExistedGroup(name string) bool {
 	return true
 }
 
-func InsertGroup(name string, params string, mode int) *Group {
+func InsertGroup(name string, params string, mode int) (*Group, error) {
 	group := Group{
 		Name:   name,
 		Params: params,
 		Mode:   mode,
 	}
-	result := db.Create(&group)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Create(&group).Error
+	if err != nil {
+		return nil, err
 	}
-	return &group
+	return &group, nil
 }
 
-func UpdateGroup(id int, name string, params string, mode int) *Group {
+func UpdateGroup(id int, name string, params string, mode int) (*Group, error) {
 	group := Group{}
-	result := db.Where("id = ?", id).First(&group)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("id = ?", id).First(&group).Error
+	if err != nil {
+		return nil, err
 	}
 	if name != "" {
 		group.Name = name
@@ -69,19 +69,20 @@ func UpdateGroup(id int, name string, params string, mode int) *Group {
 	if params != "" {
 		group.Params = params
 	}
-	group.Mode = mode
-	result = db.Save(&group)
-	if result.Error != nil {
-		log.Println(result.Error)
+	if mode > 0 {
+		group.Mode = mode
 	}
-	return &group
+	err = db.Save(&group).Error
+	if err != nil {
+		return nil, err
+	}
+	return &group, nil
 }
 
-func DeleteGroupById(id int) bool {
-	result := db.Delete(&Group{}, id)
-	if result.Error != nil {
-		log.Println(result.Error)
-		return false
+func DeleteGroupById(id int) error {
+	err := db.Delete(&Group{}, id).Error
+	if err != nil {
+		return err
 	}
-	return true
+	return nil
 }

@@ -1,38 +1,33 @@
 package models
 
-import (
-	"log"
-)
-
 type Tag struct {
 	Id    int
-	Name  string `gorm:"size:100"`
+	Name  string `gorm:"size:100;not null;unique"`
 	Hosts []Host `gorm:"many2many:host_tag;"`
 }
 
-func GetAllTag() []*Tag {
+func GetAllTag() ([]*Tag, error) {
 	var tags []*Tag
-	result := db.Find(&tags)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Find(&tags).Error
+	if err != nil {
+		return nil, err
 	}
-	return tags
+	return tags, nil
 }
 
-func GetTagById(id int) *Tag {
+func GetTagById(id int) (*Tag, error) {
 	tag := Tag{}
-	result := db.Where("id = ?", id).First(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("id = ?", id).First(&tag).Error
+	if err != nil {
+		return nil, err
 	}
-	return &tag
+	return &tag, nil
 }
 
 func ExistedTag(name string) bool {
 	var tags []*Tag
-	result := db.Where("name = ?", name).Find(&tags)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("name = ?", name).Find(&tags).Error
+	if err != nil {
 		return false
 	}
 	if len(tags) == 0 {
@@ -41,47 +36,45 @@ func ExistedTag(name string) bool {
 	return true
 }
 
-func InsertTag(name string) *Tag {
+func InsertTag(name string) (*Tag, error) {
 	tag := Tag{
 		Name: name,
 	}
-	result := db.Create(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Create(&tag).Error
+	if err != nil {
+		return nil, err
 	}
-	return &tag
+	return &tag, nil
 }
 
-func UpdateTag(id int, name string) *Tag {
+func UpdateTag(id int, name string) (*Tag, error) {
 	tag := Tag{Id: id}
-	result := db.Where("id = ?", id).First(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("id = ?", id).First(&tag).Error
+	if err != nil {
+		return nil, err
 	}
 	if name != "" {
 		tag.Name = name
 	}
-	result = db.Save(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err = db.Save(&tag).Error
+	if err != nil {
+		return nil, err
 	}
-	return &tag
+	return &tag, nil
 }
 
-func DeleteTagById(id int) bool {
+func DeleteTagById(id int) error {
 	tag := Tag{}
-	result := db.Where("id = ?", id).First(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
-		return false
+	err := db.Where("id = ?", id).First(&tag).Error
+	if err != nil {
+		return err
 	}
 	if err := db.Model(&tag).Association("Hosts").Clear(); err != nil {
-		log.Println("clear association error for tags and host.")
+		return err
 	}
-	result = db.Delete(&tag)
-	if result.Error != nil {
-		log.Println(result.Error)
-		return false
+	err = db.Delete(&tag).Error
+	if err != nil {
+		return err
 	}
-	return true
+	return nil
 }

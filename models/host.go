@@ -1,7 +1,7 @@
 package models
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,13 +24,13 @@ type Host struct {
 	Tags    []Tag `gorm:"many2many:host_tag"`
 }
 
-func GetHostById(id int) *Host {
+func GetHostById(id int) (*Host, error) {
 	host := Host{}
-	result := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host).Error
+	if err != nil {
+		return nil, err
 	}
-	return &host
+	return &host, nil
 }
 
 func ExistedHost(name string, addr string) bool {
@@ -46,31 +46,39 @@ func ExistedHost(name string, addr string) bool {
 	return true
 }
 
-func DeleteHostById(id int) bool {
+func DeleteHostById(id int) error {
 	host := Host{}
-	result := db.Where("id = ?", id).First(&host)
-	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
-		log.Println("clear association error for tags and host.")
+	err := db.Where("id = ?", id).First(&host).Error
+	if err != nil {
+		log.Errorf("DeleteHostById error when First host, err: %v", err)
+		return err
 	}
-	result = db.Delete(&host)
-	if result.Error != nil {
-		log.Println(result.Error)
-		return false
+	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
+		log.Errorf("DeleteHostById error Association tag Clear, err: %v", err)
+	}
+	err = db.Delete(&host).Error
+	if err != nil {
+		return err
 	}
 
-	return true
+	return nil
 }
 
-func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) *Host {
+func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) (*Host, error) {
 	var tagObjs []Tag
 	for _, tagIdStr := range tags {
-		tagId, _ := strconv.Atoi(tagIdStr)
-		tag := Tag{}
-		err := db.Where("id = ?", tagId).First(&tag)
-		tagObjs = append(tagObjs, tag)
+		tagId, err := strconv.Atoi(tagIdStr)
 		if err != nil {
-			log.Println(err)
+			log.Errorf("InsertHost error when Atoi tagArray idRaw, idRaw: %s, err: %v", tagIdStr, err)
+			continue
 		}
+		tag := Tag{}
+		err = db.Where("id = ?", tagId).First(&tag).Error
+		if err != nil {
+			log.Errorf("InsertHost error when First tag, err: %v", err)
+			continue
+		}
+		tagObjs = append(tagObjs, tag)
 	}
 	host := Host{
 		Name:     hostname,
@@ -81,37 +89,48 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 		KeyFile:  keyText,
 		Tags:     tagObjs,
 	}
-	result := db.Omit("GroupId").Create(&host)
+	err := db.Omit("GroupId").Create(&host).Error
+	if err != nil {
+		return nil, err
+	}
 	if groupId != 0 {
 		host.GroupId = groupId
 		db.Save(&host)
 	}
-	if result.Error != nil {
-		log.Println(result.Error)
-	}
-	return &host
+	return &host, nil
 }
 
-func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) *Host {
+func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) (*Host, error) {
 	host := Host{Id: id}
-	result := db.Where("id = ?", id).First(&host)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("id = ?", id).First(&host).Error
+	if err != nil {
+		return nil, err
 	}
-	var tagObjs []Tag
-	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
-		log.Println("clear association error for tags and host.")
-	}
-	for _, tagIdStr := range tags {
-		tagId, _ := strconv.Atoi(tagIdStr)
-		tag := Tag{}
-		result := db.Where("id = ?", tagId).First(&tag)
-		tagObjs = append(tagObjs, tag)
-		if result.Error != nil {
-			log.Println(result.Error)
+
+	if len(tags) > 0 {
+		var tagObjs []Tag
+		for _, tagIdStr := range tags {
+			tagId, err := strconv.Atoi(tagIdStr)
+			if err != nil {
+				log.Errorf("UpdateHost error when Atoi tagIdStr, err: %v", err)
+				continue
+			}
+			tag := Tag{}
+			err = db.Where("id = ?", tagId).First(&tag).Error
+			if err != nil {
+				log.Errorf("UpdateHost error when First tag, err: %v", err)
+				continue
+			}
+			tagObjs = append(tagObjs, tag)
+		}
+		if len(tagObjs) != 0 {
+			if err := db.Model(&host).Association("Tags").Clear(); err != nil {
+				log.Errorf("UpdateHost error when Association tag Clear, err: %v", err)
+			}
+			host.Tags = tagObjs
 		}
 	}
-	host.Tags = tagObjs
+
 	if hostname != "" {
 		host.Name = hostname
 	}
@@ -132,27 +151,28 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 	}
 	if groupId != 0 {
 		host.GroupId = groupId
-		result = db.Save(&host)
+		if err := db.Save(&host).Error; err != nil {
+			log.Errorf("UpdateHost error when Save host for groupId, err: %v", err)
+		}
 	} else {
 		if err := db.Model(&host).Association("Group").Clear(); err != nil {
-			log.Println(err)
+			log.Errorf("UpdateHost error when Association group Clear, err: %v", err)
 		}
-		result = db.Omit("GroupId").Save(&host)
+		if err = db.Omit("GroupId").Save(&host).Error; err != nil {
+			log.Errorf("UpdateHost error when Save host, err: %v", err)
+		}
 	}
-	if result.Error != nil {
-		log.Println(result.Error)
-	}
-	return &host
+	return &host, nil
 }
 
-func GetAllHost() []*Host {
+func GetAllHost() ([]*Host, error) {
 	var hosts []*Host
-	result := db.Preload("Tags").Preload("Group").Find(&hosts)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Preload("Tags").Preload("Group").Find(&hosts).Error
+	if err != nil {
+		return nil, err
 	}
 
-	return hosts
+	return hosts, nil
 }
 
 func GetHostByGlob(glob string) []*Host {

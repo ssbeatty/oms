@@ -40,13 +40,25 @@ const (
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
 	if pType == "host" {
-		host := GetHostById(id)
+		host, err := GetHostById(id)
+		if err != nil {
+			log.Errorf("ParseHostList error when GetHostById, err: %v", err)
+			return nil
+		}
 		hosts = append(hosts, host)
 	} else if pType == "tag" {
-		tag := GetTagById(id)
+		tag, err := GetTagById(id)
+		if err != nil {
+			log.Errorf("ParseHostList error when GetTagById, err: %v", err)
+			return nil
+		}
 		hosts = GetHostsByTag(tag)
 	} else {
-		group := GetGroupById(id)
+		group, err := GetGroupById(id)
+		if err != nil {
+			log.Errorf("ParseHostList error when GetGroupById, err: %v", err)
+			return nil
+		}
 		if group.Mode == 0 {
 			hosts = GetHostsByGroup(group)
 		} else {
@@ -175,7 +187,7 @@ func GetStatus(host *Host) bool {
 
 func GetPathInfo(hostId int, path string) []*FileInfo {
 	var results []*FileInfo
-	host := GetHostById(hostId)
+	host, _ := GetHostById(hostId)
 	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return results
@@ -193,7 +205,7 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 }
 
 func DownloadFile(hostId int, path string) *sftp.File {
-	host := GetHostById(hostId)
+	host, _ := GetHostById(hostId)
 	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return nil
@@ -206,7 +218,7 @@ func DownloadFile(hostId int, path string) *sftp.File {
 }
 
 func DeleteFileOrDir(hostId int, path string) error {
-	host := GetHostById(hostId)
+	host, _ := GetHostById(hostId)
 	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
@@ -227,9 +239,9 @@ func DeleteFileOrDir(hostId int, path string) error {
 
 func ExportDbData() ([]byte, error) {
 	data := &ExportData{}
-	groups := GetAllGroup()
-	tags := GetAllTag()
-	hosts := GetAllHost()
+	groups, _ := GetAllGroup()
+	tags, _ := GetAllTag()
+	hosts, _ := GetAllHost()
 	data.Tags = append(data.Tags, tags...)
 	data.Groups = append(data.Groups, groups...)
 	data.Hosts = append(data.Hosts, hosts...)

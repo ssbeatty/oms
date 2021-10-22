@@ -7,9 +7,9 @@ import (
 )
 
 func GetIndexPage(c *gin.Context) {
-	hosts := models.GetAllHost()
-	groups := models.GetAllGroup()
-	tags := models.GetAllTag()
+	hosts, _ := models.GetAllHost()
+	groups, _ := models.GetAllGroup()
+	tags, _ := models.GetAllTag()
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"Hosts":  hosts,
@@ -19,8 +19,8 @@ func GetIndexPage(c *gin.Context) {
 }
 
 func GetGroupPage(c *gin.Context) {
-	groups := models.GetAllGroup()
-	tags := models.GetAllTag()
+	groups, _ := models.GetAllGroup()
+	tags, _ := models.GetAllTag()
 
 	c.HTML(http.StatusOK, "group.html", gin.H{
 		"Groups": groups,
@@ -54,7 +54,7 @@ func GetFilePage(c *gin.Context) {
 
 func GetFileBrowsePage(c *gin.Context) {
 	HostId := c.Query("id")
-	hosts := models.GetAllHost()
+	hosts, _ := models.GetAllHost()
 
 	c.HTML(http.StatusOK, "browse.html", gin.H{
 		"HostId": HostId,
@@ -64,7 +64,7 @@ func GetFileBrowsePage(c *gin.Context) {
 
 func GetSshPage(c *gin.Context) {
 	HostId := c.Query("id")
-	hosts := models.GetAllHost()
+	hosts, _ := models.GetAllHost()
 
 	c.HTML(http.StatusOK, "ssh.html", gin.H{
 		"HostId": HostId,

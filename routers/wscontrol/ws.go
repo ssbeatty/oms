@@ -10,9 +10,8 @@ type WsHandler func(conn *websocket.Conn, msg *WsMsg)
 
 type WSConnect struct {
 	*websocket.Conn
-	onMessage func(b []byte)
-	handlers  map[string]WsHandler
-	closer    chan struct{}
+	handlers map[string]WsHandler
+	closer   chan struct{}
 }
 
 type WsMsg struct {
@@ -30,19 +29,11 @@ func (w *WSConnect) Write(p []byte) (int, error) {
 
 func NewWSConnect(conn *websocket.Conn) *WSConnect {
 	c := &WSConnect{Conn: conn}
-	c.onMessage = c.OnMessage
 	return c
 }
 
-func (w *WSConnect) InitHandlers() {
-	w.handlers = map[string]WsHandler{
-		"WS_CMD": HandlerSSHShell,
-	}
-}
-
-func (w *WSConnect) Serve() error {
+func (w *WSConnect) Serve() {
 	w.mange()
-	return nil
 }
 
 func (w *WSConnect) mange() {
@@ -57,8 +48,14 @@ func (w *WSConnect) mange() {
 				log.Debugf("read message from wsconnect failed, err: %v", err)
 				continue
 			}
-			if w.onMessage != nil {
-				w.onMessage(b)
+			msg := &WsMsg{}
+			err = json.Unmarshal(b, msg)
+			if err != nil {
+				log.Debugf("on message unmarshal failed, err: %v", err)
+			}
+			handler := w.getHandler(msg.Type)
+			if handler != nil {
+				handler(w.Conn, msg)
 			}
 		}
 	}
@@ -76,20 +73,4 @@ func (w *WSConnect) getHandler(t string) WsHandler {
 	} else {
 		return nil
 	}
-}
-
-func (w *WSConnect) OnMessage(buf []byte) {
-	msg := &WsMsg{}
-	err := json.Unmarshal(buf, msg)
-	if err != nil {
-		log.Debugf("onmeesage unmarshal failed, err: %v", err)
-	}
-	handler := w.getHandler(msg.Type)
-	if handler != nil {
-		handler(w.Conn, msg)
-	}
-}
-
-func HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
-	log.Info(msg.Data)
 }

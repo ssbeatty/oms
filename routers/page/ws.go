@@ -24,8 +24,7 @@ func GetWebsocketIndex(c *gin.Context) {
 	if err != nil {
 		log.Errorf("upgrade websocket failed, err: %v", err)
 	}
-	ws := wscontrol.NewWSConnect(wsConn)
-	ws.InitHandlers()
+	ws := wscontrol.NewWSConnect(wsConn).InitHandlers()
 	ws.Serve()
 
 	defer ws.Close()
@@ -44,7 +43,7 @@ func GetWebsocketSsh(c *gin.Context) {
 	}
 	defer wsConn.Close()
 
-	host := models.GetHostById(id)
+	host, _ := models.GetHostById(id)
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		log.Errorf("transport new client failed, err: %v", err)
