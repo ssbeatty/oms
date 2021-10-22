@@ -1,9 +1,5 @@
 package models
 
-import (
-	"log"
-)
-
 type Group struct {
 	Id     int
 	Name   string `gorm:"size:256;not null"`
@@ -33,9 +29,8 @@ func GetGroupById(id int) (*Group, error) {
 
 func ExistedGroup(name string) bool {
 	var groups []*Group
-	result := db.Where("name = ?", name).Find(&groups)
-	if result.Error != nil {
-		log.Println(result.Error)
+	err := db.Where("name = ?", name).Find(&groups).Error
+	if err != nil {
 		return false
 	}
 	if len(groups) == 0 {
@@ -59,7 +54,7 @@ func InsertGroup(name string, params string, mode int) (*Group, error) {
 
 func UpdateGroup(id int, name string, params string, mode int) (*Group, error) {
 	group := Group{}
-	err := db.Where("id = ?", id).First(&group).Error
+	err := db.Where("id = ?", id).FirstOrCreate(&group).Error
 	if err != nil {
 		return nil, err
 	}

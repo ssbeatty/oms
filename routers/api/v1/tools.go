@@ -3,8 +3,8 @@ package v1
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"oms/models"
 	"strconv"
@@ -14,11 +14,18 @@ import (
 func RunCmd(c *gin.Context) {
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
-		log.Println(err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
 	}
 	pType := c.Query("type")
 	cmd := c.Query("cmd")
 	hosts := models.ParseHostList(pType, id)
+	if len(hosts) == 0 {
+		data := generateResponsePayload(HttpStatusError, "parse host array empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	// do cmd
 	results := models.RunCmd(hosts, cmd)
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
@@ -29,6 +36,11 @@ func RunCmd(c *gin.Context) {
 func FileUpload(c *gin.Context) {
 	var remoteFile string
 	id, err := strconv.Atoi(c.PostForm("id"))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	form, _ := c.MultipartForm()
 	files := form.File["files"]
 	remote := c.PostForm("remote")
@@ -36,9 +48,6 @@ func FileUpload(c *gin.Context) {
 		remoteFile = remote
 	} else {
 		remoteFile = remote + "/"
-	}
-	if err != nil {
-		log.Println(err)
 	}
 	pType := c.PostForm("type")
 	hosts := models.ParseHostList(pType, id)
@@ -48,6 +57,7 @@ func FileUpload(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 
 }
+
 func GetPathInfo(c *gin.Context) {
 	path := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
@@ -65,13 +75,15 @@ func DownLoadFile(c *gin.Context) {
 	path := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
-		log.Println(err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
 	}
 	file := models.DownloadFile(id, path)
 	if file != nil {
 		fh, err := file.Stat()
 		if err != nil {
-			log.Println(err)
+			log.Errorf("DownLoadFile error when Stat file, err: %v", err)
 			http.ServeContent(c.Writer, c.Request, "download", time.Now(), file)
 		} else {
 			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
@@ -87,7 +99,9 @@ func DeleteFile(c *gin.Context) {
 	path := c.PostForm("path")
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		log.Println(err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
 	}
 	err = models.DeleteFileOrDir(id, path)
 	if err != nil {
@@ -101,7 +115,9 @@ func DeleteFile(c *gin.Context) {
 func ExportData(c *gin.Context) {
 	marshal, err := models.ExportDbData()
 	if err != nil {
-		log.Println(err)
+		data := generateResponsePayload(HttpStatusError, "error export data", nil)
+		c.JSON(http.StatusOK, data)
+		return
 	}
 	file := bytes.NewReader(marshal)
 	c.Writer.Header().Set("content-type", "application/json")

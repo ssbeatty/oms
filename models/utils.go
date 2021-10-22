@@ -52,7 +52,11 @@ func ParseHostList(pType string, id int) []*Host {
 			log.Errorf("ParseHostList error when GetTagById, err: %v", err)
 			return nil
 		}
-		hosts = GetHostsByTag(tag)
+		hosts, err = GetHostsByTag(tag)
+		if err != nil {
+			log.Errorf("ParseHostList error when GetHostsByTag, err: %v", err)
+			return nil
+		}
 	} else {
 		group, err := GetGroupById(id)
 		if err != nil {
@@ -60,26 +64,46 @@ func ParseHostList(pType string, id int) []*Host {
 			return nil
 		}
 		if group.Mode == 0 {
-			hosts = GetHostsByGroup(group)
+			hosts, err = GetHostsByGroup(group)
+			if err != nil {
+				log.Errorf("ParseHostList error when GetHostsByGroup, err: %v", err)
+				return nil
+			}
 		} else {
 			args := strings.Split(group.Params, " ")
 			switch args[0] {
 			case "-G":
-				hosts := GetHostByGlob(args[1])
+				hosts, err := GetHostByGlob(args[1])
+				if err != nil {
+					log.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
+					return nil
+				}
 				return hosts
 			case "-L":
 				var hosts []*Host
 				addrArgs := strings.Split(args[1], ",")
 				for _, addr := range addrArgs {
-					host := GetHostByAddr(addr)
+					host, err := GetHostByAddr(addr)
+					if err != nil {
+						log.Errorf("ParseHostList error when GetHostByAddr, err: %v", err)
+						return nil
+					}
 					hosts = append(hosts, host...)
 				}
 				return hosts
 			case "-E":
-				hosts := GetHostByReg(args[1])
+				hosts, err := GetHostByReg(args[1])
+				if err != nil {
+					log.Errorf("ParseHostList error when GetHostByReg, err: %v", err)
+					return nil
+				}
 				return hosts
 			default:
-				hosts := GetHostByGlob(args[0])
+				hosts, err := GetHostByGlob(args[0])
+				if err != nil {
+					log.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
+					return nil
+				}
 				return hosts
 			}
 		}
@@ -170,18 +194,18 @@ func GetStatus(host *Host) bool {
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		host.Status = false
-		UpdateHostStatus(host)
+		_ = UpdateHostStatus(host)
 		return false
 	}
 	session, err := client.NewSession()
 	if err != nil {
 		host.Status = false
-		UpdateHostStatus(host)
+		_ = UpdateHostStatus(host)
 		return false
 	}
 	defer session.Close()
 	host.Status = true
-	UpdateHostStatus(host)
+	_ = UpdateHostStatus(host)
 	return true
 }
 
@@ -265,7 +289,7 @@ func ImportDbData(marshal []byte) error {
 		ok := ExistedTag(tag.Name)
 		if !ok {
 			log.Printf("Insert Tag %s", tag.Name)
-			InsertTag(tag.Name)
+			_, _ = InsertTag(tag.Name)
 		}
 	}
 	for index := 0; index < len(data.Groups); index++ {
@@ -273,7 +297,7 @@ func ImportDbData(marshal []byte) error {
 		ok := ExistedGroup(group.Name)
 		if !ok {
 			log.Printf("Insert Group %s", group.Name)
-			InsertGroup(group.Name, group.Params, group.Mode)
+			_, _ = InsertGroup(group.Name, group.Params, group.Mode)
 		}
 	}
 	for index := 0; index < len(data.Hosts); index++ {
@@ -285,7 +309,7 @@ func ImportDbData(marshal []byte) error {
 			for i := 0; i < len(host.Tags); i++ {
 				tags = append(tags, strconv.Itoa(host.Tags[i].Id))
 			}
-			InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
+			_, _ = InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
 		}
 	}
 	return nil
