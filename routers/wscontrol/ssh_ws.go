@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"oms/transport"
+	"oms/pkg/transport"
 )
 
 const (

@@ -6,8 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"oms/models"
+	"oms/pkg/transport"
 	"oms/routers/wscontrol"
-	"oms/transport"
 	"strconv"
 )
 

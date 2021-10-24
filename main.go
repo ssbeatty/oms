@@ -3,8 +3,8 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	_ "oms/conf"
+	"oms/pkg/schedule"
 	"oms/routers"
-	"oms/schedule"
 )
 
 func init() {

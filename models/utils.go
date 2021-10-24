@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"mime/multipart"
-	"oms/transport"
+	"oms/pkg/transport"
 	"strconv"
 	"strings"
 	"sync"
