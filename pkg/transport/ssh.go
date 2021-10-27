@@ -263,22 +263,30 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 	var remoteFile, remoteDir string
-	if remote[len(remote)-1] == '/' {
-		remoteFile = filepath.ToSlash(filepath.Join(remote, filepath.Base(fileH.Filename)))
-		remoteDir = remote
+	if remote != "" {
+		if remote[len(remote)-1] == '/' {
+			remoteFile = filepath.ToSlash(filepath.Join(remote, filepath.Base(fileH.Filename)))
+			remoteDir = remote
+		} else {
+			remoteFile = remote
+			remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
+		}
 	} else {
-		remoteFile = remote
+		remoteFile = fileH.Filename
 		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
 	}
 	if _, err := c.sftpClient.Stat(remoteDir); err != nil {
 		log.Println("sftp: Mkdir all", remoteDir)
-		c.MkdirAll(remoteDir)
+		_ = c.MkdirAll(remoteDir)
 	}
 	r, err := c.sftpClient.Create(remoteFile)
 	if err != nil {
 		return err
 	}
+
+	defer r.Close()
 
 	_, err = io.Copy(r, file)
 	return err

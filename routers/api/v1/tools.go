@@ -44,10 +44,14 @@ func FileUpload(c *gin.Context) {
 	form, _ := c.MultipartForm()
 	files := form.File["files"]
 	remote := c.PostForm("remote")
-	if remote[len(remote)-1] == '/' {
+	if remote == "" {
 		remoteFile = remote
 	} else {
-		remoteFile = remote + "/"
+		if remote[len(remote)-1] == '/' {
+			remoteFile = remote
+		} else {
+			remoteFile = remote + "/"
+		}
 	}
 	pType := c.PostForm("type")
 	hosts := models.ParseHostList(pType, id)
