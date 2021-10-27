@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"oms/pkg/transport"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,10 +34,6 @@ type ExportData struct {
 	Groups []*Group
 	Hosts  []*Host
 }
-
-const (
-	ModeSymbolLink = fs.FileMode(134218239)
-)
 
 func ParseHostList(pType string, id int) []*Host {
 	var hosts []*Host
@@ -221,7 +219,14 @@ func GetPathInfo(hostId int, path string) []*FileInfo {
 		return results
 	}
 	for i := 0; i < len(infos); i++ {
-		isDir := infos[i].IsDir() || infos[i].Mode() == ModeSymbolLink
+		var isDir bool
+		var newHead os.FileInfo
+		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
+			newHead, _ = client.Stat(filepath.ToSlash(filepath.Join(path, infos[i].Name())))
+			isDir = newHead.IsDir()
+		} else {
+			isDir = infos[i].IsDir()
+		}
 		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: isDir}
 		results = append(results, &info)
 	}

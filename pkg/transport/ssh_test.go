@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/fs"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -85,11 +86,11 @@ func TestLongTimeCmd(t *testing.T) {
 }
 
 func TestConnectionPing(t *testing.T) {
-	_, err := client.NewSession()
+	session, err := client.NewSession()
 	assert.Nil(t, err)
 
-	client.NewSession()
-	time.Sleep(5 * time.Second)
+	err = session.Run("cd /")
+	assert.Nil(t, err)
 }
 
 func TestConnCache(t *testing.T) {
@@ -112,4 +113,25 @@ func TestConnCache(t *testing.T) {
 
 	ret, _ = l.Get(host2.serialize())
 	assert.NotNil(t, ret)
+}
+
+func TestNewClientWithSftp(t *testing.T) {
+	err := client.NewSftpClient()
+	assert.Nil(t, err)
+
+	h, _ := client.sftpClient.Lstat("/bin")
+	t.Log(h.Mode()&fs.ModeType == fs.ModeSymlink)
+
+	s, _ := client.sftpClient.ReadLink("/bin")
+	t.Log(s)
+
+	t.Log(client.sftpClient.Getwd())
+
+	infos, _ := client.ReadDir("/")
+	for _, info := range infos {
+		mode := info.Mode() & fs.ModeType
+		if mode == fs.ModeSymlink {
+			t.Log(client.RealPath(info.Name()))
+		}
+	}
 }

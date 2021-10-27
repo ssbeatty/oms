@@ -359,3 +359,19 @@ func (c *Client) RemoveDir(remoteDir string) error {
 	c.sftpClient.RemoveDirectory(remoteDir)
 	return nil
 }
+
+func (c *Client) ReadLink(path string) (string, error) {
+	return c.sftpClient.ReadLink(path)
+}
+
+func (c *Client) Stat(path string) (os.FileInfo, error) {
+	return c.sftpClient.Stat(path)
+}
+
+func (c *Client) RealPath(path string) (string, error) {
+	return c.sftpClient.RealPath(path)
+}
+
+func (c *Client) GetPwd() (string, error) {
+	return c.sftpClient.Getwd()
+}

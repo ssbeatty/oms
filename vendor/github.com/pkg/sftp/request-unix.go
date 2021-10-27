@@ -1,4 +1,4 @@
-// +build !windows
+// +build !windows,!plan9
 
 package sftp
 
@@ -20,4 +20,8 @@ func testOsSys(sys interface{}) error {
 		return errors.New("Gid failed to match")
 	}
 	return nil
+}
+
+func toLocalPath(p string) string {
+	return p
 }
