@@ -183,23 +183,6 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 	return ssh.PublicKeys(signer), nil
 }
 
-func NewClient(host string, port int, user string, password string, KeyBytes []byte) (client *Client, err error) {
-	if user == "" {
-		user = "root"
-	}
-	var config = &Config{
-		Host:       host,
-		Port:       port,
-		User:       user,
-		Password:   password,
-		Passphrase: password,
-	}
-	if KeyBytes != nil {
-		config.KeyBytes = KeyBytes
-	}
-	return New(config)
-}
-
 func NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
 	client, err := NewClient(host, port, user, password, KeyBytes)
 	if err != nil {

@@ -53,6 +53,14 @@ func (w *WSConnect) mange() {
 	}
 }
 
+func (w *WSConnect) Write(p []byte) (int, error) {
+	err := w.WriteMessage(websocket.TextMessage, p)
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func (w *WSConnect) Close() error {
 	w.closer <- true
 	return w.Conn.Close()

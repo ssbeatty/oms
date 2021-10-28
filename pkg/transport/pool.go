@@ -5,11 +5,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
+	"oms/pkg/cache"
+	"oms/pkg/utils"
 	"path/filepath"
 	"sync"
 )
 
 var CurrentFiles *sync.Map
+var SSHClientPoll *cache.Cache
 
 const (
 	DefaultBlockSize = 1024 * 4
@@ -20,6 +23,7 @@ const (
 
 func init() {
 	CurrentFiles = &sync.Map{}
+	SSHClientPoll = cache.NewCache(1000)
 }
 
 type TaskItem struct {
@@ -30,6 +34,43 @@ type TaskItem struct {
 	CSize    int64      // 当前字节
 	FileName string
 	Host     string
+}
+
+func (h *Config) serialize() int64 {
+	return utils.InetAtoN(h.Host, h.Port)
+}
+
+func NewClient(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
+	if user == "" {
+		user = "root"
+	}
+	var config = &Config{
+		Host:       host,
+		Port:       port,
+		User:       user,
+		Password:   password,
+		Passphrase: password,
+	}
+	if KeyBytes != nil {
+		config.KeyBytes = KeyBytes
+	}
+	if cli, ok := SSHClientPoll.Get(config.serialize()); ok {
+		ss, err := cli.(*Client).NewSession()
+		defer ss.Close()
+
+		if err != nil {
+			SSHClientPoll.Remove(config.serialize())
+		} else {
+			return cli.(*Client), nil
+		}
+	}
+
+	cli, err := New(config)
+	if err != nil {
+		return nil, err
+	}
+	SSHClientPoll.Add(config.serialize(), cli)
+	return cli, nil
 }
 
 func manageChannel(ch chan int64, key string) {
@@ -78,12 +119,12 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 }
 
 func (c *Client) UploadFileOneAsync(fileH *multipart.FileHeader, remote string, addr string, filename string) {
-	ch := make(chan int64, 5)
+	ch := make(chan int64, 10)
 	task := &TaskItem{
 		Total:    fileH.Size,
 		ch:       ch,
 		FileName: fileH.Filename,
-		Status:   TaskFailed,
+		Status:   TaskRunning,
 		Host:     addr,
 	}
 
@@ -126,6 +167,10 @@ func (c *Client) UploadFileOneAsync(fileH *multipart.FileHeader, remote string, 
 		_ = file.Close()
 		_ = r.Close()
 		close(ch)
+		// 遇到关闭连接的情况
+		if task.Status != TaskDone {
+			task.Status = TaskFailed
+		}
 	}()
 
 	key := fmt.Sprintf("%s/%s", addr, filename)
