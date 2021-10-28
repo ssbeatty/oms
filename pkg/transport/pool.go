@@ -83,7 +83,7 @@ func (c *Client) UploadFileOneAsync(fileH *multipart.FileHeader, remote string, 
 		Total:    fileH.Size,
 		ch:       ch,
 		FileName: fileH.Filename,
-		Status:   TaskRunning,
+		Status:   TaskFailed,
 		Host:     addr,
 	}
 

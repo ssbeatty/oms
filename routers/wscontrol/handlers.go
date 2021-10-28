@@ -69,7 +69,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
 				}
 				task.CSize = task.RSize
 				marshal, _ := json.Marshal(resp)
-				err := w.WriteMessage(websocket.TextMessage, marshal)
+				err := conn.WriteMessage(websocket.TextMessage, marshal)
 				if err != nil {
 					log.Errorf("error when write task status, err: %v", err)
 				}
