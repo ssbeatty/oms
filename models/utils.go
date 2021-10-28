@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
 	"io/fs"
@@ -156,7 +157,7 @@ func UploadFile(hosts []*Host, files []*multipart.FileHeader, remotePath string)
 	wg := sync.WaitGroup{}
 	for _, host := range hosts {
 		wg.Add(1)
-		go UploadFileOneAsync(host, remotePath, files, channel, &wg)
+		go UploadFileOneSync(host, remotePath, files, channel, &wg)
 	}
 	wg.Wait()
 	for i := 0; i < len(hosts); i++ {
@@ -165,7 +166,16 @@ func UploadFile(hosts []*Host, files []*multipart.FileHeader, remotePath string)
 	return results
 }
 
-func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result, wg *sync.WaitGroup) {
+func UploadFileUnBlock(hosts []*Host, files []*multipart.FileHeader, remotePath string) {
+	wg := sync.WaitGroup{}
+	for _, host := range hosts {
+		wg.Add(1)
+		go UploadFileOneAsync(host, remotePath, files, &wg)
+	}
+	wg.Wait()
+}
+
+func UploadFileOneSync(host *Host, remote string, files []*multipart.FileHeader, ch chan *Result, wg *sync.WaitGroup) {
 	var result *Result
 	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -185,6 +195,19 @@ func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader
 	}
 
 	ch <- result
+	wg.Done()
+}
+
+func UploadFileOneAsync(host *Host, remote string, files []*multipart.FileHeader, wg *sync.WaitGroup) {
+	client, err := transport.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	if err != nil {
+		return
+	}
+	// do upload
+	for i := 0; i < len(files); i++ {
+		addr := fmt.Sprintf("%s:%d", host.Addr, host.Port)
+		client.UploadFileOneAsync(files[i], remote, addr, files[i].Filename)
+	}
 	wg.Done()
 }
 

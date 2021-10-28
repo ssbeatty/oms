@@ -64,6 +64,7 @@ func InitGinServer() {
 	r.POST("/tools/delete", v1.DeleteFile)
 	r.GET("/tools/export", v1.ExportData)
 	r.POST("/tools/import", v1.ImportData)
+	r.POST("/tools/upload_file", v1.FileUploadUnBlock)
 
 	// restapi
 	apiV1 := r.Group("/api/v1")

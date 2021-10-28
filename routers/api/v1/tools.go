@@ -62,6 +62,35 @@ func FileUpload(c *gin.Context) {
 
 }
 
+func FileUploadUnBlock(c *gin.Context) {
+	var remoteFile string
+	id, err := strconv.Atoi(c.PostForm("id"))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	form, _ := c.MultipartForm()
+	files := form.File["files"]
+	remote := c.PostForm("remote")
+	if remote == "" {
+		remoteFile = remote
+	} else {
+		if remote[len(remote)-1] == '/' {
+			remoteFile = remote
+		} else {
+			remoteFile = remote + "/"
+		}
+	}
+	pType := c.PostForm("type")
+	hosts := models.ParseHostList(pType, id)
+
+	models.UploadFileUnBlock(hosts, files, remoteFile)
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
+
+}
+
 func GetPathInfo(c *gin.Context) {
 	path := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))

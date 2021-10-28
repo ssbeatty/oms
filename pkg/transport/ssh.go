@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 	"io"
-	"mime/multipart"
 	"net"
 	"os"
 	"path"
@@ -256,40 +255,6 @@ func (c *Client) NewSftpClient() error {
 	}
 	c.sftpClient = cli
 	return nil
-}
-
-func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error {
-	file, err := fileH.Open()
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	var remoteFile, remoteDir string
-	if remote != "" {
-		if remote[len(remote)-1] == '/' {
-			remoteFile = filepath.ToSlash(filepath.Join(remote, filepath.Base(fileH.Filename)))
-			remoteDir = remote
-		} else {
-			remoteFile = remote
-			remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
-		}
-	} else {
-		remoteFile = fileH.Filename
-		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
-	}
-	if _, err := c.sftpClient.Stat(remoteDir); err != nil {
-		log.Println("sftp: Mkdir all", remoteDir)
-		_ = c.MkdirAll(remoteDir)
-	}
-	r, err := c.sftpClient.Create(remoteFile)
-	if err != nil {
-		return err
-	}
-
-	defer r.Close()
-
-	_, err = io.Copy(r, file)
-	return err
 }
 
 func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {

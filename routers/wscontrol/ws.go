@@ -11,20 +11,12 @@ type WsHandler func(conn *websocket.Conn, msg *WsMsg)
 type WSConnect struct {
 	*websocket.Conn
 	handlers map[string]WsHandler
-	closer   chan struct{}
+	closer   chan bool
 }
 
 type WsMsg struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
-}
-
-func (w *WSConnect) Write(p []byte) (int, error) {
-	err := w.WriteMessage(websocket.TextMessage, p)
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
 }
 
 func NewWSConnect(conn *websocket.Conn) *WSConnect {
@@ -62,7 +54,7 @@ func (w *WSConnect) mange() {
 }
 
 func (w *WSConnect) Close() error {
-	w.closer <- struct{}{}
+	w.closer <- true
 	return w.Conn.Close()
 }
 
