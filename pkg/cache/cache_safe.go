@@ -4,11 +4,6 @@ import (
 	"sync"
 )
 
-const (
-	// DefaultEvictedBufferSize defines the default buffer size to store evicted key/val
-	DefaultEvictedBufferSize = 16
-)
-
 // Cache is a thread-safe fixed size LRU cache.
 type Cache struct {
 	lru  *Lru
@@ -27,7 +22,6 @@ func (c *Cache) Add(key Key, value interface{}) {
 	c.lock.Lock()
 	c.lru.Add(key, value)
 	c.lock.Unlock()
-	return
 }
 
 // Get looks up a key's value from the cache.
@@ -43,7 +37,6 @@ func (c *Cache) Remove(key interface{}) {
 	c.lock.Lock()
 	c.lru.Remove(key)
 	c.lock.Unlock()
-	return
 }
 
 // RemoveOldest removes the oldest item from the cache.
@@ -51,7 +44,6 @@ func (c *Cache) RemoveOldest() {
 	c.lock.Lock()
 	c.lru.RemoveOldest()
 	c.lock.Unlock()
-	return
 }
 
 // Keys returns a slice of the keys in the cache, from oldest to newest.
