@@ -135,6 +135,10 @@ func (c *Client) NewSession() (*Session, error) {
 	}, nil
 }
 
+func (c *Client) GetSSHClient() *ssh.Client {
+	return c.sshClient
+}
+
 func (s *Session) Kill() error {
 	// kill signal
 	//if _, err := s.Write([]byte(KillSignal)); err != nil {

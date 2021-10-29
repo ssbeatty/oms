@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type WsHandler func(conn *websocket.Conn, msg *WsMsg)
+type WsHandler func(conn *websocket.Conn, msg []byte)
 
 type WSConnect struct {
 	*websocket.Conn
@@ -50,7 +50,8 @@ func (w *WSConnect) mange() {
 			}
 			handler := w.getHandler(msg.Type)
 			if handler != nil {
-				go handler(w.Conn, msg)
+				data, _ := json.Marshal(msg.Data)
+				go handler(w.Conn, data)
 			}
 		}
 	}
@@ -62,6 +63,14 @@ func (w *WSConnect) Write(p []byte) (int, error) {
 		return 0, err
 	}
 	return len(p), nil
+}
+
+func (w *WSConnect) WriteMsg(msg interface{}) {
+	marshal, _ := json.Marshal(msg)
+	err := w.WriteMessage(websocket.TextMessage, marshal)
+	if err != nil {
+		log.Errorf("error when write msg, err: %v", err)
+	}
 }
 
 func (w *WSConnect) Close() error {

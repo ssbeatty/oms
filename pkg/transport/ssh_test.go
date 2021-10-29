@@ -122,3 +122,14 @@ func TestNewClientWithSftp(t *testing.T) {
 		}
 	}
 }
+
+func TestSSHStat(t *testing.T) {
+	status := NewStatus()
+	for i := 0; i < 10; i++ {
+		GetAllStats(client.sshClient, status, nil)
+		t.Log(status.CPU)
+		time.Sleep(time.Second)
+	}
+
+	assert.NotNil(t, status)
+}

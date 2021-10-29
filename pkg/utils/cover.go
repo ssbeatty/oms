@@ -16,3 +16,17 @@ func InetAtoN(ip string, port int) int64 {
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret.Int64()<<32 + int64(port)
 }
+
+// IntChangeToSize 转换单位
+func IntChangeToSize(s int64) string {
+	// 1k 以内
+	if s < 1024 {
+		return fmt.Sprintf("%.2fb", float64(s))
+	} else if s < 1024*1024 {
+		return fmt.Sprintf("%.2fkb", float64(s)/1024.0)
+	} else if s < 1024*1024*1024 {
+		return fmt.Sprintf("%.2fmb", float64(s)/1048576.0)
+	} else {
+		return fmt.Sprintf("%.2fgb", float64(s)/1073741824.0)
+	}
+}
