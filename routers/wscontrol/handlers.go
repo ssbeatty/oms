@@ -49,35 +49,37 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 }
 
 func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
-	log.Info(msg.Data)
+	log.Infof("handler task status recv a message: %v", msg.Data)
 	ticker := time.NewTicker(TaskTickerInterval * time.Second)
+
 	for {
 		select {
 		case <-w.closer:
 			log.Debug("file task status exit.")
 			return
 		case <-ticker.C:
+			var resp []FTaskResp
 			transport.CurrentFiles.Range(func(key, value interface{}) bool {
 				task := value.(*transport.TaskItem)
-				resp := FTaskResp{
+				resp = append(resp, FTaskResp{
 					File:    task.FileName,
 					Dest:    task.Host,
 					Current: intChangeToSize(task.RSize),
 					Total:   intChangeToSize(task.Total),
 					Speed:   fmt.Sprintf("%s/s", intChangeToSize((task.RSize-task.CSize)/TaskTickerInterval)),
 					Status:  task.Status,
-				}
+				})
 				task.CSize = task.RSize
-				marshal, _ := json.Marshal(resp)
-				err := conn.WriteMessage(websocket.TextMessage, marshal)
-				if err != nil {
-					log.Errorf("error when write task status, err: %v", err)
-				}
 				if task.Status == transport.TaskDone || task.Status == transport.TaskFailed {
 					transport.CurrentFiles.Delete(key)
 				}
 				return true
 			})
+			marshal, _ := json.Marshal(resp)
+			err := conn.WriteMessage(websocket.TextMessage, marshal)
+			if err != nil {
+				log.Errorf("error when write task status, err: %v", err)
+			}
 		}
 	}
 }

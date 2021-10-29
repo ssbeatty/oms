@@ -20,12 +20,15 @@ type WsMsg struct {
 }
 
 func NewWSConnect(conn *websocket.Conn) *WSConnect {
-	c := &WSConnect{Conn: conn}
+	c := &WSConnect{
+		Conn:   conn,
+		closer: make(chan bool),
+	}
 	return c
 }
 
 func (w *WSConnect) Serve() {
-	w.mange()
+	go w.mange()
 }
 
 func (w *WSConnect) mange() {
@@ -38,7 +41,7 @@ func (w *WSConnect) mange() {
 			_, b, err := w.ReadMessage()
 			if err != nil {
 				log.Debugf("read message from wsconnect failed, err: %v", err)
-				continue
+				_ = w.Close()
 			}
 			msg := &WsMsg{}
 			err = json.Unmarshal(b, msg)
@@ -47,7 +50,7 @@ func (w *WSConnect) mange() {
 			}
 			handler := w.getHandler(msg.Type)
 			if handler != nil {
-				handler(w.Conn, msg)
+				go handler(w.Conn, msg)
 			}
 		}
 	}
@@ -62,7 +65,7 @@ func (w *WSConnect) Write(p []byte) (int, error) {
 }
 
 func (w *WSConnect) Close() error {
-	w.closer <- true
+	defer close(w.closer)
 	return w.Conn.Close()
 }
 

@@ -26,9 +26,6 @@ func GetWebsocketIndex(c *gin.Context) {
 	}
 	ws := wscontrol.NewWSConnect(wsConn).InitHandlers()
 	ws.Serve()
-
-	defer ws.Close()
-
 }
 
 func GetWebsocketSsh(c *gin.Context) {
