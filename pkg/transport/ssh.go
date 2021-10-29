@@ -8,17 +8,23 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
+	"oms/pkg/cache"
+	"oms/pkg/utils"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"time"
 )
+
+/*
+变量声明
+*/
 
 const (
 	DefaultTimeout = 30 * time.Second
 	KillSignal     = "0x09"
 )
+
+var SSHClientPoll *cache.Cache
 
 type Config struct {
 	User       string
@@ -38,6 +44,55 @@ type Session struct {
 	sshSession *ssh.Session
 	stdin      io.WriteCloser
 }
+
+func init() {
+	SSHClientPoll = cache.NewCache(1000)
+}
+
+/*
+扩展服务
+*/
+
+func (h *Config) serialize() int64 {
+	return utils.InetAtoN(h.Host, h.Port)
+}
+
+func NewClient(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
+	if user == "" {
+		user = "root"
+	}
+	var config = &Config{
+		Host:       host,
+		Port:       port,
+		User:       user,
+		Password:   password,
+		Passphrase: password,
+	}
+	if KeyBytes != nil {
+		config.KeyBytes = KeyBytes
+	}
+	if cli, ok := SSHClientPoll.Get(config.serialize()); ok {
+		ss, err := cli.(*Client).NewSession()
+		defer ss.Close()
+
+		if err != nil {
+			SSHClientPoll.Remove(config.serialize())
+		} else {
+			return cli.(*Client), nil
+		}
+	}
+
+	cli, err := New(config)
+	if err != nil {
+		return nil, err
+	}
+	SSHClientPoll.Add(config.serialize(), cli)
+	return cli, nil
+}
+
+/*
+ssh基础服务
+*/
 
 func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	session, err := c.sshClient.NewSession()
@@ -183,18 +238,6 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 	return ssh.PublicKeys(signer), nil
 }
 
-func NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
-	client, err := NewClient(host, port, user, password, KeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	err = client.NewSftpClient()
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 // New 创建SSH client
 func New(cnf *Config) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
@@ -229,97 +272,4 @@ func New(cnf *Config) (client *Client, err error) {
 	}
 
 	return &Client{sshClient: sshClient}, nil
-}
-
-func (c *Client) NewSftpClient() error {
-	cli, err := sftp.NewClient(c.sshClient)
-	if err != nil {
-		return err
-	}
-	c.sftpClient = cli
-	return nil
-}
-
-func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
-	if c.IsDir(path) {
-		info, err := c.sftpClient.ReadDir(path)
-		return info, err
-	}
-	return nil, nil
-}
-
-func (c *Client) GetFile(path string) (*sftp.File, error) {
-	file, err := c.sftpClient.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	return file, err
-}
-
-func (c *Client) IsDir(path string) bool {
-	// 检查远程是文件还是目录
-	info, err := c.sftpClient.Stat(path)
-	if err == nil && info.IsDir() {
-		return true
-	}
-	return false
-}
-
-func (c *Client) MkdirAll(dirPath string) error {
-
-	parentDir := filepath.ToSlash(filepath.Dir(dirPath))
-	_, err := c.sftpClient.Stat(parentDir)
-	if err != nil {
-		// log.Println(err)
-		if err.Error() == "file does not exist" {
-			err := c.MkdirAll(parentDir)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	err = c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) Remove(path string) error {
-	return c.sftpClient.Remove(path)
-}
-
-func (c *Client) RemoveDir(remoteDir string) error {
-	remoteFiles, err := c.sftpClient.ReadDir(remoteDir)
-	if err != nil {
-		return err
-	}
-	for _, file := range remoteFiles {
-		subRemovePath := path.Join(remoteDir, file.Name())
-		if file.IsDir() {
-			c.RemoveDir(subRemovePath)
-		} else {
-			c.Remove(subRemovePath)
-		}
-	}
-	c.sftpClient.RemoveDirectory(remoteDir)
-	return nil
-}
-
-func (c *Client) ReadLink(path string) (string, error) {
-	return c.sftpClient.ReadLink(path)
-}
-
-func (c *Client) Stat(path string) (os.FileInfo, error) {
-	return c.sftpClient.Stat(path)
-}
-
-func (c *Client) RealPath(path string) (string, error) {
-	return c.sftpClient.RealPath(path)
-}
-
-func (c *Client) GetPwd() (string, error) {
-	return c.sftpClient.Getwd()
 }

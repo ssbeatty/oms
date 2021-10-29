@@ -19,6 +19,10 @@
 
 <script>
     var currentPage = window.location.pathname;
-    $(".h" + currentPage.split("/")[1]).addClass("layui-this")
+    if (currentPage !== "/") {
+        $(".h" + currentPage.split("/")[2]).addClass("layui-this")
+    } else {
+        $(".h").addClass("layui-this")
+    }
 </script>
 {{end}}

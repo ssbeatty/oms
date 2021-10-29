@@ -14,12 +14,13 @@ const (
 )
 
 type FTaskResp struct {
-	File    string `json:"file"`
-	Dest    string `json:"dest"`
-	Speed   string `json:"speed"`
-	Current string `json:"current"`
-	Total   string `json:"total"`
-	Status  string `json:"status"`
+	File    string  `json:"file"`
+	Dest    string  `json:"dest"`
+	Speed   string  `json:"speed"`
+	Current string  `json:"current"`
+	Total   string  `json:"total"`
+	Status  string  `json:"status"`
+	Percent float32 `json:"percent"`
 }
 
 func (w *WSConnect) InitHandlers() *WSConnect {
@@ -61,6 +62,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
 			var resp []FTaskResp
 			transport.CurrentFiles.Range(func(key, value interface{}) bool {
 				task := value.(*transport.TaskItem)
+				percent := float32(task.RSize) * 100.0 / float32(task.Total)
 				resp = append(resp, FTaskResp{
 					File:    task.FileName,
 					Dest:    task.Host,
@@ -68,6 +70,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
 					Total:   intChangeToSize(task.Total),
 					Speed:   fmt.Sprintf("%s/s", intChangeToSize((task.RSize-task.CSize)/TaskTickerInterval)),
 					Status:  task.Status,
+					Percent: percent,
 				})
 				task.CSize = task.RSize
 				if task.Status == transport.TaskDone || task.Status == transport.TaskFailed {
@@ -75,10 +78,12 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
 				}
 				return true
 			})
-			marshal, _ := json.Marshal(resp)
-			err := conn.WriteMessage(websocket.TextMessage, marshal)
-			if err != nil {
-				log.Errorf("error when write task status, err: %v", err)
+			if len(resp) > 0 {
+				marshal, _ := json.Marshal(resp)
+				err := conn.WriteMessage(websocket.TextMessage, marshal)
+				if err != nil {
+					log.Errorf("error when write task status, err: %v", err)
+				}
 			}
 		}
 	}

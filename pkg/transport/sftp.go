@@ -2,17 +2,21 @@ package transport
 
 import (
 	"fmt"
+	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
-	"oms/pkg/cache"
-	"oms/pkg/utils"
+	"os"
+	"path"
 	"path/filepath"
 	"sync"
 )
 
+/*
+变量声明
+*/
+
 var CurrentFiles *sync.Map
-var SSHClientPoll *cache.Cache
 
 const (
 	DefaultBlockSize = 1024 * 4
@@ -23,8 +27,11 @@ const (
 
 func init() {
 	CurrentFiles = &sync.Map{}
-	SSHClientPoll = cache.NewCache(1000)
 }
+
+/*
+扩展服务
+*/
 
 type TaskItem struct {
 	Status   string
@@ -34,43 +41,6 @@ type TaskItem struct {
 	CSize    int64      // 当前字节
 	FileName string
 	Host     string
-}
-
-func (h *Config) serialize() int64 {
-	return utils.InetAtoN(h.Host, h.Port)
-}
-
-func NewClient(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
-	if user == "" {
-		user = "root"
-	}
-	var config = &Config{
-		Host:       host,
-		Port:       port,
-		User:       user,
-		Password:   password,
-		Passphrase: password,
-	}
-	if KeyBytes != nil {
-		config.KeyBytes = KeyBytes
-	}
-	if cli, ok := SSHClientPoll.Get(config.serialize()); ok {
-		ss, err := cli.(*Client).NewSession()
-		defer ss.Close()
-
-		if err != nil {
-			SSHClientPoll.Remove(config.serialize())
-		} else {
-			return cli.(*Client), nil
-		}
-	}
-
-	cli, err := New(config)
-	if err != nil {
-		return nil, err
-	}
-	SSHClientPoll.Add(config.serialize(), cli)
-	return cli, nil
 }
 
 func manageChannel(ch chan int64, key string) {
@@ -188,4 +158,113 @@ func (c *Client) UploadFileOneAsync(fileH *multipart.FileHeader, remote string, 
 	task.Status = TaskDone
 
 	log.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
+}
+
+/*
+sftp基础服务
+*/
+
+func NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
+	client, err := NewClient(host, port, user, password, KeyBytes)
+	if err != nil {
+		return nil, err
+	}
+	err = client.NewSftpClient()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func (c *Client) NewSftpClient() error {
+	cli, err := sftp.NewClient(c.sshClient)
+	if err != nil {
+		return err
+	}
+	c.sftpClient = cli
+	return nil
+}
+
+func (c *Client) ReadDir(path string) ([]os.FileInfo, error) {
+	if c.IsDir(path) {
+		info, err := c.sftpClient.ReadDir(path)
+		return info, err
+	}
+	return nil, nil
+}
+
+func (c *Client) GetFile(path string) (*sftp.File, error) {
+	file, err := c.sftpClient.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return file, err
+}
+
+func (c *Client) IsDir(path string) bool {
+	// 检查远程是文件还是目录
+	info, err := c.sftpClient.Stat(path)
+	if err == nil && info.IsDir() {
+		return true
+	}
+	return false
+}
+
+func (c *Client) MkdirAll(dirPath string) error {
+
+	parentDir := filepath.ToSlash(filepath.Dir(dirPath))
+	_, err := c.sftpClient.Stat(parentDir)
+	if err != nil {
+		// log.Println(err)
+		if err.Error() == "file does not exist" {
+			err := c.MkdirAll(parentDir)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	err = c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) Remove(path string) error {
+	return c.sftpClient.Remove(path)
+}
+
+func (c *Client) RemoveDir(remoteDir string) error {
+	remoteFiles, err := c.sftpClient.ReadDir(remoteDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range remoteFiles {
+		subRemovePath := path.Join(remoteDir, file.Name())
+		if file.IsDir() {
+			c.RemoveDir(subRemovePath)
+		} else {
+			c.Remove(subRemovePath)
+		}
+	}
+	c.sftpClient.RemoveDirectory(remoteDir)
+	return nil
+}
+
+func (c *Client) ReadLink(path string) (string, error) {
+	return c.sftpClient.ReadLink(path)
+}
+
+func (c *Client) Stat(path string) (os.FileInfo, error) {
+	return c.sftpClient.Stat(path)
+}
+
+func (c *Client) RealPath(path string) (string, error) {
+	return c.sftpClient.RealPath(path)
+}
+
+func (c *Client) GetPwd() (string, error) {
+	return c.sftpClient.Getwd()
 }
