@@ -54,6 +54,17 @@ func TestSampleCmd(t *testing.T) {
 	t.Log(string(result))
 }
 
+func TestSudoCmd(t *testing.T) {
+
+	session, err := client.NewSessionWithPty(20, 20)
+	assert.Nil(t, err)
+
+	result, err := session.Sudo("ls -l /root", host.PassWord)
+	assert.Nil(t, err)
+
+	t.Log(string(result))
+}
+
 func TestLongTimeCmd(t *testing.T) {
 
 	session, err := client.NewSessionWithPty(20, 20)

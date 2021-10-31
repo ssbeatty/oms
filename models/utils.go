@@ -111,7 +111,8 @@ func ParseHostList(pType string, id int) []*Host {
 	return hosts
 }
 
-func RunCmdOneAsync(host *Host, cmd string, ch chan *Result, wg *sync.WaitGroup) {
+func RunCmdOneAsync(host *Host, cmd string, sudo bool, ch chan *Result, wg *sync.WaitGroup) {
+	var msg []byte
 	var result *Result
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -123,9 +124,13 @@ func RunCmdOneAsync(host *Host, cmd string, ch chan *Result, wg *sync.WaitGroup)
 	if err != nil {
 		log.Errorf("create new session failed, err: %v", err)
 	}
-	msg, err := session.Output(cmd)
+	if sudo {
+		msg, err = session.Sudo(cmd, host.PassWord)
+	} else {
+		msg, err = session.Output(cmd)
+	}
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
 	} else {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
@@ -134,14 +139,14 @@ func RunCmdOneAsync(host *Host, cmd string, ch chan *Result, wg *sync.WaitGroup)
 	wg.Done()
 }
 
-func RunCmd(hosts []*Host, cmd string) []*Result {
+func RunCmd(hosts []*Host, cmd string, sudo bool) []*Result {
 	var results []*Result
 	channel := make(chan *Result, len(hosts))
 	defer close(channel)
 	wg := sync.WaitGroup{}
 	for _, host := range hosts {
 		wg.Add(1)
-		go RunCmdOneAsync(host, cmd, channel, &wg)
+		go RunCmdOneAsync(host, cmd, sudo, channel, &wg)
 	}
 	wg.Wait()
 	for i := 0; i < len(hosts); i++ {

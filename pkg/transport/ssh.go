@@ -90,6 +90,26 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 	return cli, nil
 }
 
+func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool) {
+	go func(c string) {
+		err := s.sshSession.Run(c)
+		if err != nil {
+			log.Errorf("RunTaskWithQuit run task error, %v", err)
+		}
+	}(cmd)
+
+	select {
+	case <-quitCh:
+		// 理论上pty下不需要kill
+		if err := s.Kill(); err != nil {
+			return
+		}
+		if err := s.Close(); err != nil {
+			return
+		}
+	}
+}
+
 /*
 ssh基础服务
 */
@@ -186,26 +206,6 @@ func (s *Session) Write(b []byte) (int, error) {
 // Output run done and return output
 func (s *Session) Output(cmd string) ([]byte, error) {
 	return s.sshSession.Output(cmd)
-}
-
-func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool) {
-	go func(c string) {
-		err := s.sshSession.Run(c)
-		if err != nil {
-			log.Errorf("RunTaskWithQuit run task error, %v", err)
-		}
-	}(cmd)
-
-	select {
-	case <-quitCh:
-		// 理论上pty下不需要kill
-		if err := s.Kill(); err != nil {
-			return
-		}
-		if err := s.Close(); err != nil {
-			return
-		}
-	}
 }
 
 // AuthWithAgent use already authed user

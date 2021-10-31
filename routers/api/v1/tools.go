@@ -20,6 +20,10 @@ func RunCmd(c *gin.Context) {
 	}
 	pType := c.Query("type")
 	cmd := c.Query("cmd")
+	sudoRaw := c.Query("sudo")
+	// default false
+	sudo, _ := strconv.ParseBool(sudoRaw)
+
 	hosts := models.ParseHostList(pType, id)
 	if len(hosts) == 0 {
 		data := generateResponsePayload(HttpStatusError, "parse host array empty", nil)
@@ -27,7 +31,7 @@ func RunCmd(c *gin.Context) {
 		return
 	}
 	// do cmd
-	results := models.RunCmd(hosts, cmd)
+	results := models.RunCmd(hosts, cmd, sudo)
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
 	c.JSON(http.StatusOK, data)
 
