@@ -41,15 +41,20 @@ func ConvertMapToValuesForCreate(stmt *gorm.Statement, mapValue map[string]inter
 // ConvertSliceOfMapToValuesForCreate convert slice of map to values
 func ConvertSliceOfMapToValuesForCreate(stmt *gorm.Statement, mapValues []map[string]interface{}) (values clause.Values) {
 	var (
-		columns                   = make([]string, 0, len(mapValues))
-		result                    = map[string][]interface{}{}
-		selectColumns, restricted = stmt.SelectAndOmitColumns(true, false)
+		columns = make([]string, 0, len(mapValues))
 	)
 
+	// when the length of mapValues is zero,return directly here
+	// no need to call stmt.SelectAndOmitColumns method
 	if len(mapValues) == 0 {
 		stmt.AddError(gorm.ErrEmptySlice)
 		return
 	}
+
+	var (
+		result                    = make(map[string][]interface{}, len(mapValues))
+		selectColumns, restricted = stmt.SelectAndOmitColumns(true, false)
+	)
 
 	for idx, mapValue := range mapValues {
 		for k, v := range mapValue {
@@ -87,4 +92,17 @@ func ConvertSliceOfMapToValuesForCreate(stmt *gorm.Statement, mapValues []map[st
 		}
 	}
 	return
+}
+
+func hasReturning(tx *gorm.DB, supportReturning bool) (bool, gorm.ScanMode) {
+	if supportReturning {
+		if c, ok := tx.Statement.Clauses["RETURNING"]; ok {
+			returning, _ := c.Expression.(clause.Returning)
+			if len(returning.Columns) == 0 || (len(returning.Columns) == 1 && returning.Columns[0].Name == "*") {
+				return true, 0
+			}
+			return true, gorm.ScanUpdate
+		}
+	}
+	return false, 0
 }

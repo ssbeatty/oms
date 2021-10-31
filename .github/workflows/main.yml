@@ -24,27 +24,16 @@ jobs:
       - name: Check out code into current branch
         uses: actions/checkout@v2
 
-      - name: Build for linux
+      - name: Make all
         run: |
-          packr build -o oms main.go
-
-      - name: Build for windows
-        run: |
-          sudo apt-get install gcc-mingw-w64
-          packr build -o oms.exe main.go
-        env:
-          GOARCH: amd64
-          GOOS: windows
-          CGO_ENABLED: 1
-          CC: x86_64-w64-mingw32-gcc
+          make all
 
       - name: Draft release
         uses: softprops/action-gh-release@v1
         with:
           body: Release for new version
           files: |
-            ./oms.exe
-            ./oms
+            ./release/*
             ./conf/config.yaml.example
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

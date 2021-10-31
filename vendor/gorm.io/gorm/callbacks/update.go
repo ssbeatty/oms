@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+	"gorm.io/gorm/utils"
 )
 
 func SetupUpdateReflectValue(db *gorm.DB) {
@@ -50,8 +51,14 @@ func BeforeUpdate(db *gorm.DB) {
 	}
 }
 
-func Update(db *gorm.DB) {
-	if db.Error == nil {
+func Update(config *Config) func(db *gorm.DB) {
+	supportReturning := utils.Contains(config.UpdateClauses, "RETURNING")
+
+	return func(db *gorm.DB) {
+		if db.Error != nil {
+			return
+		}
+
 		if db.Statement.Schema != nil && !db.Statement.Unscoped {
 			for _, c := range db.Statement.Schema.UpdateClauses {
 				db.Statement.AddClause(c)
@@ -66,7 +73,7 @@ func Update(db *gorm.DB) {
 			} else {
 				return
 			}
-			db.Statement.Build("UPDATE", "SET", "WHERE")
+			db.Statement.Build(db.Statement.BuildClauses...)
 		}
 
 		if _, ok := db.Statement.Clauses["WHERE"]; !db.AllowGlobalUpdate && !ok {
@@ -75,12 +82,20 @@ func Update(db *gorm.DB) {
 		}
 
 		if !db.DryRun && db.Error == nil {
-			result, err := db.Statement.ConnPool.ExecContext(db.Statement.Context, db.Statement.SQL.String(), db.Statement.Vars...)
-
-			if err == nil {
-				db.RowsAffected, _ = result.RowsAffected()
+			if ok, mode := hasReturning(db, supportReturning); ok {
+				if rows, err := db.Statement.ConnPool.QueryContext(db.Statement.Context, db.Statement.SQL.String(), db.Statement.Vars...); db.AddError(err) == nil {
+					dest := db.Statement.Dest
+					db.Statement.Dest = db.Statement.ReflectValue.Addr().Interface()
+					gorm.Scan(rows, db, mode)
+					db.Statement.Dest = dest
+					rows.Close()
+				}
 			} else {
-				db.AddError(err)
+				result, err := db.Statement.ConnPool.ExecContext(db.Statement.Context, db.Statement.SQL.String(), db.Statement.Vars...)
+
+				if db.AddError(err) == nil {
+					db.RowsAffected, _ = result.RowsAffected()
+				}
 			}
 		}
 	}
@@ -140,20 +155,23 @@ func ConvertToAssignments(stmt *gorm.Statement) (set clause.Set) {
 	if !updatingValue.CanAddr() || stmt.Dest != stmt.Model {
 		switch stmt.ReflectValue.Kind() {
 		case reflect.Slice, reflect.Array:
-			var primaryKeyExprs []clause.Expression
-			for i := 0; i < stmt.ReflectValue.Len(); i++ {
-				var exprs = make([]clause.Expression, len(stmt.Schema.PrimaryFields))
-				var notZero bool
-				for idx, field := range stmt.Schema.PrimaryFields {
-					value, isZero := field.ValueOf(stmt.ReflectValue.Index(i))
-					exprs[idx] = clause.Eq{Column: field.DBName, Value: value}
-					notZero = notZero || !isZero
+			if size := stmt.ReflectValue.Len(); size > 0 {
+				var primaryKeyExprs []clause.Expression
+				for i := 0; i < stmt.ReflectValue.Len(); i++ {
+					var exprs = make([]clause.Expression, len(stmt.Schema.PrimaryFields))
+					var notZero bool
+					for idx, field := range stmt.Schema.PrimaryFields {
+						value, isZero := field.ValueOf(stmt.ReflectValue.Index(i))
+						exprs[idx] = clause.Eq{Column: field.DBName, Value: value}
+						notZero = notZero || !isZero
+					}
+					if notZero {
+						primaryKeyExprs = append(primaryKeyExprs, clause.And(exprs...))
+					}
 				}
-				if notZero {
-					primaryKeyExprs = append(primaryKeyExprs, clause.And(exprs...))
-				}
+
+				stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.Or(primaryKeyExprs...)}})
 			}
-			stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.Or(primaryKeyExprs...)}})
 		case reflect.Struct:
 			for _, field := range stmt.Schema.PrimaryFields {
 				if value, isZero := field.ValueOf(stmt.ReflectValue); !isZero {
@@ -202,7 +220,7 @@ func ConvertToAssignments(stmt *gorm.Statement) (set clause.Set) {
 			for _, dbName := range stmt.Schema.DBNames {
 				field := stmt.Schema.LookUpField(dbName)
 				if field.AutoUpdateTime > 0 && value[field.Name] == nil && value[field.DBName] == nil {
-					if v, ok := selectColumns[field.DBName]; (ok && v) || (!ok && !restricted) {
+					if v, ok := selectColumns[field.DBName]; (ok && v) || !ok {
 						now := stmt.DB.NowFunc()
 						assignValue(field, now)
 
@@ -220,16 +238,24 @@ func ConvertToAssignments(stmt *gorm.Statement) (set clause.Set) {
 			}
 		}
 	default:
+		var updatingSchema = stmt.Schema
+		if !updatingValue.CanAddr() || stmt.Dest != stmt.Model {
+			// different schema
+			updatingStmt := &gorm.Statement{DB: stmt.DB}
+			if err := updatingStmt.Parse(stmt.Dest); err == nil {
+				updatingSchema = updatingStmt.Schema
+			}
+		}
+
 		switch updatingValue.Kind() {
 		case reflect.Struct:
 			set = make([]clause.Assignment, 0, len(stmt.Schema.FieldsByDBName))
 			for _, dbName := range stmt.Schema.DBNames {
-				field := stmt.Schema.LookUpField(dbName)
-				if !field.PrimaryKey || (!updatingValue.CanAddr() || stmt.Dest != stmt.Model) {
-					if v, ok := selectColumns[field.DBName]; (ok && v) || (!ok && !restricted) {
-						value, isZero := field.ValueOf(updatingValue)
-						if !stmt.SkipHooks {
-							if field.AutoUpdateTime > 0 {
+				if field := updatingSchema.LookUpField(dbName); field != nil {
+					if !field.PrimaryKey || !updatingValue.CanAddr() || stmt.Dest != stmt.Model {
+						if v, ok := selectColumns[field.DBName]; (ok && v) || (!ok && (!restricted || (!stmt.SkipHooks && field.AutoUpdateTime > 0))) {
+							value, isZero := field.ValueOf(updatingValue)
+							if !stmt.SkipHooks && field.AutoUpdateTime > 0 {
 								if field.AutoUpdateTime == schema.UnixNanosecond {
 									value = stmt.DB.NowFunc().UnixNano()
 								} else if field.AutoUpdateTime == schema.UnixMillisecond {
@@ -241,16 +267,16 @@ func ConvertToAssignments(stmt *gorm.Statement) (set clause.Set) {
 								}
 								isZero = false
 							}
-						}
 
-						if ok || !isZero {
-							set = append(set, clause.Assignment{Column: clause.Column{Name: field.DBName}, Value: value})
-							assignValue(field, value)
+							if (ok || !isZero) && field.Updatable {
+								set = append(set, clause.Assignment{Column: clause.Column{Name: field.DBName}, Value: value})
+								assignValue(field, value)
+							}
 						}
-					}
-				} else {
-					if value, isZero := field.ValueOf(updatingValue); !isZero {
-						stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.Eq{Column: field.DBName, Value: value}}})
+					} else {
+						if value, isZero := field.ValueOf(updatingValue); !isZero {
+							stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.Eq{Column: field.DBName, Value: value}}})
+						}
 					}
 				}
 			}

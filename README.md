@@ -1,5 +1,5 @@
 ## 项目简介
-​本项目使用gin、gorm和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
+本项目使用gin、gorm和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
 
 #### 项目依赖
 https://github.com/gin-gonic/gin
@@ -22,13 +22,17 @@ GOOS=windows GOARCH=amd64 packr build
 
 2. 启动 创建config.yaml在可执行文件同级 运行即可(例如conf/conf.yaml)
 ```shell script
-# 数据库配置
+# 数据库配置 如果使用默认配置文件则使用sqlite
+db_driver: sqlite
+
 mysql:
   user: root
   password: 123456
   urls: 127.0.0.1:3306
   db: oms
 ```
+
+3. 关于配置, 默认使用内嵌在二进制文件中的`conf/config.yaml.example`, 如果当前目录存在`config.yaml`则以此文件优先。
 
 #### 目前已经实现的功能
 
@@ -70,8 +74,3 @@ https://github.com/mojocn/felix
 https://github.com/pytool/ssh
 
 https://github.com/hequan2017/go-webssh
-
-## 最后
-因为时间紧促且自己学习go时间比较短，所以代码写的比较烂，之后会持续开发修复BUG，如果感兴趣的可以给个star，也可联系我共同学习
-
-email & qq: 918562230@qq.com

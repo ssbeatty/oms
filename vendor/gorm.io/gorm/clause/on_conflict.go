@@ -1,11 +1,13 @@
 package clause
 
 type OnConflict struct {
-	Columns   []Column
-	Where     Where
-	DoNothing bool
-	DoUpdates Set
-	UpdateAll bool
+	Columns      []Column
+	Where        Where
+	TargetWhere  Where
+	OnConstraint string
+	DoNothing    bool
+	DoUpdates    Set
+	UpdateAll    bool
 }
 
 func (OnConflict) Name() string {
@@ -25,9 +27,15 @@ func (onConflict OnConflict) Build(builder Builder) {
 		builder.WriteString(`) `)
 	}
 
-	if len(onConflict.Where.Exprs) > 0 {
-		builder.WriteString("WHERE ")
-		onConflict.Where.Build(builder)
+	if len(onConflict.TargetWhere.Exprs) > 0 {
+		builder.WriteString(" WHERE ")
+		onConflict.TargetWhere.Build(builder)
+		builder.WriteByte(' ')
+	}
+
+	if onConflict.OnConstraint != "" {
+		builder.WriteString("ON CONSTRAINT ")
+		builder.WriteString(onConflict.OnConstraint)
 		builder.WriteByte(' ')
 	}
 
@@ -36,6 +44,12 @@ func (onConflict OnConflict) Build(builder Builder) {
 	} else {
 		builder.WriteString("DO UPDATE SET ")
 		onConflict.DoUpdates.Build(builder)
+	}
+
+	if len(onConflict.Where.Exprs) > 0 {
+		builder.WriteString(" WHERE ")
+		onConflict.Where.Build(builder)
+		builder.WriteByte(' ')
 	}
 }
 

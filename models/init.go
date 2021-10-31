@@ -3,8 +3,8 @@ package models
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/ssbeatty/sqlite"
 	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"oms/conf"
 )
