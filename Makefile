@@ -16,7 +16,7 @@ app:
 		gomips=$(shell echo "$(n)" | cut -d : -f 3);\
 		target_suffix=$${os}_$${arch};\
 		echo "Build $${os}-$${arch}...";\
-		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} GOMIPS=$${gomips} go build -trimpath -ldflags "$(LDFLAGS)" -o ./release/oms_$${target_suffix} main.go;\
+		env CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} GOMIPS=$${gomips} packr build -trimpath -ldflags "$(LDFLAGS)" -o ./release/oms_$${target_suffix} main.go;\
 		echo "Build $${os}-$${arch} done";\
 	)
 	@mv ./release/oms_windows_amd64 ./release/oms_windows_amd64.exe
