@@ -5,7 +5,6 @@ ssh 实现隧道 对应ssh命令的L和R参数
 package tunnel
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
@@ -13,11 +12,13 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
-	LocalMode  = "local"
-	RemoteMode = "remote"
+	LocalMode    = "local"
+	RemoteMode   = "remote"
+	ConnDeadLine = 20 * time.Second
 )
 
 type SSHTunnel struct {
@@ -57,6 +58,7 @@ func (s *SSHTunnel) newConnectionWaiter(c chan net.Conn) {
 	if err != nil {
 		log.Errorf("error when tunnel accept, err: %v", err)
 		s.SetErrorMsg("listening error", err)
+		s.isOpen = false
 		return
 	}
 	c <- conn
@@ -132,19 +134,18 @@ func (s *SSHTunnel) forward(localConn net.Conn) {
 		return
 	}
 
-	defer remoteConn.Close()
-	defer localConn.Close()
-
 	copyConn := func(writer, reader net.Conn) {
+		defer writer.Close()
+		defer reader.Close()
+
 		_, err := io.Copy(writer, reader)
-		if errors.Is(err, io.EOF) {
+		if err != nil {
 			return
 		}
 	}
-	// close when EOF
+	// 关闭连接后退出
 	go copyConn(localConn, remoteConn)
 	go copyConn(remoteConn, localConn)
 
 	log.Debug("new conn forward success.")
-	<-s.closer
 }

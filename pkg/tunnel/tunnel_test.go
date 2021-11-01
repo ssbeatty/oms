@@ -43,6 +43,10 @@ func TestLocalTunnel(t *testing.T) {
 	time.Sleep(time.Second)
 	t.Log(tunnel.GetErrorMsg())
 
+	time.Sleep(5 * time.Second)
+	tunnel.Close()
+
+	time.Sleep(50 * time.Second)
 }
 
 func TestRemoteTunnel(t *testing.T) {
