@@ -9,20 +9,20 @@ import (
 
 // Host Struct
 type Host struct {
-	Id       int
-	Name     string `gorm:"size:100;not null"`
-	User     string `gorm:"size:128;not null"`
-	Addr     string `gorm:"size:128;not null"`
-	Port     int    `gorm:"default:22"`
-	PassWord string `gorm:"size:128;not null"`
-	KeyFile  string `gorm:"type:text"`
+	Id       int    `json:"id"`
+	Name     string `gorm:"size:100;not null" json:"name"`
+	User     string `gorm:"size:128;not null" json:"user"`
+	Addr     string `gorm:"size:128;not null" json:"addr"`
+	Port     int    `gorm:"default:22" json:"port"`
+	PassWord string `gorm:"size:128;not null" json:"-"`
+	KeyFile  string `gorm:"type:text" json:"-"`
 
-	Status bool `gorm:"default:false"`
+	Status bool `gorm:"default:false" json:"status"`
 
-	GroupId int
-	Group   Group    `gorm:"constraint:OnDelete:SET NULL;"`
-	Tags    []Tag    `gorm:"many2many:host_tag"`
-	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;"`
+	GroupId int      `json:"group_id"`
+	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
+	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
+	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 func GetHostById(id int) (*Host, error) {

@@ -1,11 +1,11 @@
 package models
 
 type Group struct {
-	Id     int
-	Name   string `gorm:"size:256;not null"`
-	Mode   int    `gorm:"default:0;not null"` //0.主机模式, 1.其他匹配模式主机不生效
-	Host   []Host
-	Params string
+	Id     int    `json:"id"`
+	Name   string `gorm:"size:256;not null" json:"name"`
+	Mode   int    `gorm:"default:0;not null" json:"mode"` //0.主机模式, 1.其他匹配模式主机不生效
+	Host   []Host `json:"-"`
+	Params string `json:"params"`
 }
 
 func GetAllGroup() ([]*Group, error) {

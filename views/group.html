@@ -185,11 +185,11 @@
             function callBack(data) {
                 data = data.data;
                 if (t === "tag") {
-                    $("#tagName").val(data.Name);
+                    $("#tagName").val(data.name);
                 }else {
-                    $("#groupName").val(data.Name);
-                    $("#groupMode").val(data.Mode);
-                    $("#groupParams").val(data.Params);
+                    $("#groupName").val(data.name);
+                    $("#groupMode").val(data.mode);
+                    $("#groupParams").val(data.params);
                 }
                 layui.form.render();
 

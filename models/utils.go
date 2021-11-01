@@ -17,17 +17,17 @@ import (
 )
 
 type Result struct {
-	Status   bool
-	HostId   int
-	HostName string
-	Msg      string
+	Status   bool   `json:"status"`
+	HostId   int    `json:"host_id"`
+	HostName string `json:"hostname"`
+	Msg      string `json:"msg"`
 }
 
 type FileInfo struct {
-	Name    string
-	ModTime time.Time
-	Size    int64
-	IsDir   bool
+	Name    string    `json:"name"`
+	ModTime time.Time `json:"mod_time"`
+	Size    int64     `json:"size"`
+	IsDir   bool      `json:"is_dir"`
 }
 
 type ExportData struct {

@@ -1,7 +1,7 @@
 package models
 
 type Tunnel struct {
-	Id          int
+	Id          int    `json:"id"`
 	Mode        string `gorm:"size:64" json:"mode"`
 	Source      string `gorm:"size:128;not null" json:"source"`
 	Destination string `gorm:"size:128;not null" json:"destination"`

@@ -1,9 +1,9 @@
 package models
 
 type Tag struct {
-	Id    int
-	Name  string `gorm:"size:100;not null;unique"`
-	Hosts []Host `gorm:"many2many:host_tag;"`
+	Id    int    `json:"id"`
+	Name  string `gorm:"size:100;not null;unique" json:"name"`
+	Hosts []Host `gorm:"many2many:host_tag;" json:"-"`
 }
 
 func GetAllTag() ([]*Tag, error) {

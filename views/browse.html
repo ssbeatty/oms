@@ -157,11 +157,11 @@
                 if (data.data !== null) {
                     for(var index=0;index < data.data.length;index++){
                         var i = data.data[index];
-                        var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
-                        var tagStr ="<tr><td>"+ i.Size +"</td>" +
-                            "<td>"+ i.ModTime +"</td>" +
-                            "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td>" +
-                            "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.Name + "\")'>删除</a></td>" +
+                        var addr = !i.is_dir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
+                        var tagStr ="<tr><td>"+ i.size +"</td>" +
+                            "<td>"+ i.mod_time +"</td>" +
+                            "<td><a " + addr + " onclick='browseFunc(\"" + path + i.name + "\")' class=\"mButton\">" + i.name + "</a></td>" +
+                            "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.name + "\")'>删除</a></td>" +
                             "</tr>";
                         $("#fileList").append(tagStr);
                     }
@@ -230,11 +230,11 @@
                 if (data.data !== null) {
                     for(var index=0;index < data.data.length;index++){
                         var i = data.data[index];
-                        var addr = !i.IsDir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.Name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
-                        var tagStr ="<tr><td>"+ i.Size +"</td>" +
-                            "<td>"+ i.ModTime +"</td>" +
-                            "<td><a " + addr + " onclick='browseFunc(\"" + path + i.Name + "\")' class=\"mButton\">" + i.Name + "</a></td>" +
-                            "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.Name + "\")'>删除</a></td>" +
+                        var addr = !i.is_dir ? "href=\"/tools/download?id="+hostId+"&path="+path+i.name + "\" target=\"_blank\" class=\'mButton2\' onclick='' " : "";
+                        var tagStr ="<tr><td>"+ i.size +"</td>" +
+                            "<td>"+ i.mod_time +"</td>" +
+                            "<td><a " + addr + " onclick='browseFunc(\"" + path + i.name + "\")' class=\"mButton\">" + i.name + "</a></td>" +
+                            "<td><a class=\"mButton2\" onclick='deleteFunc(\"" + path + i.name + "\")'>删除</a></td>" +
                             "</tr>";
                         $("#fileList").append(tagStr);
                     }

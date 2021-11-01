@@ -147,17 +147,17 @@
             });
             function callBack(data) {
                 data = data.data;
-                $("#hostname").val(data.Name);
-                $("#addr").val(data.Addr);
-                $("#port").val(data.Port);
-                $("#user").val(data.User);
-                $("#password").val(data.PassWord);
-                $("#group").val(data.Group.Id);
-                if (data.Tags != null) {
-                    for (var j = 0; j < data.Tags.length; j++) {
+                $("#hostname").val(data.name);
+                $("#addr").val(data.addr);
+                $("#port").val(data.port);
+                $("#user").val(data.user);
+                $("#password").val(data.password);
+                $("#group").val(data.group.id);
+                if (data.tags != null) {
+                    for (var j = 0; j < data.tags.length; j++) {
                         var unitTypeCheckbox = $('input[type=checkbox]');
                         for (var i = 0; i < unitTypeCheckbox.length; i++) {
-                            if (unitTypeCheckbox[i].name == data.Tags[j].Id) {
+                            if (unitTypeCheckbox[i].name == data.tags[j].Id) {
                                 unitTypeCheckbox[i].checked = true;
                             }
                         }

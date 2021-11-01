@@ -177,11 +177,13 @@ func NewClientWithSftp(host string, port int, user string, password string, KeyB
 }
 
 func (c *Client) NewSftpClient() error {
-	cli, err := sftp.NewClient(c.sshClient)
-	if err != nil {
-		return err
+	if c.sftpClient == nil {
+		cli, err := sftp.NewClient(c.sshClient)
+		if err != nil {
+			return err
+		}
+		c.sftpClient = cli
 	}
-	c.sftpClient = cli
 	return nil
 }
 

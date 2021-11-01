@@ -117,6 +117,8 @@ func DownLoadFile(c *gin.Context) {
 		return
 	}
 	file := models.DownloadFile(id, path)
+	defer file.Close()
+
 	if file != nil {
 		fh, err := file.Stat()
 		if err != nil {

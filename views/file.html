@@ -100,7 +100,7 @@
                     $("#dId").empty();
                     $("#dId").append(new Option("请选择" + zhMap[_dType],""));
                     $.each(data.data, function(index,item){
-                        $("#dId").append(new Option(item.Name,item.Id));
+                        $("#dId").append(new Option(item.name,item.id));
                     });
                     layui.form.render("select");
                 }
@@ -123,7 +123,7 @@
                     $("#dId").empty();
                     $("#dId").append(new Option("请选择" + zhMap[dType], ""));
                     $.each(data.data, function (index, item) {
-                        $("#dId").append(new Option(item.Name, item.Id));
+                        $("#dId").append(new Option(item.name, item.id));
                     });
                     $("#dType").val(dType);
                     $("#dId").val(dId);
@@ -148,23 +148,6 @@
             });
             function callBack(data) {
                 $(".code div").remove();
-                if (data != null) {
-                    for(let i in data.data){
-                        let item = data.data[i];
-                        var reg = new RegExp('\n', 'g');
-                        var tagStr = "        <div style=\"margin-top: 1em\">\n" +
-                            "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
-                            "            <p class=\"hMsg\">" + item.Msg.replace(reg, '<br/>') + "</p>\n" +
-                            "        </div>";
-                        $(".code").append(tagStr);
-                    }
-                }else {
-                    var tagStr = "        <div style=\"margin-top: 1em\">\n" +
-                        "            <h4 class=\"hName\">结果为空</h4>\n" +
-                        "        </div>";
-                    $(".code").append(tagStr);
-                }
-
             }
         })
 

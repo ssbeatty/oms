@@ -96,7 +96,7 @@
                     $("#dId").empty();
                     $("#dId").append(new Option("请选择" + zhMap[dType], ""));
                     $.each(data.data, function (index, item) {
-                        $("#dId").append(new Option(item.Name, item.Id));
+                        $("#dId").append(new Option(item.name, item.id));
                     });
                     $("#dType").val(dType);
                     $("#dId").val(dId);
@@ -123,8 +123,8 @@
                     let item = data.data[i];
                     var reg = new RegExp('\n', 'g');
                     var tagStr = "        <div style=\"margin-top: 1em\">\n" +
-                        "            <h4 class=\"hName\">"+ item.HostName +":</h4>\n" +
-                        "            <p class=\"hMsg\">" + item.Msg.replace(reg, '<br/>') + "</p>\n" +
+                        "            <h4 class=\"hName\">"+ item.hostname +":</h4>\n" +
+                        "            <p class=\"hMsg\">" + item.msg.replace(reg, '<br/>') + "</p>\n" +
                         "        </div>";
                     $(".code").append(tagStr);
                 }
@@ -145,7 +145,7 @@
                     $("#dId").empty();
                     $("#dId").append(new Option("请选择" + zhMap[_dType],""));
                     $.each(data.data, function(index,item){
-                        $("#dId").append(new Option(item.Name,item.Id));
+                        $("#dId").append(new Option(item.name,item.id));
                     });
                     layui.form.render("select");
                 }
