@@ -132,6 +132,9 @@ func (s *SSHTunnel) forward(localConn net.Conn) {
 		return
 	}
 
+	defer remoteConn.Close()
+	defer localConn.Close()
+
 	copyConn := func(writer, reader net.Conn) {
 		_, err := io.Copy(writer, reader)
 		if errors.Is(err, io.EOF) {
@@ -141,4 +144,7 @@ func (s *SSHTunnel) forward(localConn net.Conn) {
 	// close when EOF
 	go copyConn(localConn, remoteConn)
 	go copyConn(remoteConn, localConn)
+
+	log.Debug("new conn forward success.")
+	<-s.closer
 }
