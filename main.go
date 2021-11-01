@@ -4,6 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	_ "oms/conf"
 	"oms/pkg/schedule"
+	_ "oms/pkg/tunnel"
 	"oms/routers"
 )
 

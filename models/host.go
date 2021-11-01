@@ -20,8 +20,9 @@ type Host struct {
 	Status bool `gorm:"default:false"`
 
 	GroupId int
-	Group   Group `gorm:"constraint:OnDelete:SET NULL;"`
-	Tags    []Tag `gorm:"many2many:host_tag"`
+	Group   Group    `gorm:"constraint:OnDelete:SET NULL;"`
+	Tags    []Tag    `gorm:"many2many:host_tag"`
+	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;"`
 }
 
 func GetHostById(id int) (*Host, error) {
