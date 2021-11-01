@@ -8,7 +8,7 @@ type Tunnel struct {
 	Status      bool   `json:"status"`
 	ErrorMsg    string `gorm:"size:128" json:"error_msg"`
 	HostId      int    `json:"host_id"`
-	Host        Host
+	Host        Host   `json:"-"`
 }
 
 func GetAllTunnel() ([]*Tunnel, error) {
@@ -48,7 +48,7 @@ func InsertTunnel(mode, src, dest string, host *Host) (*Tunnel, error) {
 		Destination: dest,
 		HostId:      host.Id,
 	}
-	err := db.Create(&tunnel).Error
+	err := db.Preload("Host").Create(&tunnel).Error
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func UpdateTunnel(id int, mode, src, dest string) (*Tunnel, error) {
 	if dest != "" {
 		tunnel.Destination = dest
 	}
-	err = db.Save(&tunnel).Error
+	err = db.Preload("Host").Save(&tunnel).Error
 	if err != nil {
 		return nil, err
 	}

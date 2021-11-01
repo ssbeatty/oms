@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"oms/models"
+	Tunnel "oms/pkg/tunnel"
 	"strconv"
 )
 
@@ -27,6 +28,7 @@ func generateResponsePayload(code string, msg string, data interface{}) Response
 }
 
 // api for table host
+
 func GetHosts(c *gin.Context) {
 	hosts, err := models.GetAllHost()
 	if err != nil {
@@ -201,6 +203,7 @@ func DeleteHost(c *gin.Context) {
 }
 
 // api for table group
+
 func GetGroups(c *gin.Context) {
 	groups, err := models.GetAllGroup()
 	if err != nil {
@@ -316,6 +319,7 @@ func DeleteGroup(c *gin.Context) {
 }
 
 // api for table tag
+
 func GetTags(c *gin.Context) {
 	tags, err := models.GetAllTag()
 	if err != nil {
@@ -408,6 +412,155 @@ func DeleteTag(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
+}
+
+// api for table tunnel
+
+func GetTunnels(c *gin.Context) {
+	tunnels, err := models.GetAllTunnel()
+	if err != nil {
+		log.Errorf("GetTunnels error when GetAllTunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get tunnels", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnels)
+	c.JSON(http.StatusOK, data)
+}
+
+func GetOneTunnel(c *gin.Context) {
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("GetOneTunnel error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	tunnel, err := models.GetTunnelById(id)
+	if err != nil {
+		log.Errorf("GetOneTunnel error when GetTunnelById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnel)
+	c.JSON(http.StatusOK, data)
+}
+
+func PostTunnel(c *gin.Context) {
+	mode := c.PostForm("mode")
+	src := c.PostForm("src")
+	if src == "" {
+		data := generateResponsePayload(HttpStatusError, "src can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	dest := c.PostForm("dest")
+	if dest == "" {
+		data := generateResponsePayload(HttpStatusError, "dest can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	hostIdRaw := c.PostForm("host_id")
+	if dest == "" {
+		data := generateResponsePayload(HttpStatusError, "host_id can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	hostId, err := strconv.Atoi(hostIdRaw)
+	if err != nil {
+		log.Errorf("PostTunnel error when Atoi idStr, idRaw: %s ,err: %v", hostIdRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		log.Errorf("PostTunnel error get host, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get host by id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	tunnel, err := models.InsertTunnel(mode, src, dest, host)
+	if err != nil {
+		log.Errorf("PostTunnel error when InsertTunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not create tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = Tunnel.DefaultManager.AddTunnel(tunnel, host)
+	if err != nil {
+		log.Errorf("PostTunnel error when add tunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not add tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnel)
+	c.JSON(http.StatusOK, data)
+}
+
+func PutTunnel(c *gin.Context) {
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("PutTunnel error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	mode := c.PostForm("mode")
+	src := c.PostForm("src")
+	dest := c.PostForm("dest")
+	tunnel, err := models.UpdateTunnel(id, mode, src, dest)
+	if err != nil {
+		log.Errorf("PutTunnel error when UpdateTunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not update tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	host, err := models.GetHostById(tunnel.HostId)
+	if err != nil {
+		log.Errorf("PostTunnel error get host, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get host by id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	Tunnel.DefaultManager.RemoveTunnel(tunnel.Id)
+	err = Tunnel.DefaultManager.AddTunnel(tunnel, host)
+	if err != nil {
+		log.Errorf("PutTunnel error when recreate tunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not recreate tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnel)
+	c.JSON(http.StatusOK, data)
+}
+
+func DeleteTunnel(c *gin.Context) {
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("PutTag error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = models.DeleteTunnelById(id)
+	if err != nil {
+		log.Errorf("DeleteTunnel error when DeleteTunnelById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not delete tunnel", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	Tunnel.DefaultManager.RemoveTunnel(id)
+
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	c.JSON(http.StatusOK, data)
 }

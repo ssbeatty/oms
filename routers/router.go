@@ -86,6 +86,12 @@ func InitGinServer() {
 		apiV1.POST("/tag", v1.PostTag)
 		apiV1.PUT("/tag", v1.PutTag)
 		apiV1.DELETE("/tag/:id", v1.DeleteTag)
+
+		apiV1.GET("/tunnel", v1.GetTunnels)
+		apiV1.GET("/tunnel/:id", v1.GetOneTunnel)
+		apiV1.POST("/tunnel", v1.PostTunnel)
+		apiV1.PUT("/tunnel", v1.PutTunnel)
+		apiV1.DELETE("/tunnel/:id", v1.DeleteTunnel)
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)

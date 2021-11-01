@@ -36,7 +36,7 @@ func NewManager() *Manager {
 
 func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
 	for _, modelTunnel := range modelTunnels {
-		err := m.AddTunnel(modelTunnel)
+		err := m.AddTunnel(modelTunnel, &modelTunnel.Host)
 		if err != nil {
 			log.Errorf("error when add tunnel, err: %v", err)
 		}
@@ -84,8 +84,7 @@ func (m *Manager) Close() {
 	close(m.closer)
 }
 
-func (m *Manager) AddTunnel(modelTunnel *models.Tunnel) error {
-	host := modelTunnel.Host
+func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
@@ -98,8 +97,8 @@ func (m *Manager) AddTunnel(modelTunnel *models.Tunnel) error {
 	return nil
 }
 
-func (m *Manager) RemoveTunnel(modelTunnel *models.Tunnel) {
-	val, ok := m.tunnels.Load(modelTunnel.Id)
+func (m *Manager) RemoveTunnel(id int) {
+	val, ok := m.tunnels.Load(id)
 	if !ok {
 		return
 	}
@@ -107,6 +106,5 @@ func (m *Manager) RemoveTunnel(modelTunnel *models.Tunnel) {
 	realTunnel := val.(*SSHTunnel)
 	defer realTunnel.Close()
 
-	m.tunnels.Delete(modelTunnel.Id)
-
+	m.tunnels.Delete(id)
 }
