@@ -73,6 +73,12 @@ func (s *Schedule) IsExists(jid string) bool {
 	return exist
 }
 
+func (s *Schedule) Remove(id string) {
+	if s.IsExists(id) {
+		s.inner.Remove(s.ids[id])
+	}
+}
+
 func NewSchedule() *Schedule {
 	return &Schedule{
 		inner: cron.New(),
