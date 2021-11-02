@@ -5,6 +5,18 @@ import (
 	"oms/models"
 )
 
+var taskService *Schedule
+
+func init() {
+	// add init tasks
+	taskService = NewSchedule()
+	taskService.Start()
+
+	if err := taskService.AddByFunc("loop-status", "*/5 * * * *", GetHostStatus); err != nil {
+		log.Println("init loop-status error!", err)
+	}
+}
+
 func GetHostStatus() {
 	log.Println("======================Task GetHostStatus start======================")
 	hosts, err := models.GetAllHost()
