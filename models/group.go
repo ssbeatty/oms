@@ -64,7 +64,7 @@ func UpdateGroup(id int, name string, params string, mode int) (*Group, error) {
 	if params != "" {
 		group.Params = params
 	}
-	if mode > 0 {
+	if mode >= 0 {
 		group.Mode = mode
 	}
 	err = db.Save(&group).Error

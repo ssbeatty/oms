@@ -263,6 +263,8 @@ func PostGroup(c *gin.Context) {
 }
 
 func PutGroup(c *gin.Context) {
+	var mode int
+
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
@@ -272,19 +274,12 @@ func PutGroup(c *gin.Context) {
 		return
 	}
 	name := c.PostForm("name")
-	if name == "" {
-		data := generateResponsePayload(HttpStatusError, "name can not be empty", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
 	params := c.PostForm("params")
-
-	mode, err := strconv.Atoi(c.PostForm("mode"))
+	modeRaw, err := strconv.Atoi(c.PostForm("mode"))
 	if err != nil {
-		log.Errorf("PutGroup error when Atoi mode, mode: %d, err: %v", mode, err)
-		data := generateResponsePayload(HttpStatusError, "can not parse param mode", nil)
-		c.JSON(http.StatusOK, data)
-		return
+		mode = -1
+	} else {
+		mode = modeRaw
 	}
 
 	group, err := models.UpdateGroup(id, name, params, mode)
