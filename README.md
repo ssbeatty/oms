@@ -1,6 +1,12 @@
 ## 项目简介
 本项目使用gin、gorm和ssh、sftp开发。前端使用的是layui框架。主要用来在网络条件差或者没有其他可用的ssh客户端时做批量任务执行和ssh连接。目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
 
+**API文档**
+
+[markdown](./doc/lv1/API.md)
+
+[swagger](./doc/lv1/swaggerAPI.json)
+
 #### 项目依赖
 https://github.com/gin-gonic/gin
 

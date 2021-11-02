@@ -1,0 +1,1735 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "oms",
+    "version": "last"
+  },
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "host",
+      "description": "ssh主机相关接口"
+    },
+    {
+      "name": "tag",
+      "description": "主机标签相关接口"
+    },
+    {
+      "name": "group",
+      "description": "主机组相关接口"
+    },
+    {
+      "name": "tunnel",
+      "description": "主机隧道相关接口"
+    },
+    {
+      "name": "tools",
+      "description": "工具相关接口"
+    },
+    {
+      "name": "other",
+      "description": "其他接口"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "paths": {
+    "/api/v1/host": {
+      "put": {
+        "tags": [
+          "host"
+        ],
+        "summary": "修改host",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "主机ID",
+            "type": "string"
+          },
+          {
+            "name": "hostname",
+            "in": "formData",
+            "required": false,
+            "description": "主机名",
+            "type": "string"
+          },
+          {
+            "name": "user",
+            "in": "formData",
+            "required": false,
+            "description": "用户名",
+            "type": "string"
+          },
+          {
+            "name": "addr",
+            "in": "formData",
+            "required": false,
+            "description": "主机地址",
+            "type": "string"
+          },
+          {
+            "name": "port",
+            "in": "formData",
+            "required": false,
+            "description": "ssh端口(默认：22)",
+            "type": "string"
+          },
+          {
+            "name": "password",
+            "in": "formData",
+            "required": false,
+            "description": "ssh密码",
+            "type": "string"
+          },
+          {
+            "name": "group",
+            "in": "formData",
+            "required": false,
+            "description": "主机组ID",
+            "type": "string"
+          },
+          {
+            "name": "keyFile",
+            "in": "formData",
+            "required": false,
+            "description": "秘钥文件",
+            "type": "file"
+          },
+          {
+            "name": "tags",
+            "in": "formData",
+            "required": false,
+            "description": "主机标签集合",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "string"
+                    },
+                    "addr": {
+                      "type": "string"
+                    },
+                    "port": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "group_id": {
+                      "type": "number"
+                    },
+                    "group": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "number"
+                        },
+                        "params": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "tags": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "host"
+        ],
+        "summary": "新增host",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "hostname",
+            "in": "formData",
+            "required": true,
+            "description": "主机名",
+            "type": "string"
+          },
+          {
+            "name": "user",
+            "in": "formData",
+            "required": true,
+            "description": "用户名",
+            "type": "string"
+          },
+          {
+            "name": "addr",
+            "in": "formData",
+            "required": true,
+            "description": "主机地址",
+            "type": "string"
+          },
+          {
+            "name": "port",
+            "in": "formData",
+            "required": true,
+            "description": "ssh端口(默认：22)",
+            "type": "string"
+          },
+          {
+            "name": "group",
+            "in": "formData",
+            "required": true,
+            "description": "主机组ID",
+            "type": "string"
+          },
+          {
+            "name": "password",
+            "in": "formData",
+            "required": true,
+            "description": "ssh密码",
+            "type": "string"
+          },
+          {
+            "name": "keyFile",
+            "in": "formData",
+            "required": false,
+            "description": "ssh秘钥",
+            "type": "file"
+          },
+          {
+            "name": "tags",
+            "in": "formData",
+            "required": false,
+            "description": "tag的id集合",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "string"
+                    },
+                    "addr": {
+                      "type": "string"
+                    },
+                    "port": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "group_id": {
+                      "type": "number"
+                    },
+                    "group": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "number"
+                        },
+                        "params": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "host"
+        ],
+        "summary": "获取所有host",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "user": {
+                        "type": "string"
+                      },
+                      "addr": {
+                        "type": "string"
+                      },
+                      "port": {
+                        "type": "number"
+                      },
+                      "status": {
+                        "type": "boolean"
+                      },
+                      "group_id": {
+                        "type": "number"
+                      },
+                      "group": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "mode": {
+                            "type": "number"
+                          },
+                          "params": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "number"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "user",
+                      "addr",
+                      "port",
+                      "status",
+                      "group_id",
+                      "group",
+                      "tags"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/host/:id": {
+      "delete": {
+        "tags": [
+          "host"
+        ],
+        "summary": "删除host",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "主机ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "host"
+        ],
+        "summary": "通过ID获取host",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "主机的ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "string"
+                    },
+                    "addr": {
+                      "type": "string"
+                    },
+                    "port": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "group_id": {
+                      "type": "number"
+                    },
+                    "group": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "number"
+                        },
+                        "params": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tag": {
+      "put": {
+        "tags": [
+          "tag"
+        ],
+        "summary": "修改tag",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "标签ID",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": false,
+            "description": "标签名",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tag"
+        ],
+        "summary": "新增tag",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "description": "标签名",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "tag"
+        ],
+        "summary": "获取所有tag",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tag/:id": {
+      "delete": {
+        "tags": [
+          "tag"
+        ],
+        "summary": "删除tag",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "标签ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "tag"
+        ],
+        "summary": "通过ID获取tag",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "标签ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/group": {
+      "get": {
+        "tags": [
+          "group"
+        ],
+        "summary": "获取所有group",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "mode": {
+                        "type": "number"
+                      },
+                      "params": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "group"
+        ],
+        "summary": "新增group",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "description": "组名",
+            "type": "string"
+          },
+          {
+            "name": "mode",
+            "in": "formData",
+            "required": true,
+            "description": "组模式 0.主机模式, 1.其他匹配模式主机不生效",
+            "type": "string"
+          },
+          {
+            "name": "params",
+            "in": "formData",
+            "required": false,
+            "description": "其他匹配模式参数",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "number"
+                    },
+                    "params": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "group"
+        ],
+        "summary": "修改group",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "组ID",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": false,
+            "description": "组名",
+            "type": "string"
+          },
+          {
+            "name": "mode",
+            "in": "formData",
+            "required": false,
+            "description": "组模式",
+            "type": "string"
+          },
+          {
+            "name": "params",
+            "in": "formData",
+            "required": false,
+            "description": "组匹配参数",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "number"
+                    },
+                    "params": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/group/:id": {
+      "get": {
+        "tags": [
+          "group"
+        ],
+        "summary": "通过ID获取group",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "组ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "number"
+                    },
+                    "params": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "group"
+        ],
+        "summary": "删除group",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "组ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tunnel": {
+      "put": {
+        "tags": [
+          "tunnel"
+        ],
+        "summary": "修改tunnel",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "隧道ID",
+            "type": "string"
+          },
+          {
+            "name": "mode",
+            "in": "formData",
+            "required": false,
+            "description": "隧道模式 local或remote",
+            "type": "string"
+          },
+          {
+            "name": "src",
+            "in": "formData",
+            "required": false,
+            "description": "目标地址",
+            "type": "string"
+          },
+          {
+            "name": "dest",
+            "in": "formData",
+            "required": false,
+            "description": "监听地址",
+            "type": "string"
+          },
+          {
+            "name": "host_id",
+            "in": "formData",
+            "required": true,
+            "description": "主机ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "error_msg": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tunnel"
+        ],
+        "summary": "新增tunnel",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "formData",
+            "required": true,
+            "description": "隧道模式",
+            "type": "string"
+          },
+          {
+            "name": "src",
+            "in": "formData",
+            "required": true,
+            "description": "目标地址",
+            "type": "string"
+          },
+          {
+            "name": "dest",
+            "in": "formData",
+            "required": true,
+            "description": "监听地址",
+            "type": "string"
+          },
+          {
+            "name": "host_id",
+            "in": "formData",
+            "required": true,
+            "description": "主机ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "error_msg": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "tunnel"
+        ],
+        "summary": "获取所有tunnel",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "mode": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "type": "string"
+                      },
+                      "destination": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "boolean"
+                      },
+                      "error_msg": {
+                        "type": "string"
+                      },
+                      "host_id": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tunnel/:id": {
+      "delete": {
+        "tags": [
+          "tunnel"
+        ],
+        "summary": "删除tunnel",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "隧道ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "tunnel"
+        ],
+        "summary": "通过ID获取tunnel",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "隧道ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "boolean"
+                    },
+                    "error_msg": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/download": {
+      "get": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "下载文件",
+        "description": "返回文件流",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "host的ID",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "文件路径",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "object",
+              "title": "empty object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    },
+    "/tools/delete": {
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "删除文件",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "host的ID",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "formData",
+            "required": true,
+            "description": "文件路径",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/cmd": {
+      "get": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "命令分发",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "host | group | tag 的id",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "id对应的类型",
+            "type": "string"
+          },
+          {
+            "name": "cmd",
+            "in": "query",
+            "required": true,
+            "description": "要执行的命令",
+            "type": "string"
+          },
+          {
+            "name": "sudo",
+            "in": "query",
+            "required": false,
+            "description": "是否sudo",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "boolean"
+                      },
+                      "host_id": {
+                        "type": "number"
+                      },
+                      "hostname": {
+                        "type": "string"
+                      },
+                      "msg": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/upload_file": {
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "文件分发",
+        "description": "上传后通过websocket查询结果",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "host | group | tag的id",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "formData",
+            "required": true,
+            "description": "id的类型",
+            "type": "string"
+          },
+          {
+            "name": "remote",
+            "in": "formData",
+            "required": true,
+            "description": "远端路径",
+            "type": "string"
+          },
+          {
+            "name": "files",
+            "in": "formData",
+            "required": true,
+            "description": "上传的文件 多复选",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/browse": {
+      "get": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "浏览文件",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "host的ID",
+            "type": "string"
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "远端路径",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "mod_time": {
+                        "type": "string"
+                      },
+                      "size": {
+                        "type": "number"
+                      },
+                      "is_dir": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "mod_time",
+                      "size",
+                      "is_dir"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/import": {
+      "post": {
+        "tags": [
+          "other"
+        ],
+        "summary": "数据库导入",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "dataFile",
+            "in": "formData",
+            "required": true,
+            "description": "导入的文件",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "object",
+              "title": "empty object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    },
+    "/tools/export": {
+      "get": {
+        "tags": [
+          "other"
+        ],
+        "summary": "数据库导出",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "object",
+              "title": "empty object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}
