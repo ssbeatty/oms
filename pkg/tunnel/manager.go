@@ -36,7 +36,7 @@ func NewManager() *Manager {
 
 func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
 	for _, modelTunnel := range modelTunnels {
-		err := m.AddTunnel(modelTunnel, &modelTunnel.Host)
+		err := m.addTunnel(modelTunnel, &modelTunnel.Host)
 		if err != nil {
 			log.Errorf("error when add tunnel, err: %v", err)
 		}
@@ -51,7 +51,10 @@ func (m *Manager) updateTunnelStatus() {
 		_, err := models.UpdateTunnelStatus(id, realTunnel.Status(), realTunnel.GetErrorMsg())
 		if err != nil {
 			log.Errorf("error when update model tunnel status")
-			return false
+			// 如果数据没有这条数据 停止隧道
+			if !models.ExistedTunnel(id) {
+				m.RemoveTunnel(id)
+			}
 		}
 		return true
 	})
@@ -84,7 +87,7 @@ func (m *Manager) Close() {
 	close(m.closer)
 }
 
-func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
+func (m *Manager) addTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
 	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
@@ -107,4 +110,20 @@ func (m *Manager) RemoveTunnel(id int) {
 	defer realTunnel.Close()
 
 	m.tunnels.Delete(id)
+}
+
+func (m *Manager) AddTunnel(hostId int, mode, src, dest string) (*models.Tunnel, error) {
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return nil, err
+	}
+	tunnel, err := models.InsertTunnel(mode, src, dest, host)
+	if err != nil {
+		return nil, err
+	}
+	err = DefaultManager.addTunnel(tunnel, host)
+	if err != nil {
+		return nil, err
+	}
+	return tunnel, nil
 }

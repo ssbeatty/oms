@@ -472,24 +472,10 @@ func PostTunnel(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	host, err := models.GetHostById(hostId)
+	tunnel, err := Tunnel.DefaultManager.AddTunnel(hostId, mode, src, dest)
 	if err != nil {
-		log.Errorf("PostTunnel error get host, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not get host by id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	tunnel, err := models.InsertTunnel(mode, src, dest, host)
-	if err != nil {
-		log.Errorf("PostTunnel error when InsertTunnel, err: %v", err)
+		log.Errorf("error when add tunnel, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create tunnel", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	err = Tunnel.DefaultManager.AddTunnel(tunnel, host)
-	if err != nil {
-		log.Errorf("PostTunnel error when add tunnel, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not add tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -518,18 +504,12 @@ func PutTunnel(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	host, err := models.GetHostById(tunnel.HostId)
-	if err != nil {
-		log.Errorf("PostTunnel error get host, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not get host by id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
+	// 先删除隧道再重建
 	Tunnel.DefaultManager.RemoveTunnel(tunnel.Id)
-	err = Tunnel.DefaultManager.AddTunnel(tunnel, host)
+	tunnel, err = Tunnel.DefaultManager.AddTunnel(tunnel.HostId, mode, src, dest)
 	if err != nil {
-		log.Errorf("PutTunnel error when recreate tunnel, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not recreate tunnel", nil)
+		log.Errorf("error when add tunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not create tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}

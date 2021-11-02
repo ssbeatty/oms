@@ -5,7 +5,7 @@ type Tunnel struct {
 	Mode        string `gorm:"size:64" json:"mode"`
 	Source      string `gorm:"size:128;not null" json:"source"`
 	Destination string `gorm:"size:128;not null" json:"destination"`
-	Status      bool   `json:"status"`
+	Status      int    `json:"status;default:0"`
 	ErrorMsg    string `gorm:"size:128" json:"error_msg"`
 	HostId      int    `json:"host_id"`
 	Host        Host   `json:"-"`
@@ -29,13 +29,13 @@ func GetTunnelById(id int) (*Tunnel, error) {
 	return &tunnel, nil
 }
 
-func ExistedTunnel(name string) bool {
-	var tunnels []*Tunnel
-	err := db.Where("name = ?", name).Find(&tunnels).Error
+func ExistedTunnel(id int) bool {
+	var tunnel *Tunnel
+	err := db.Where("id = ?", id).First(&tunnel).Error
 	if err != nil {
 		return false
 	}
-	if len(tunnels) == 0 {
+	if tunnel == nil {
 		return false
 	}
 	return true
@@ -83,7 +83,9 @@ func UpdateTunnelStatus(id int, status bool, msg string) (*Tunnel, error) {
 	if err != nil {
 		return nil, err
 	}
-	tunnel.Status = status
+	if status {
+		tunnel.Status = 1
+	}
 
 	if msg != "" {
 		tunnel.ErrorMsg = msg
