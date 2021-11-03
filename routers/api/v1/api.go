@@ -2,7 +2,9 @@ package v1
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -23,6 +25,8 @@ type Response struct {
 	Msg  string      `json:"msg"`
 	Data interface{} `json:"data,omitempty"`
 }
+
+var parser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 
 func generateResponsePayload(code string, msg string, data interface{}) Response {
 	return Response{code, msg, data}
@@ -577,10 +581,28 @@ func GetOneJob(c *gin.Context) {
 
 func PostJob(c *gin.Context) {
 	name := c.PostForm("name")
-	spec := c.PostForm("spec")
+	if name == "" {
+		data := generateResponsePayload(HttpStatusError, "name can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	dType := c.PostForm("type")
 	if dType == "" {
 		data := generateResponsePayload(HttpStatusError, "type can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	spec := c.PostForm("spec")
+	if dType == string(schedule.JobTypeCron) && spec == "" {
+		data := generateResponsePayload(HttpStatusError, "spec can not be empty if type is cron", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	_, err := parser.Parse(spec)
+	if err != nil {
+		msg := fmt.Sprintf("got a error spec, err: %s", err.Error())
+		log.Error(msg)
+		data := generateResponsePayload(HttpStatusError, msg, nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -599,7 +621,7 @@ func PostJob(c *gin.Context) {
 	hostId, err := strconv.Atoi(hostIdRaw)
 	if err != nil {
 		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", hostIdRaw, err)
-		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		data := generateResponsePayload(HttpStatusError, "can not parse param host id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -617,7 +639,12 @@ func PostJob(c *gin.Context) {
 		return
 	}
 
-	schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
+	err = schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
@@ -634,23 +661,35 @@ func PutJob(c *gin.Context) {
 	}
 	name := c.PostForm("name")
 	spec := c.PostForm("spec")
+	_, err = parser.Parse(spec)
+	if err != nil && spec != "" {
+		msg := fmt.Sprintf("got a error spec, err: %s", err.Error())
+		log.Error(msg)
+		data := generateResponsePayload(HttpStatusError, msg, nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	dType := c.PostForm("type")
 	cmd := c.PostForm("cmd")
 	job, err := models.UpdateJob(id, name, dType, spec, cmd)
 	if err != nil {
-		log.Errorf("error when add tunnel, err: %v", err)
+		log.Errorf("error when add job, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create job", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	err = schedule.RemoveJob(id)
+	err = schedule.UnRegister(id)
 	if err != nil {
-		log.Errorf("error when RemoveJob, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not delete job", nil)
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
+	err = schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
@@ -692,7 +731,15 @@ func StartJob(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	schedule.StartJob(job)
+	err = schedule.StartJob(job)
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
 }
 
 func StopJob(c *gin.Context) {
@@ -704,5 +751,42 @@ func StopJob(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	schedule.StopJob(id)
+	err = schedule.StopJob(id)
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
+}
+
+func RestartJob(c *gin.Context) {
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	job, err := models.GetJobById(id)
+	if err != nil {
+		log.Errorf("error when GetJobById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	_ = schedule.StopJob(id)
+
+	err = schedule.StartJob(job)
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
 }

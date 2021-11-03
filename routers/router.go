@@ -100,6 +100,7 @@ func InitGinServer() {
 		apiV1.DELETE("/job/:id", v1.DeleteJob)
 		apiV1.POST("/job/start", v1.StartJob)
 		apiV1.POST("/job/stop", v1.StopJob)
+		apiV1.POST("/job/restart", v1.RestartJob)
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)

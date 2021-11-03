@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -144,48 +145,61 @@ func (j *Job) Name() string {
 }
 
 // Register 开始task & 添加到poll
-func Register(id int, job *Job) {
+func Register(id int, job *Job) error {
 	if job.Status() == JobStatusRunning {
 		log.Info("task is running already.")
-		return
+		return errors.New("task is running already")
 	}
 	switch job.Type {
 	case JobTypeCron:
 		err := taskService.AddByJob(job.Name(), job.spec, job)
 		if err != nil {
 			log.Errorf("error when register job, err: %v", err)
-			return
+			return err
 		}
 	case JobTypeTask:
 		go job.Run()
 	}
 
 	TaskPoll.Store(id, job)
+
+	return nil
 }
 
 // UnRegister 关闭task & 从poll删除
-func UnRegister(id int) {
+func UnRegister(id int) error {
 	key, ok := TaskPoll.Load(id)
 	if ok {
 		job := key.(*Job)
 		job.Close()
 		defer TaskPoll.Delete(id)
+	} else {
+		return errors.New("job is stopped already")
 	}
 	log.Infof("un register a job: %d, success", id)
+
+	return nil
 }
 
-func NewJobWithRegister(modelJob *models.Job, status string) {
+func NewJobWithRegister(modelJob *models.Job, status string) error {
 	realJob := NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
 	realJob.status.Store(JobStatus(status))
-	Register(modelJob.Id, realJob)
+	if err := Register(modelJob.Id, realJob); err != nil {
+		return err
+	}
 
 	log.Infof("register a new job, type: %s, name: %s, cmd: %s success", modelJob.Type, modelJob.Name, modelJob.Cmd)
+
+	return nil
 }
 
 func RemoveJob(id int) error {
 	log.Infof("recv singinl to remove job: %d", id)
-	defer UnRegister(id)
-	err := models.DeleteJobById(id)
+	err := UnRegister(id)
+	if err != nil {
+		return err
+	}
+	err = models.DeleteJobById(id)
 	if err != nil {
 		return err
 	}
@@ -193,25 +207,40 @@ func RemoveJob(id int) error {
 	return nil
 }
 
-func StartJob(modelJob *models.Job) {
+func StartJob(modelJob *models.Job) error {
 	log.Infof("recv singinl to start job: %d", modelJob.Id)
 	if key, ok := TaskPoll.Load(modelJob.Id); ok {
 		job := key.(*Job)
 		job.status.Store(JobStatusReady)
-		Register(modelJob.Id, job)
+		err := Register(modelJob.Id, job)
+		if err != nil {
+			return err
+		}
 	} else {
-		NewJobWithRegister(modelJob, string(JobStatusReady))
+		err := NewJobWithRegister(modelJob, string(JobStatusReady))
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func StopJob(id int) {
+func StopJob(id int) error {
 	log.Infof("recv singinl to stop job: %d", id)
-	UnRegister(id)
+	err := UnRegister(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initJobFromModels(modelJobs []*models.Job) {
 	log.Info("init all job without stopped.")
 	for _, modelJob := range modelJobs {
-		NewJobWithRegister(modelJob, modelJob.Status)
+		err := NewJobWithRegister(modelJob, modelJob.Status)
+		if err != nil {
+			log.Errorf("error when register a new job, err: %v", err)
+		}
 	}
 }
