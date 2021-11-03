@@ -20,7 +20,7 @@ const (
 type Response struct {
 	Code string      `json:"code"`
 	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 func generateResponsePayload(code string, msg string, data interface{}) Response {
