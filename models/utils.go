@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
@@ -111,6 +112,7 @@ func ParseHostList(pType string, id int) []*Host {
 	return hosts
 }
 
+// RunCmdOneAsync 搭配RunCmd使用
 func RunCmdOneAsync(host *Host, cmd string, sudo bool, ch chan *Result, wg *sync.WaitGroup) {
 	var msg []byte
 	var result *Result
@@ -139,6 +141,7 @@ func RunCmdOneAsync(host *Host, cmd string, sudo bool, ch chan *Result, wg *sync
 	wg.Done()
 }
 
+// RunCmd 用于http接口
 func RunCmd(hosts []*Host, cmd string, sudo bool) []*Result {
 	var results []*Result
 	channel := make(chan *Result, len(hosts))
@@ -346,4 +349,51 @@ func ImportDbData(marshal []byte) error {
 		}
 	}
 	return nil
+}
+
+// RunCmdWithContext 使用在websocket接口上
+func RunCmdWithContext(host *Host, cmd string, sudo bool, ch chan *Result, ctx context.Context) {
+	var msg []byte
+	var result *Result
+
+	quit := make(chan bool, 1)
+	defer close(quit)
+
+	client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+	session, err := client.NewSessionWithPty(20, 20)
+	if err != nil {
+		log.Errorf("create new session failed, err: %v", err)
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = session.Close()
+			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: "command timeout!"}
+			ch <- result
+		case <-quit:
+			return
+		}
+	}()
+
+	if sudo {
+		msg, err = session.Sudo(cmd, host.PassWord)
+	} else {
+		msg, err = session.Output(cmd)
+	}
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+	} else {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
+	}
+
+	ch <- result
 }

@@ -1,6 +1,7 @@
 package wscontrol
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -17,6 +18,7 @@ const (
 	RequestTypeHost    = "host"
 	RequestTypeGroup   = "group"
 	RequestTypeTag     = "tag"
+	SSHTimeDeadline    = 30 * time.Second
 )
 
 type FTaskResp struct {
@@ -32,6 +34,7 @@ type FTaskResp struct {
 type Request struct {
 	Type string `json:"type"`
 	Id   int    `json:"id"`
+	Cmd  string `json:"cmd"`
 }
 
 type Response struct {
@@ -51,6 +54,31 @@ func (w *WSConnect) InitHandlers() *WSConnect {
 
 func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	log.Infof("handler ssh shell recv a message: %s", msg)
+	req := &Request{}
+	ch := make(chan *models.Result)
+
+	err := json.Unmarshal(msg, req)
+	if err != nil {
+		w.WriteMsg(Response{ErrorCode: -1, Msg: "can not parse payload"})
+		return
+	}
+	hosts := models.ParseHostList(req.Type, req.Id)
+	if len(hosts) == 0 {
+		w.WriteMsg(Response{ErrorCode: 0, Msg: "host empty"})
+		return
+	}
+	for _, host := range hosts {
+		ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(SSHTimeDeadline))
+		// TODO sudo 由host本身管理
+		go models.RunCmdWithContext(host, req.Cmd, true, ch, ctx)
+	}
+
+	for i := 0; i < len(hosts); i++ {
+		res := <-ch
+		w.WriteMsg(Response{ErrorCode: 0, Msg: "success", Data: res})
+	}
+
+	close(ch)
 }
 
 func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
