@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
-	"oms/pkg/cache"
 	"oms/pkg/utils"
 	"os"
 	"strconv"
@@ -23,8 +22,6 @@ const (
 	DefaultTimeout = 30 * time.Second
 	KillSignal     = "0x09"
 )
-
-var SSHClientPoll *cache.Cache
 
 type Config struct {
 	User       string
@@ -43,10 +40,6 @@ type Client struct {
 type Session struct {
 	sshSession *ssh.Session
 	stdin      io.WriteCloser
-}
-
-func init() {
-	SSHClientPoll = cache.NewCache(1000)
 }
 
 /*
@@ -90,17 +83,18 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 	return cli, nil
 }
 
-func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool) {
+func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool, logger *log.Logger) {
 	go func(c string) {
 		err := s.sshSession.Run(c)
 		if err != nil {
-			log.Errorf("RunTaskWithQuit run task error, %v", err)
+			logger.Errorf("RunTaskWithQuit run task error, %v", err)
 		}
 	}(cmd)
 
 	select {
 	case <-quitCh:
 		// 理论上pty下不需要kill
+		logger.Info("task quit.")
 		if err := s.Kill(); err != nil {
 			return
 		}
@@ -161,9 +155,9 @@ func (c *Client) GetSSHClient() *ssh.Client {
 
 func (s *Session) Kill() error {
 	// kill signal
-	//if _, err := s.Write([]byte(KillSignal)); err != nil {
-	//	return err
-	//}
+	if _, err := s.Write([]byte(KillSignal)); err != nil {
+		return err
+	}
 	return nil
 }
 

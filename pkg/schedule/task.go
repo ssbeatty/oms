@@ -3,11 +3,17 @@ package schedule
 import (
 	log "github.com/sirupsen/logrus"
 	"oms/models"
+	"os"
+	"sync"
 )
 
 var taskService *Schedule
+var TaskPoll *sync.Map
+var onceInitJob sync.Once
 
 func init() {
+	TaskPoll = &sync.Map{}
+
 	// add init tasks
 	taskService = NewSchedule()
 	taskService.Start()
@@ -15,6 +21,21 @@ func init() {
 	if err := taskService.AddByFunc("loop-status", "*/5 * * * *", GetHostStatus); err != nil {
 		log.Println("init loop-status error!", err)
 	}
+
+	err := os.MkdirAll(DefaultTmpPath, 0644)
+	if err != nil {
+		log.Errorf("error when make all tmp path, err: %v", err)
+		return
+	}
+
+	onceInitJob.Do(func() {
+		jobs, err := models.GetAllJob()
+		if err != nil {
+			log.Errorf("error when get all job, err: %v", err)
+		}
+		initJobFromModels(jobs)
+	})
+
 }
 
 func GetHostStatus() {

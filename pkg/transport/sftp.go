@@ -9,14 +9,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 )
 
 /*
 变量声明
 */
-
-var CurrentFiles *sync.Map
 
 const (
 	DefaultBlockSize = 1024 * 4
@@ -24,10 +21,6 @@ const (
 	TaskDone         = "done"
 	TaskFailed       = "failed"
 )
-
-func init() {
-	CurrentFiles = &sync.Map{}
-}
 
 /*
 扩展服务

@@ -50,7 +50,7 @@ func (m *Manager) updateTunnelStatus() {
 		realTunnel := value.(*SSHTunnel)
 		_, err := models.UpdateTunnelStatus(id, realTunnel.Status(), realTunnel.GetErrorMsg())
 		if err != nil {
-			log.Errorf("error when update model tunnel status")
+			log.Errorf("error when update model tunnel status, err: %v", err)
 			// 如果数据没有这条数据 停止隧道
 			if !models.ExistedTunnel(id) {
 				m.RemoveTunnel(id)
@@ -62,11 +62,12 @@ func (m *Manager) updateTunnelStatus() {
 
 func (m *Manager) Start() {
 	var once sync.Once
-	tunnels, err := models.GetAllTunnel()
-	if err != nil {
-		log.Errorf("error when get all tunnel, err: %v", err)
-	}
+
 	once.Do(func() {
+		tunnels, err := models.GetAllTunnel()
+		if err != nil {
+			log.Errorf("error when get all tunnel, err: %v", err)
+		}
 		m.initTunnelFromModels(tunnels)
 	})
 

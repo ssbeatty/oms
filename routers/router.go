@@ -92,6 +92,14 @@ func InitGinServer() {
 		apiV1.POST("/tunnel", v1.PostTunnel)
 		apiV1.PUT("/tunnel", v1.PutTunnel)
 		apiV1.DELETE("/tunnel/:id", v1.DeleteTunnel)
+
+		apiV1.GET("/job", v1.GetJobs)
+		apiV1.GET("/job/:id", v1.GetOneJob)
+		apiV1.POST("/job", v1.PostJob)
+		apiV1.PUT("/job", v1.PutJob)
+		apiV1.DELETE("/job/:id", v1.DeleteJob)
+		apiV1.POST("/job/start", v1.StartJob)
+		apiV1.POST("/job/stop", v1.StopJob)
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.DefaultConf.AppConf.HttpAddr, conf.DefaultConf.AppConf.HttpPort)

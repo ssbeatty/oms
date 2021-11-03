@@ -23,6 +23,7 @@ type Host struct {
 	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
 	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
 	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
+	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
 }
 
 func GetHostById(id int) (*Host, error) {

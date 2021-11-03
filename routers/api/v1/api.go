@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"oms/models"
+	"oms/pkg/schedule"
 	Tunnel "oms/pkg/tunnel"
 	"strconv"
 )
@@ -460,7 +461,7 @@ func PostTunnel(c *gin.Context) {
 		return
 	}
 	hostIdRaw := c.PostForm("host_id")
-	if dest == "" {
+	if hostIdRaw == "" {
 		data := generateResponsePayload(HttpStatusError, "host_id can not be empty", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -522,14 +523,14 @@ func DeleteTunnel(c *gin.Context) {
 	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		log.Errorf("PutTag error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	err = models.DeleteTunnelById(id)
 	if err != nil {
-		log.Errorf("DeleteTunnel error when DeleteTunnelById, err: %v", err)
+		log.Errorf("error when DeleteTunnelById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not delete tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -538,4 +539,170 @@ func DeleteTunnel(c *gin.Context) {
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	c.JSON(http.StatusOK, data)
+}
+
+// api for table job
+
+func GetJobs(c *gin.Context) {
+	jobs, err := models.GetAllJob()
+	if err != nil {
+		log.Errorf("error when GetAllJob, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get jobs", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, jobs)
+	c.JSON(http.StatusOK, data)
+}
+
+func GetOneJob(c *gin.Context) {
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	job, err := models.GetJobById(id)
+	if err != nil {
+		log.Errorf("error when GetJobById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
+	c.JSON(http.StatusOK, data)
+}
+
+func PostJob(c *gin.Context) {
+	name := c.PostForm("name")
+	spec := c.PostForm("spec")
+	dType := c.PostForm("type")
+	if dType == "" {
+		data := generateResponsePayload(HttpStatusError, "type can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	cmd := c.PostForm("cmd")
+	if cmd == "" {
+		data := generateResponsePayload(HttpStatusError, "cmd can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	hostIdRaw := c.PostForm("host_id")
+	if hostIdRaw == "" {
+		data := generateResponsePayload(HttpStatusError, "host_id can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	hostId, err := strconv.Atoi(hostIdRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", hostIdRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		log.Errorf("error when get host, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get host", nil)
+		c.JSON(http.StatusOK, data)
+	}
+	job, err := models.InsertJob(name, dType, spec, cmd, host)
+	if err != nil {
+		log.Errorf("error when add tunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not create job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	schedule.NewJobWithRegister(job)
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
+	c.JSON(http.StatusOK, data)
+}
+
+func PutJob(c *gin.Context) {
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	name := c.PostForm("name")
+	spec := c.PostForm("spec")
+	dType := c.PostForm("type")
+	cmd := c.PostForm("cmd")
+	job, err := models.UpdateJob(id, name, dType, spec, cmd)
+	if err != nil {
+		log.Errorf("error when add tunnel, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not create job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = schedule.RemoveJob(id)
+	if err != nil {
+		log.Errorf("error when RemoveJob, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not delete job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	schedule.NewJobWithRegister(job)
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
+	c.JSON(http.StatusOK, data)
+}
+
+func DeleteJob(c *gin.Context) {
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = schedule.RemoveJob(id)
+	if err != nil {
+		log.Errorf("error when RemoveJob, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not delete job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
+}
+
+func StartJob(c *gin.Context) {
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	job, err := models.GetJobById(id)
+	if err != nil {
+		log.Errorf("error when GetJobById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	schedule.StartJob(job)
+}
+
+func StopJob(c *gin.Context) {
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	schedule.StopJob(id)
 }

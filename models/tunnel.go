@@ -5,8 +5,8 @@ type Tunnel struct {
 	Mode        string `gorm:"size:64" json:"mode"`
 	Source      string `gorm:"size:128;not null" json:"source"`
 	Destination string `gorm:"size:128;not null" json:"destination"`
-	Status      int    `json:"status;default:0"`
-	ErrorMsg    string `gorm:"size:128" json:"error_msg"`
+	Status      int    `gorm:"default:0" json:"status"`
+	ErrorMsg    string `gorm:"size:512" json:"error_msg"`
 	HostId      int    `json:"host_id"`
 	Host        Host   `json:"-"`
 }
@@ -70,7 +70,7 @@ func UpdateTunnel(id int, mode, src, dest string) (*Tunnel, error) {
 	if dest != "" {
 		tunnel.Destination = dest
 	}
-	err = db.Preload("Host").Save(&tunnel).Error
+	err = db.Save(&tunnel).Error
 	if err != nil {
 		return nil, err
 	}

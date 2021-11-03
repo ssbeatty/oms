@@ -31,7 +31,7 @@ func init() {
 	if err != nil {
 		log.Panicf("dataSource load error! exit! err: %v", err)
 	}
-	if err = db.AutoMigrate(new(Tag), new(Group), new(Host), new(Tunnel)); err != nil {
+	if err = db.AutoMigrate(new(Tag), new(Group), new(Host), new(Tunnel), new(Job)); err != nil {
 		log.Errorf("Migrate error! err: %v", err)
 	}
 }
