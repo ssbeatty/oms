@@ -7,11 +7,30 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"oms/conf"
+	"sync"
 )
 
-var db *gorm.DB
+var db *DataBase
+
+type DataBase struct {
+	*gorm.DB
+	mu *sync.Mutex
+}
+
+func (d *DataBase) Lock() {
+	if d.mu != nil {
+		d.mu.Lock()
+	}
+}
+
+func (d *DataBase) Unlock() {
+	if d.mu != nil {
+		d.mu.Unlock()
+	}
+}
 
 func init() {
+	var d *gorm.DB
 	var err error
 	var dataSource string
 
@@ -22,10 +41,13 @@ func init() {
 
 	if conf.DefaultConf.DbDriver == "mysql" {
 		dataSource = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", userName, passWord, mysqlUrl, dbName)
-		db, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+		d, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+		db = &DataBase{d, nil}
 	} else {
 		dataSource = "oms.db"
-		db, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
+		d, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
+		// 防止database locked
+		db = &DataBase{d, &sync.Mutex{}}
 	}
 
 	if err != nil {

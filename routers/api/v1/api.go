@@ -817,13 +817,15 @@ func GetLogStream(c *gin.Context) {
 	header.Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 
+	defer log.Debug("log file stream exit.")
+
 	w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
 	w.(http.Flusher).Flush()
 
 	t, err := tail.TailFile(job.Log(), tail.Config{
-		Follow:      true,
-		Location:    &tail.SeekInfo{Offset: 0, Whence: io.SeekCurrent},
-		MaxLineSize: 100,
+		Follow:   true,
+		Poll:     true,
+		Location: &tail.SeekInfo{Offset: -2000, Whence: io.SeekEnd},
 	})
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "tail file error", nil)
@@ -837,9 +839,4 @@ func GetLogStream(c *gin.Context) {
 		}
 		w.(http.Flusher).Flush()
 	}
-	err = t.Wait()
-	if err != nil {
-		return
-	}
-	defer log.Debug("log file stream exit.")
 }

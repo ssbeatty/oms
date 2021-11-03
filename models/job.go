@@ -91,6 +91,9 @@ func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
 }
 
 func UpdateJobStatus(id int, status string) (*Job, error) {
+	db.Lock()
+	defer db.Unlock()
+
 	job := Job{Id: id}
 	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {

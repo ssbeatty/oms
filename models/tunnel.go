@@ -78,6 +78,9 @@ func UpdateTunnel(id int, mode, src, dest string) (*Tunnel, error) {
 }
 
 func UpdateTunnelStatus(id int, status bool, msg string) (*Tunnel, error) {
+	db.Lock()
+	defer db.Unlock()
+
 	tunnel := Tunnel{Id: id}
 	err := db.Where("id = ?", id).First(&tunnel).Error
 	if err != nil {

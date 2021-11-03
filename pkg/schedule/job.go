@@ -84,7 +84,7 @@ func (j *Job) Run() {
 			j.UpdateStatus(JobStatusDone)
 		}
 	}()
-	j.logger.Infof("task name: [%s], cmd: '%s' running", j.Name(), j.cmd)
+	//j.logger.Infoln(fmt.Sprintf("task name: [%s], cmd: '%s' running", j.Name(), j.cmd))
 	client, err := transport.NewClient(j.host.Addr, j.host.Port, j.host.User, j.host.PassWord, []byte(j.host.KeyFile))
 	if err != nil {
 		j.logger.Errorf("error when new ssh client, err: %v", err)

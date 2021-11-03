@@ -230,6 +230,9 @@ func GetHostsByGroup(group *Group) ([]*Host, error) {
 }
 
 func UpdateHostStatus(host *Host) error {
+	db.Lock()
+	defer db.Unlock()
+
 	if err := db.Omit("GroupId").Save(&host).Error; err != nil {
 		return err
 	}
