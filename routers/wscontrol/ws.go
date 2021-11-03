@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"oms/pkg/transport"
 )
 
 type WsHandler func(conn *websocket.Conn, msg []byte)
@@ -12,6 +13,7 @@ type WSConnect struct {
 	*websocket.Conn
 	handlers map[string]WsHandler
 	closer   chan bool
+	status   *transport.Stats
 }
 
 type WsMsg struct {

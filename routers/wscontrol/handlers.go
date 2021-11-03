@@ -40,7 +40,7 @@ type Request struct {
 type Response struct {
 	ErrorCode int         `json:"code"`
 	Msg       string      `json:"msg"`
-	Data      interface{} `json:"data"`
+	Data      interface{} `json:"data,omitempty"`
 }
 
 func (w *WSConnect) InitHandlers() *WSConnect {
@@ -64,7 +64,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	}
 	hosts := models.ParseHostList(req.Type, req.Id)
 	if len(hosts) == 0 {
-		w.WriteMsg(Response{ErrorCode: 0, Msg: "host empty"})
+		w.WriteMsg(Response{ErrorCode: -2, Msg: "host empty"})
 		return
 	}
 	for _, host := range hosts {
@@ -111,7 +111,10 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 				return true
 			})
 			if len(resp) > 0 {
-				w.WriteMsg(resp)
+				w.WriteMsg(Response{ErrorCode: 0, Msg: "success", Data: resp})
+			} else {
+				w.WriteMsg(Response{ErrorCode: -1, Msg: "file task empty"})
+				return
 			}
 		}
 	}
@@ -120,6 +123,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 	log.Infof("handler host status recv a message: %s", msg)
 	req := &Request{}
+	w.status = transport.NewStatus()
 
 	err := json.Unmarshal(msg, req)
 	if err != nil {
@@ -133,27 +137,16 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 	}
 	wg := sync.WaitGroup{}
 
-	ticker := time.NewTicker(TaskTickerInterval * time.Second)
-
-	for {
-		select {
-		case <-ticker.C:
-			var Result []transport.Stats
-			for _, host := range hosts {
-				wg.Add(1)
-				client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
-				if err != nil {
-					w.WriteMsg(Response{ErrorCode: -3, Msg: fmt.Sprintf("error when new ssh client, id: %d", host.Id)})
-				}
-				status := transport.NewStatus()
-				transport.GetAllStats(client.GetSSHClient(), status, &wg)
-				Result = append(Result, *status)
-			}
-			wg.Wait()
-			w.WriteMsg(Response{ErrorCode: 0, Msg: "success", Data: Result})
-		case <-w.closer:
-			log.Debug("host status exit.")
-			return
+	var Result []transport.Stats
+	for _, host := range hosts {
+		wg.Add(1)
+		client, err := transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+		if err != nil {
+			w.WriteMsg(Response{ErrorCode: -3, Msg: fmt.Sprintf("error when new ssh client, id: %d", host.Id)})
 		}
+		transport.GetAllStats(client.GetSSHClient(), w.status, &wg)
+		Result = append(Result, *w.status)
 	}
+	wg.Wait()
+	w.WriteMsg(Response{ErrorCode: 0, Msg: "success", Data: Result})
 }
