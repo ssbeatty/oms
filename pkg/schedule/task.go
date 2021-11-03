@@ -2,6 +2,7 @@ package schedule
 
 import (
 	log "github.com/sirupsen/logrus"
+	"io/fs"
 	"oms/models"
 	"os"
 	"sync"
@@ -22,7 +23,7 @@ func init() {
 		log.Println("init loop-status error!", err)
 	}
 
-	err := os.MkdirAll(DefaultTmpPath, 0644)
+	err := os.MkdirAll(DefaultTmpPath, fs.ModePerm)
 	if err != nil {
 		log.Errorf("error when make all tmp path, err: %v", err)
 		return

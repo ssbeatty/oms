@@ -144,6 +144,14 @@ func (j *Job) Name() string {
 	return strconv.Itoa(j.ID)
 }
 
+func (j *Job) Log() string {
+	return j.log
+}
+
+func (j *Job) Cmd() string {
+	return j.cmd
+}
+
 // Register 开始task & 添加到poll
 func Register(id int, job *Job) error {
 	if job.Status() == JobStatusRunning {
@@ -233,6 +241,13 @@ func StopJob(id int) error {
 	}
 
 	return nil
+}
+
+func GetJob(id int) (*Job, bool) {
+	if key, ok := TaskPoll.Load(id); ok {
+		return key.(*Job), true
+	}
+	return nil, false
 }
 
 func initJobFromModels(modelJobs []*models.Job) {

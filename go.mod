@@ -9,6 +9,7 @@ require (
 	github.com/gobuffalo/packr v1.30.1
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/websocket v1.4.2
+	github.com/hpcloud/tail v1.0.0
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/pkg/errors v0.9.1
@@ -21,7 +22,9 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
+	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.0.3
 	gorm.io/gorm v1.22.2

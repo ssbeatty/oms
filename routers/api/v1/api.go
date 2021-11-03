@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/hpcloud/tail"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"oms/models"
@@ -789,4 +791,55 @@ func RestartJob(c *gin.Context) {
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	c.JSON(http.StatusOK, data)
+}
+
+func GetLogStream(c *gin.Context) {
+	idRaw := c.Query("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		log.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	job, ok := schedule.GetJob(id)
+	if !ok {
+		data := generateResponsePayload(HttpStatusError, "can not found job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	w := c.Writer
+	header := w.Header()
+	//http chunked
+	header.Set("Transfer-Encoding", "chunked")
+	header.Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+
+	w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
+	w.(http.Flusher).Flush()
+
+	t, err := tail.TailFile(job.Log(), tail.Config{
+		Follow:      true,
+		Location:    &tail.SeekInfo{Offset: 0, Whence: io.SeekCurrent},
+		MaxLineSize: 100,
+	})
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "tail file error", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	for line := range t.Lines {
+		_, err := w.Write([]byte(line.Text))
+		if err != nil {
+			return
+		}
+		w.(http.Flusher).Flush()
+	}
+	err = t.Wait()
+	if err != nil {
+		return
+	}
+	defer log.Debug("log file stream exit.")
 }

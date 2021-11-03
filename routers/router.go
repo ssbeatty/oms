@@ -98,6 +98,7 @@ func InitGinServer() {
 		apiV1.POST("/job", v1.PostJob)
 		apiV1.PUT("/job", v1.PutJob)
 		apiV1.DELETE("/job/:id", v1.DeleteJob)
+		apiV1.GET("/job/tail", v1.GetLogStream)
 		apiV1.POST("/job/start", v1.StartJob)
 		apiV1.POST("/job/stop", v1.StopJob)
 		apiV1.POST("/job/restart", v1.RestartJob)

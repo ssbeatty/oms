@@ -36,6 +36,13 @@ github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
 ## explicit
 github.com/gorilla/websocket
+# github.com/hpcloud/tail v1.0.0
+## explicit
+github.com/hpcloud/tail
+github.com/hpcloud/tail/ratelimiter
+github.com/hpcloud/tail/util
+github.com/hpcloud/tail/watch
+github.com/hpcloud/tail/winfile
 # github.com/jinzhu/inflection v1.0.0
 github.com/jinzhu/inflection
 # github.com/jinzhu/now v1.1.2
@@ -163,9 +170,15 @@ google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
+# gopkg.in/fsnotify.v1 v1.4.7
+## explicit
+gopkg.in/fsnotify.v1
 # gopkg.in/natefinch/lumberjack.v2 v2.0.0
 ## explicit
 gopkg.in/natefinch/lumberjack.v2
+# gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+## explicit
+gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
