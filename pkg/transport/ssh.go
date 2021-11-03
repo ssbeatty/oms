@@ -83,25 +83,25 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 	return cli, nil
 }
 
-func (s *Session) RunTaskWithQuit(cmd string, quitCh <-chan bool, logger *log.Logger) {
+func (s *Session) RunTaskWithQuit(cmd string, quitCh chan bool) (err error) {
+	errChan := make(chan error)
 	go func(c string) {
-		err := s.sshSession.Run(c)
+		err = s.sshSession.Run(c)
 		if err != nil {
-			logger.Errorf("RunTaskWithQuit run task error, %v", err)
+			log.Errorf("RunTaskWithQuit run task error, %v", err)
+			errChan <- err
 		}
 	}(cmd)
+	defer s.Close()
 
 	select {
 	case <-quitCh:
 		// 理论上pty下不需要kill
-		logger.Info("task quit.")
-		if err := s.Kill(); err != nil {
-			return
-		}
-		if err := s.Close(); err != nil {
-			return
-		}
+		log.Info("task quit.")
+	case err := <-errChan:
+		return err
 	}
+	return
 }
 
 /*

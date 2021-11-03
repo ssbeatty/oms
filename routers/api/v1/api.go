@@ -617,7 +617,7 @@ func PostJob(c *gin.Context) {
 		return
 	}
 
-	schedule.NewJobWithRegister(job)
+	schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
@@ -650,7 +650,7 @@ func PutJob(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	schedule.NewJobWithRegister(job)
+	schedule.NewJobWithRegister(job, string(schedule.JobStatusReady))
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)

@@ -75,7 +75,7 @@ func NewJob(id int, name, cmd, spec string, t JobType, host *models.Host) *Job {
 }
 
 func (j *Job) Run() {
-	if j.Status() == JobStatusStop {
+	if j.Status() == JobStatusStop || j.Status() == JobStatusFatal {
 		return
 	}
 	defer func() {
@@ -83,7 +83,7 @@ func (j *Job) Run() {
 			j.UpdateStatus(JobStatusDone)
 		}
 	}()
-	j.logger.Infof("task name: %s, cmd: %s running", j.Name(), j.cmd)
+	j.logger.Infof("task name: [%s], cmd: '%s' running", j.Name(), j.cmd)
 	client, err := transport.NewClient(j.host.Addr, j.host.Port, j.host.User, j.host.PassWord, []byte(j.host.KeyFile))
 	if err != nil {
 		j.logger.Errorf("error when new ssh client, err: %v", err)
@@ -99,11 +99,17 @@ func (j *Job) Run() {
 		err = session.Run(j.cmd)
 		if err != nil {
 			j.logger.Errorf("error when run cmd, err: %v", err)
-			j.UpdateStatus(JobStatusFatal)
+			j.UpdateStatus(JobStatusBackoff)
 			return
 		}
 	} else if j.Type == JobTypeTask {
-		session.RunTaskWithQuit(j.cmd, j.quit, j.logger)
+		// TODO retry
+		err := session.RunTaskWithQuit(j.cmd, j.quit)
+		if err != nil {
+			j.logger.Errorf("error when run cmd, err: %v", err)
+			j.UpdateStatus(JobStatusFatal)
+			return
+		}
 	}
 }
 
@@ -151,10 +157,9 @@ func Register(id int, job *Job) {
 			return
 		}
 	case JobTypeTask:
-		// TODO retry
 		go job.Run()
 	}
-	job.UpdateStatus(JobStatusReady)
+
 	TaskPoll.Store(id, job)
 }
 
@@ -169,8 +174,9 @@ func UnRegister(id int) {
 	log.Infof("un register a job: %d, success", id)
 }
 
-func NewJobWithRegister(modelJob *models.Job) {
+func NewJobWithRegister(modelJob *models.Job, status string) {
 	realJob := NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
+	realJob.status.Store(JobStatus(status))
 	Register(modelJob.Id, realJob)
 
 	log.Infof("register a new job, type: %s, name: %s, cmd: %s success", modelJob.Type, modelJob.Name, modelJob.Cmd)
@@ -188,24 +194,24 @@ func RemoveJob(id int) error {
 }
 
 func StartJob(modelJob *models.Job) {
+	log.Infof("recv singinl to start job: %d", modelJob.Id)
 	if key, ok := TaskPoll.Load(modelJob.Id); ok {
 		job := key.(*Job)
+		job.status.Store(JobStatusReady)
 		Register(modelJob.Id, job)
 	} else {
-		NewJobWithRegister(modelJob)
+		NewJobWithRegister(modelJob, string(JobStatusReady))
 	}
 }
 
 func StopJob(id int) {
+	log.Infof("recv singinl to stop job: %d", id)
 	UnRegister(id)
 }
 
 func initJobFromModels(modelJobs []*models.Job) {
 	log.Info("init all job without stopped.")
 	for _, modelJob := range modelJobs {
-		if JobStatus(modelJob.Status) == JobStatusStop {
-			continue
-		}
-		NewJobWithRegister(modelJob)
+		NewJobWithRegister(modelJob, modelJob.Status)
 	}
 }

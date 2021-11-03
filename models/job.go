@@ -6,7 +6,7 @@ type Job struct {
 	Type   string `gorm:"size:32;not null" json:"type"`
 	Spec   string `gorm:"size:128" json:"spec"`
 	Cmd    string `gorm:"size:512" json:"cmd"`
-	Status string `gorm:"size:64" json:"status"`
+	Status string `gorm:"size:64;default: ready" json:"status"`
 	HostId int    `json:"host_id"`
 	Host   Host   `json:"-"`
 }

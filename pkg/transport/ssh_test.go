@@ -2,7 +2,6 @@ package transport
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"io/ioutil"
@@ -81,7 +80,7 @@ func TestLongTimeCmd(t *testing.T) {
 		quitCh <- true
 	}()
 
-	session.RunTaskWithQuit("sleep 60", quitCh, log.New())
+	session.RunTaskWithQuit("sleep 60", quitCh)
 }
 
 func TestConnectionPing(t *testing.T) {
