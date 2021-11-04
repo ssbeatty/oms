@@ -1,9 +1,11 @@
 package tunnel
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"oms/models"
 	"oms/pkg/transport"
+	"oms/pkg/utils"
 	"sync"
 	"time"
 )
@@ -14,24 +16,34 @@ const (
 
 var (
 	DefaultManager = NewManager()
+
+	tunnelNum = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "tunnel_register_nums",
+		Help: "Current Num of Tunnel.",
+	})
 )
 
 func init() {
 	go DefaultManager.Start()
+	prometheus.MustRegister(tunnelNum)
 }
 
 type Manager struct {
-	tunnels sync.Map
+	tunnels *utils.SafeMap
 	closer  chan bool
 }
 
 func NewManager() *Manager {
 	manager := &Manager{
-		tunnels: sync.Map{},
+		tunnels: utils.NewSageMap(),
 		closer:  make(chan bool),
 	}
 
 	return manager
+}
+
+func (m *Manager) Length() int {
+	return m.tunnels.Length()
 }
 
 func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
@@ -41,6 +53,8 @@ func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
 			log.Errorf("error when add tunnel, err: %v", err)
 		}
 		m.updateTunnelStatus()
+
+		tunnelNum.Set(float64(DefaultManager.Length()))
 	}
 }
 

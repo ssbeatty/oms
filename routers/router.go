@@ -5,16 +5,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"html/template"
 	"io/ioutil"
 	"oms/conf"
 	v1 "oms/routers/api/v1"
 	"oms/routers/page"
-
-	_ "github.com/cenkalti/backoff/v4"
-	_ "github.com/prometheus/client_golang/prometheus"
-	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func CORS(ctx *gin.Context) {
@@ -35,6 +32,14 @@ func CORS(ctx *gin.Context) {
 	ctx.Next()
 }
 
+func prometheusHandler() gin.HandlerFunc {
+	h := promhttp.Handler()
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
 func InitGinServer() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
@@ -46,6 +51,9 @@ func InitGinServer() {
 	r.StaticFS("/static", box)
 	t, _ := loadTemplate()
 	r.SetHTMLTemplate(t)
+
+	// metrics
+	r.GET("/metrics", prometheusHandler())
 
 	// common api
 	r.GET("/", page.GetIndexPage)

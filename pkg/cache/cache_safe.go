@@ -12,9 +12,9 @@ type Cache struct {
 
 // NewCache creates an LRU of the given size.
 func NewCache(size int) (c *Cache) {
-	c = &Cache{}
-	c.lru = New(size)
-	return
+	return &Cache{
+		lru: New(size),
+	}
 }
 
 // Add adds a value to the cache. Returns true if an eviction occurred.
@@ -27,9 +27,9 @@ func (c *Cache) Add(key Key, value interface{}) {
 // Get looks up a key's value from the cache.
 func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
 	c.lock.Lock()
-	value, ok = c.lru.Get(key)
-	c.lock.Unlock()
-	return value, ok
+	defer c.lock.Unlock()
+
+	return c.lru.Get(key)
 }
 
 // Remove removes the provided key from the cache.
@@ -49,17 +49,17 @@ func (c *Cache) RemoveOldest() {
 // Keys returns a slice of the keys in the cache, from oldest to newest.
 func (c *Cache) Keys() []interface{} {
 	c.lock.RLock()
-	keys := c.lru.Keys()
-	c.lock.RUnlock()
-	return keys
+	defer c.lock.RUnlock()
+
+	return c.lru.Keys()
 }
 
-// Len returns the number of items in the cache.
-func (c *Cache) Len() int {
+// Length returns the number of items in the cache.
+func (c *Cache) Length() int {
 	c.lock.RLock()
-	length := c.lru.Len()
-	c.lock.RUnlock()
-	return length
+	defer c.lock.RUnlock()
+
+	return c.lru.Len()
 }
 
 // Clear is used to completely clear the cache.
@@ -73,7 +73,7 @@ func (c *Cache) Clear() {
 // recent-ness or deleting it for being stale.
 func (c *Cache) Contains(key interface{}) bool {
 	c.lock.RLock()
-	containKey := c.lru.Contains(key)
-	c.lock.RUnlock()
-	return containKey
+	defer c.lock.RUnlock()
+
+	return c.lru.Contains(key)
 }

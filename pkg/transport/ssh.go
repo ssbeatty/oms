@@ -66,11 +66,11 @@ func NewClient(host string, port int, user string, password string, KeyBytes []b
 	}
 	if cli, ok := SSHClientPoll.Get(config.serialize()); ok {
 		ss, err := cli.(*Client).NewSession()
-		defer ss.Close()
 
 		if err != nil {
 			SSHClientPoll.Remove(config.serialize())
 		} else {
+			defer ss.Close()
 			return cli.(*Client), nil
 		}
 	}
@@ -113,6 +113,7 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	currentSessionNum.Inc()
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		log.Debugf("get stdin pipe error, %v", err)
@@ -138,6 +139,7 @@ func (c *Client) NewSession() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	currentSessionNum.Inc()
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		log.Debugf("get stdin pipe error, %v", err)
@@ -162,6 +164,7 @@ func (s *Session) Kill() error {
 }
 
 func (s *Session) Close() error {
+	currentSessionNum.Dec()
 	return s.sshSession.Close()
 }
 

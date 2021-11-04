@@ -3,6 +3,7 @@ package schedule
 import (
 	"errors"
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"oms/models"
@@ -10,12 +11,15 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
+	"time"
 )
 
 type JobType string
 type JobStatus string
 
 const (
+	MaxRetryTimes = 10
+
 	JobTypeCron    JobType = "cron"
 	JobTypeTask    JobType = "task"
 	DefaultTmpPath         = "tmp"
@@ -30,17 +34,18 @@ const (
 
 // Job is cron task or long task
 type Job struct {
-	ID     int
-	name   string
-	Type   JobType
-	host   *models.Host
-	cmd    string
-	status atomic.Value
-	logger *log.Logger
-	log    string // log path
-	quit   chan bool
-	std    *lumberjack.Logger
-	spec   string
+	ID       int
+	name     string
+	Type     JobType
+	host     *models.Host
+	cmd      string
+	status   atomic.Value
+	logger   *log.Logger
+	log      string // log path
+	quit     chan bool
+	std      *lumberjack.Logger
+	spec     string
+	maxRetry int32
 }
 
 func NewJob(id int, name, cmd, spec string, t JobType, host *models.Host) *Job {
@@ -51,9 +56,9 @@ func NewJob(id int, name, cmd, spec string, t JobType, host *models.Host) *Job {
 	tmp := filepath.Join(DefaultTmpPath, fmt.Sprintf("%s.log", name))
 	std := &lumberjack.Logger{
 		Filename:   tmp,
-		MaxSize:    500, // megabytes
-		MaxBackups: 2,
-		MaxAge:     30,   //days
+		MaxSize:    50, // megabytes
+		MaxBackups: 3,
+		MaxAge:     20,   //days
 		Compress:   true, // disabled by default
 	}
 	logger.SetOutput(std)
@@ -94,6 +99,8 @@ func (j *Job) Run() {
 	if err != nil {
 		j.logger.Errorf("create new session failed, err: %v", err)
 	}
+	defer session.Close()
+
 	session.SetStdout(j.std)
 	j.UpdateStatus(JobStatusRunning)
 	if j.Type == JobTypeCron {
@@ -104,12 +111,37 @@ func (j *Job) Run() {
 			return
 		}
 	} else if j.Type == JobTypeTask {
-		// TODO retry
-		err := session.RunTaskWithQuit(j.cmd, j.quit)
+		exp := backoff.NewExponentialBackOff()
+		//exp.RandomizationFactor = 1
+
+		operation := func() error {
+			session, err := client.NewSessionWithPty(20, 20)
+			if err != nil {
+				j.logger.Errorf("create new session failed, err: %v", err)
+			}
+			defer session.Close()
+
+			session.SetStdout(j.std)
+			atomic.AddInt32(&j.maxRetry, 1)
+			err = session.RunTaskWithQuit(j.cmd, j.quit)
+			if err != nil {
+				if j.maxRetry < MaxRetryTimes {
+					j.UpdateStatus(JobStatusBackoff)
+					return err
+				} else {
+					j.UpdateStatus(JobStatusFatal)
+					log.Infof("Job command: %s max retry times", j.cmd)
+					return nil
+				}
+			}
+			return nil
+		}
+		err = backoff.RetryNotify(operation, exp, func(err error, duration time.Duration) {
+			log.Debug(fmt.Sprintf("Job cmd: %s Failed: %s, retry after %v", j.Cmd(), err.Error(), duration))
+		})
 		if err != nil {
-			j.logger.Errorf("error when run cmd, err: %v", err)
 			j.UpdateStatus(JobStatusFatal)
-			return
+			log.Error("RetryNotify command error", err)
 		}
 	}
 }

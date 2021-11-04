@@ -126,6 +126,8 @@ func RunCmdOneAsync(host *Host, cmd string, sudo bool, ch chan *Result, wg *sync
 	if err != nil {
 		log.Errorf("create new session failed, err: %v", err)
 	}
+	defer session.Close()
+
 	if sudo {
 		msg, err = session.Sudo(cmd, host.PassWord)
 	} else {
@@ -380,6 +382,7 @@ func RunCmdWithContext(host *Host, cmd string, sudo bool, ch chan *Result, ctx c
 			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: "command timeout!"}
 			ch <- result
 		case <-quit:
+			_ = session.Close()
 			return
 		}
 	}()

@@ -85,6 +85,7 @@ func TestLongTimeCmd(t *testing.T) {
 
 func TestConnectionPing(t *testing.T) {
 	session, err := client.NewSession()
+	defer session.Close()
 	assert.Nil(t, err)
 
 	err = session.Run("cd /")

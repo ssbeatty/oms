@@ -116,6 +116,7 @@ func (c *Lru) Clear() {
 			c.OnEvicted(kv.key, kv.value)
 		}
 	}
+
 	c.ll = nil
 	c.cache = nil
 }
@@ -123,14 +124,17 @@ func (c *Lru) Clear() {
 func (c *Lru) Keys() []interface{} {
 	keys := make([]interface{}, len(c.cache))
 	i := 0
+
 	for ent := c.ll.Back(); ent != nil; ent = ent.Prev() {
 		keys[i] = ent.Value.(*entry).key
 		i++
 	}
+
 	return keys
 }
 
 func (c *Lru) Contains(key interface{}) (ok bool) {
 	_, ok = c.cache[key]
+
 	return ok
 }
