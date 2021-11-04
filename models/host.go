@@ -22,13 +22,15 @@ type Host struct {
 	GroupId int      `json:"group_id"`
 	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
 	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
-	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
-	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"-"`
+	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
+	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
 }
 
 func GetHostById(id int) (*Host, error) {
 	host := Host{}
-	err := db.Where("id = ?", id).Preload("Tags").Preload("Group").First(&host).Error
+	err := db.Where("id = ?", id).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		First(&host).Error
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +169,9 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 
 func GetAllHost() ([]*Host, error) {
 	var hosts []*Host
-	err := db.Preload("Tags").Preload("Group").Find(&hosts).Error
+	err := db.Preload("Jobs").
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +182,9 @@ func GetAllHost() ([]*Host, error) {
 func GetHostByGlob(glob string) ([]*Host, error) {
 	var hosts []*Host
 	glob = strings.Replace(glob, "*", "%", -1)
-	err := db.Where("addr LIKE ?", glob).Find(&hosts).Error
+	err := db.Where("addr LIKE ?", glob).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +194,9 @@ func GetHostByGlob(glob string) ([]*Host, error) {
 func GetHostByReg(regStr string) ([]*Host, error) {
 	var hosts []*Host
 	var hostsR []*Host
-	err := db.Find(&hosts).Error
+	err := db.Find(&hosts).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Error
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +212,9 @@ func GetHostByReg(regStr string) ([]*Host, error) {
 
 func GetHostByAddr(addr string) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Where("addr = ?", addr).Find(&hosts).Error
+	err := db.Where("addr = ?", addr).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +223,9 @@ func GetHostByAddr(addr string) ([]*Host, error) {
 
 func GetHostsByTag(tag *Tag) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Model(&tag).Association("Hosts").Find(&hosts)
+	err := db.Model(&tag).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Association("Hosts").Find(&hosts)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +234,9 @@ func GetHostsByTag(tag *Tag) ([]*Host, error) {
 
 func GetHostsByGroup(group *Group) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Where("group_id = ?", group.Id).Preload("Tags").Preload("Group").Find(&hosts).Error
+	err := db.Where("group_id = ?", group.Id).
+		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+		Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
