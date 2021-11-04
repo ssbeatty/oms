@@ -41,9 +41,8 @@ func prometheusHandler() gin.HandlerFunc {
 }
 
 func InitGinServer() {
-	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	//r.Use(gin.Logger())
+
 	r.Use(gin.Recovery())
 
 	// static files
