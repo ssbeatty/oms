@@ -11,6 +11,10 @@ import (
 	"oms/conf"
 	v1 "oms/routers/api/v1"
 	"oms/routers/page"
+
+	_ "github.com/cenkalti/backoff/v4"
+	_ "github.com/prometheus/client_golang/prometheus"
+	_ "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func CORS(ctx *gin.Context) {

@@ -3,6 +3,7 @@ module oms
 go 1.14
 
 require (
+	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0
@@ -14,8 +15,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
+	github.com/prometheus/client_golang v1.11.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/ssbeatty/sqlite v1.0.2
 	github.com/stretchr/testify v1.7.0
 	github.com/ugorji/go v1.2.6 // indirect
