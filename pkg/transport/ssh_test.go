@@ -5,9 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"io/ioutil"
+	"oms/internal/ssh"
+	"oms/internal/utils"
 	"oms/pkg/cache"
-	"oms/pkg/utils"
-	"os"
 	"testing"
 	"time"
 )
@@ -37,7 +37,7 @@ func init() {
 		return
 	}
 
-	client, err = NewClient(host.Addr, host.Port, host.User, host.PassWord, nil)
+	client, err = New(host.Addr, host.User, host.PassWord, nil, host.Port)
 	if err != nil {
 		return
 	}
@@ -66,13 +66,6 @@ func TestSudoCmd(t *testing.T) {
 }
 
 func TestLongTimeCmd(t *testing.T) {
-
-	session, err := client.NewSessionWithPty(20, 20)
-	assert.Nil(t, err)
-
-	session.SetStdout(os.Stdout)
-	session.SetStderr(os.Stdout)
-
 	quitCh := make(chan bool)
 
 	go func() {
@@ -80,7 +73,7 @@ func TestLongTimeCmd(t *testing.T) {
 		quitCh <- true
 	}()
 
-	session.RunTaskWithQuit("sleep 60", quitCh)
+	ssh.RunTaskWithQuit(client, "sleep 60", quitCh)
 }
 
 func TestConnectionPing(t *testing.T) {

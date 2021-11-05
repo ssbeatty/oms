@@ -6,10 +6,10 @@ package tunnel
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
+	"oms/pkg/logger"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -30,6 +30,7 @@ type SSHTunnel struct {
 	isOpen      bool
 	client      *ssh.Client
 	listener    net.Listener
+	logger      *logger.Logger
 }
 
 func NewSSHTunnel(client *ssh.Client, destination, source, mode string) *SSHTunnel {
@@ -47,6 +48,7 @@ func NewSSHTunnel(client *ssh.Client, destination, source, mode string) *SSHTunn
 		client:      client,
 		isOpen:      true,
 		closer:      make(chan bool),
+		logger:      logger.NewLogger("tunnel"),
 	}
 	sshTunnel.errorMsg.Store("success")
 
@@ -56,7 +58,7 @@ func NewSSHTunnel(client *ssh.Client, destination, source, mode string) *SSHTunn
 func (s *SSHTunnel) newConnectionWaiter(c chan net.Conn) {
 	conn, err := s.listener.Accept()
 	if err != nil {
-		log.Errorf("error when tunnel accept, err: %v", err)
+		s.logger.Errorf("error when tunnel accept, err: %v", err)
 		s.SetErrorMsg("listening error", err)
 		s.isOpen = false
 		return
@@ -91,7 +93,7 @@ func (s *SSHTunnel) Start() {
 		localListener, err = s.client.Listen("tcp", s.Destination)
 	}
 	if err != nil {
-		log.Errorf("error when tunnel listen: %s, err: %v", s.Destination, err)
+		s.logger.Errorf("error when tunnel listen: %s, err: %v", s.Destination, err)
 		s.SetErrorMsg("listening error", err)
 		return
 	}
@@ -106,7 +108,7 @@ func (s *SSHTunnel) Start() {
 		go s.newConnectionWaiter(c)
 
 		once.Do(func() {
-			log.Infof("tunnel src: '%s', dest: '%s' connect success.", s.Source, s.Destination)
+			s.logger.Infof("tunnel src: '%s', dest: '%s' connect success.", s.Source, s.Destination)
 		})
 
 		select {
@@ -117,7 +119,7 @@ func (s *SSHTunnel) Start() {
 		}
 	}
 	_ = s.listener.Close()
-	log.Infof("tunnel src: '%s', dest: '%s' closed.", s.Source, s.Destination)
+	s.logger.Infof("tunnel src: '%s', dest: '%s' closed.", s.Source, s.Destination)
 }
 
 func (s *SSHTunnel) forward(localConn net.Conn) {
@@ -129,7 +131,7 @@ func (s *SSHTunnel) forward(localConn net.Conn) {
 		remoteConn, err = net.Dial("tcp", s.Source)
 	}
 	if err != nil {
-		log.Errorf("error when dial local source, err: %v", err)
+		s.logger.Errorf("error when dial local source, err: %v", err)
 		s.SetErrorMsg("dial error", err)
 		return
 	}
@@ -147,5 +149,5 @@ func (s *SSHTunnel) forward(localConn net.Conn) {
 	go copyConn(localConn, remoteConn)
 	go copyConn(remoteConn, localConn)
 
-	log.Debug("new conn forward success.")
+	s.logger.Debug("new conn forward success.")
 }

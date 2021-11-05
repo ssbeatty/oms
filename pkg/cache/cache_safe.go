@@ -13,7 +13,8 @@ type Cache struct {
 // NewCache creates an LRU of the given size.
 func NewCache(size int) (c *Cache) {
 	return &Cache{
-		lru: New(size),
+		lru:  New(size),
+		lock: sync.RWMutex{},
 	}
 }
 

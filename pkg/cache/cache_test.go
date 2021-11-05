@@ -1,12 +1,13 @@
-package cache
+package cache_test
 
 import (
 	"math/rand"
+	"oms/pkg/cache"
 	"testing"
 )
 
 func BenchmarkLRU_Rand(b *testing.B) {
-	l := NewCache(8192)
+	l := cache.NewCache(8192)
 
 	trace := make([]int64, b.N*2)
 	for i := 0; i < b.N*2; i++ {
@@ -32,7 +33,7 @@ func BenchmarkLRU_Rand(b *testing.B) {
 }
 
 func BenchmarkLRU_Freq(b *testing.B) {
-	l := NewCache(8192)
+	l := cache.NewCache(8192)
 
 	trace := make([]int64, b.N*2)
 	for i := 0; i < b.N*2; i++ {
@@ -60,9 +61,9 @@ func BenchmarkLRU_Freq(b *testing.B) {
 	b.Logf("hit: %d miss: %d ratio: %f", hit, miss, float64(hit)/float64(miss))
 }
 
-// test that Contains doesn't update recent-ness
+// TestLRUContains test that Contains doesn't update recent-ness
 func TestLRUContains(t *testing.T) {
-	l := NewCache(8192)
+	l := cache.NewCache(8192)
 
 	l.Add(1, 1)
 	l.Add(2, 2)

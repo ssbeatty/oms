@@ -3,12 +3,10 @@ package transport
 import (
 	"errors"
 	"github.com/pkg/sftp"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
-	"oms/pkg/utils"
 	"os"
 	"strconv"
 	"time"
@@ -23,15 +21,6 @@ const (
 	KillSignal     = "0x09"
 )
 
-type Config struct {
-	User       string
-	Host       string
-	Port       int
-	Password   string
-	KeyBytes   []byte
-	Passphrase string
-}
-
 type Client struct {
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
@@ -43,68 +32,6 @@ type Session struct {
 }
 
 /*
-扩展服务
-*/
-
-func (h *Config) serialize() int64 {
-	return utils.InetAtoN(h.Host, h.Port)
-}
-
-func NewClient(host string, port int, user string, password string, KeyBytes []byte) (*Client, error) {
-	if user == "" {
-		user = "root"
-	}
-	var config = &Config{
-		Host:       host,
-		Port:       port,
-		User:       user,
-		Password:   password,
-		Passphrase: password,
-	}
-	if KeyBytes != nil {
-		config.KeyBytes = KeyBytes
-	}
-	if cli, ok := SSHClientPoll.Get(config.serialize()); ok {
-		ss, err := cli.(*Client).NewSession()
-
-		if err != nil {
-			SSHClientPoll.Remove(config.serialize())
-		} else {
-			defer ss.Close()
-			return cli.(*Client), nil
-		}
-	}
-
-	cli, err := New(config)
-	if err != nil {
-		return nil, err
-	}
-	SSHClientPoll.Add(config.serialize(), cli)
-	return cli, nil
-}
-
-func (s *Session) RunTaskWithQuit(cmd string, quitCh chan bool) (err error) {
-	errChan := make(chan error)
-	go func(c string) {
-		err = s.sshSession.Run(c)
-		if err != nil {
-			log.Errorf("RunTaskWithQuit run task error, %v", err)
-			errChan <- err
-		}
-	}(cmd)
-	defer s.Close()
-
-	select {
-	case <-quitCh:
-		// 理论上pty下不需要kill
-		log.Info("task quit.")
-	case err := <-errChan:
-		return err
-	}
-	return
-}
-
-/*
 ssh基础服务
 */
 
@@ -113,10 +40,8 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	currentSessionNum.Inc()
 	stdin, err := session.StdinPipe()
 	if err != nil {
-		log.Debugf("get stdin pipe error, %v", err)
 		return nil, err
 	}
 	modes := ssh.TerminalModes{
@@ -139,10 +64,8 @@ func (c *Client) NewSession() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	currentSessionNum.Inc()
 	stdin, err := session.StdinPipe()
 	if err != nil {
-		log.Debugf("get stdin pipe error, %v", err)
 		return nil, err
 	}
 	return &Session{
@@ -164,7 +87,6 @@ func (s *Session) Kill() error {
 }
 
 func (s *Session) Close() error {
-	currentSessionNum.Dec()
 	return s.sshSession.Close()
 }
 
@@ -240,33 +162,33 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 }
 
 // New 创建SSH client
-func New(cnf *Config) (client *Client, err error) {
+func New(host, user, password string, KeyBytes []byte, port int) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
-		User:            cnf.User,
+		User:            user,
 		Timeout:         DefaultTimeout,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略public key的安全验证
 	}
 
-	if cnf.Port == 0 {
-		cnf.Port = 22
+	if port == 0 {
+		port = 22
 	}
 
 	// 1. private key bytes
-	if cnf.KeyBytes != nil {
-		if auth, err := AuthWithPrivateKeyBytes(cnf.KeyBytes, cnf.Password); err == nil {
+	if KeyBytes != nil {
+		if auth, err := AuthWithPrivateKeyBytes(KeyBytes, password); err == nil {
 			clientConfig.Auth = append(clientConfig.Auth, auth)
 		}
 	}
 	// 2. 密码方式 放在key之后,这样密钥失败之后可以使用Password方式
-	if cnf.Password != "" {
-		clientConfig.Auth = append(clientConfig.Auth, ssh.Password(cnf.Password))
+	if password != "" {
+		clientConfig.Auth = append(clientConfig.Auth, ssh.Password(password))
 	}
 	// 3. agent 模式放在最后,这样当前两者都不能使用时可以采用Agent模式
 	if auth, err := AuthWithAgent(); err == nil {
 		clientConfig.Auth = append(clientConfig.Auth, auth)
 	}
 
-	sshClient, err := ssh.Dial("tcp", net.JoinHostPort(cnf.Host, strconv.Itoa(cnf.Port)), clientConfig)
+	sshClient, err := ssh.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)), clientConfig)
 
 	if err != nil {
 		return client, errors.New("Failed to dial ssh: " + err.Error())

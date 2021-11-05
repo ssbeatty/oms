@@ -29,7 +29,7 @@ func init() {
 		return
 	}
 
-	client, err = transport.NewClient(host.Addr, host.Port, host.User, host.PassWord, nil)
+	client, err = transport.New(host.Addr, host.User, host.PassWord, nil, host.Port)
 	if err != nil {
 		return
 	}

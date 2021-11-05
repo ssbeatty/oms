@@ -43,15 +43,15 @@ mysql:
 #### 目前已经实现的功能
 
 1. 基于websocket和xtermjs的webssh。
-![image](./images/ssh.png)
+![image](./docs/images/ssh.png)
 2. 文件的批量分发。
-![image](./images/file.png)
+![image](./docs/images/file.png)
 3. 批量执行命令。
-![image](./images/shell.png)
+![image](./docs/images/shell.png)
 4. 主机文件的浏览和下载，删除和上传。
-![image](./images/browse.png)
+![image](./docs/images/browse.png)
 5. 主机的curd管理。
-![image](./images/hosts.png)
+![image](./docs/images/hosts.png)
 6. 使用组和标签的匹配以及模仿saltstack的匹配。
 ```shell script
 -L 列表匹配
