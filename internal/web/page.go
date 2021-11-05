@@ -114,11 +114,10 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 		s.logger.Errorf("new ssh connect failed, err: %v", err)
 	}
 	ws := NewWSConnect(wsConn, nil)
-	ssConn.SetOutput(ws)
 	defer ssConn.Close()
-	defer ws.Close()
 
 	quitChan := make(chan bool, 3)
+	go ssConn.SendComboOutput(ws.Conn, quitChan)
 	go ssConn.ReceiveWsMsg(wsConn, quitChan)
 	go ssConn.SessionWait(quitChan)
 

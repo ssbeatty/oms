@@ -77,14 +77,6 @@ func (w *WSConnect) mange() {
 	}
 }
 
-func (w *WSConnect) Write(p []byte) (int, error) {
-	err := w.WriteMessage(websocket.TextMessage, p)
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
-}
-
 func (w *WSConnect) WriteMsg(msg interface{}) {
 	marshal, _ := json.Marshal(msg)
 	err := w.WriteMessage(websocket.TextMessage, marshal)

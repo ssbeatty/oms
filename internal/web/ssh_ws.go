@@ -1,10 +1,12 @@
 package web
 
 import (
+	"bytes"
 	"github.com/gorilla/websocket"
-	"io"
 	"oms/pkg/logger"
 	"oms/pkg/transport"
+	"sync"
+	"time"
 )
 
 const (
@@ -19,10 +21,34 @@ type wsMsg struct {
 	Rows int    `json:"rows"`
 }
 
+type wsBufferWriter struct {
+	buffer bytes.Buffer
+	mu     sync.Mutex
+}
+
+// implement Write interface to write bytes from ssh server into bytes.Buffer.
+func (w *wsBufferWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.buffer.Write(p)
+}
+
+func flushComboOutput(w *wsBufferWriter, wsConn *websocket.Conn) error {
+	if w.buffer.Len() != 0 {
+		err := wsConn.WriteMessage(websocket.TextMessage, w.buffer.Bytes())
+		if err != nil {
+			return err
+		}
+		w.buffer.Reset()
+	}
+	return nil
+}
+
 // SSHSession connect to ssh server using ssh session.
 type SSHSession struct {
 	*transport.Session
-	logger *logger.Logger
+	logger      *logger.Logger
+	comboOutput *wsBufferWriter
 }
 
 func NewSshConn(cols, rows int, sshClient *transport.Client) (*SSHSession, error) {
@@ -33,7 +59,15 @@ func NewSshConn(cols, rows int, sshClient *transport.Client) (*SSHSession, error
 	if err := sshSession.Shell(); err != nil {
 		return nil, err
 	}
-	return &SSHSession{Session: sshSession, logger: logger.NewLogger("webSSH")}, nil
+	comboWriter := new(wsBufferWriter)
+	sshSession.SetStderr(comboWriter)
+	sshSession.SetStdout(comboWriter)
+
+	return &SSHSession{
+		Session:     sshSession,
+		comboOutput: comboWriter,
+		logger:      logger.NewLogger("webSSH"),
+	}, nil
 }
 
 func (s *SSHSession) Close() {
@@ -41,11 +75,6 @@ func (s *SSHSession) Close() {
 		s.Session.Close()
 	}
 
-}
-
-func (s *SSHSession) SetOutput(closer io.WriteCloser) {
-	s.Session.SetStderr(closer)
-	s.Session.SetStdout(closer)
 }
 
 //ReceiveWsMsg  receive websocket msg do some handling then write into ssh.session.stdin
@@ -91,6 +120,28 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 		}
 	}
 }
+
+func (s *SSHSession) SendComboOutput(wsConn *websocket.Conn, exitCh chan bool) {
+	//tells other go routine quit
+	defer setQuit(exitCh)
+
+	//every 120ms write combine output bytes into websocket response
+	tick := time.NewTicker(time.Millisecond * time.Duration(120))
+	//for range time.Tick(120 * time.Millisecond){}
+	defer tick.Stop()
+	for {
+		select {
+		case <-tick.C:
+			//write combine output bytes into websocket response
+			if err := flushComboOutput(s.comboOutput, wsConn); err != nil {
+				return
+			}
+		case <-exitCh:
+			return
+		}
+	}
+}
+
 func (s *SSHSession) SessionWait(quitChan chan bool) {
 	if err := s.Session.Wait(); err != nil {
 		s.logger.Errorf("ssh session wait failed, err: %v", err)
