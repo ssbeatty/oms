@@ -232,7 +232,7 @@ func (s *Service) GetOneGroup(c *gin.Context) {
 	}
 	group, err := models.GetGroupById(id)
 	if err != nil {
-		s.logger.Errorf("GetGroups error when GetGroupById, err: %v", err)
+		s.logger.Errorf("GetOneGroup error when GetGroupById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "error when get group", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -400,7 +400,7 @@ func (s *Service) DeleteTag(c *gin.Context) {
 	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("PutTag error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("DeleteTag error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -479,7 +479,7 @@ func (s *Service) PostTunnel(c *gin.Context) {
 	}
 	tunnel, err := s.tunnelManager.AddTunnel(hostId, mode, src, dest)
 	if err != nil {
-		s.logger.Errorf("error when add tunnel, err: %v", err)
+		s.logger.Errorf("PostTunnel error when add tunnel, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -513,7 +513,7 @@ func (s *Service) PutTunnel(c *gin.Context) {
 	s.tunnelManager.RemoveTunnel(tunnel.Id)
 	tunnel, err = s.tunnelManager.AddTunnel(tunnel.HostId, mode, src, dest)
 	if err != nil {
-		s.logger.Errorf("error when add tunnel, err: %v", err)
+		s.logger.Errorf("PutTunnel error when add tunnel, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -527,14 +527,14 @@ func (s *Service) DeleteTunnel(c *gin.Context) {
 	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("DeleteTunnel error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	err = models.DeleteTunnelById(id)
 	if err != nil {
-		s.logger.Errorf("error when DeleteTunnelById, err: %v", err)
+		s.logger.Errorf("DeleteTunnel error when DeleteTunnelById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not delete tunnel", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -550,7 +550,7 @@ func (s *Service) DeleteTunnel(c *gin.Context) {
 func (s *Service) GetJobs(c *gin.Context) {
 	jobs, err := models.GetAllJob()
 	if err != nil {
-		s.logger.Errorf("error when GetAllJob, err: %v", err)
+		s.logger.Errorf("GetJobs error when GetAllJob, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get jobs", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -563,14 +563,14 @@ func (s *Service) GetOneJob(c *gin.Context) {
 	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("GetOneJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	job, err := models.GetJobById(id)
 	if err != nil {
-		s.logger.Errorf("error when GetJobById, err: %v", err)
+		s.logger.Errorf("GetOneJob error when GetJobById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -600,7 +600,7 @@ func (s *Service) PostJob(c *gin.Context) {
 	}
 	_, err := parser.Parse(spec)
 	if err != nil {
-		msg := fmt.Sprintf("got a error spec, err: %s", err.Error())
+		msg := fmt.Sprintf("PostJob got a error spec, err: %s", err.Error())
 		s.logger.Error(msg)
 		data := generateResponsePayload(HttpStatusError, msg, nil)
 		c.JSON(http.StatusOK, data)
@@ -620,20 +620,20 @@ func (s *Service) PostJob(c *gin.Context) {
 	}
 	hostId, err := strconv.Atoi(hostIdRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", hostIdRaw, err)
+		s.logger.Errorf("PostJob error when Atoi idStr, idRaw: %s ,err: %v", hostIdRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param host id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	host, err := models.GetHostById(hostId)
 	if err != nil {
-		s.logger.Errorf("error when get host, err: %v", err)
+		s.logger.Errorf("PostJob error when GetHostById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get host", nil)
 		c.JSON(http.StatusOK, data)
 	}
 	job, err := models.InsertJob(name, dType, spec, cmd, host)
 	if err != nil {
-		s.logger.Errorf("error when add tunnel, err: %v", err)
+		s.logger.Errorf("PostJob error when InsertJob, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -654,7 +654,7 @@ func (s *Service) PutJob(c *gin.Context) {
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("PutJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -663,7 +663,7 @@ func (s *Service) PutJob(c *gin.Context) {
 	spec := c.PostForm("spec")
 	_, err = parser.Parse(spec)
 	if err != nil && spec != "" {
-		msg := fmt.Sprintf("got a error spec, err: %s", err.Error())
+		msg := fmt.Sprintf("PutJob got a error spec, err: %s", err.Error())
 		s.logger.Error(msg)
 		data := generateResponsePayload(HttpStatusError, msg, nil)
 		c.JSON(http.StatusOK, data)
@@ -673,7 +673,7 @@ func (s *Service) PutJob(c *gin.Context) {
 	cmd := c.PostForm("cmd")
 	job, err := models.UpdateJob(id, name, dType, spec, cmd)
 	if err != nil {
-		s.logger.Errorf("error when add job, err: %v", err)
+		s.logger.Errorf("PutJob error when add job, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not create job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -699,14 +699,14 @@ func (s *Service) DeleteJob(c *gin.Context) {
 	idRaw := c.Param("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("DeleteJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	err = s.taskManager.RemoveJob(id)
 	if err != nil {
-		s.logger.Errorf("error when RemoveJob, err: %v", err)
+		s.logger.Errorf("DeleteJob error when RemoveJob, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not delete job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -719,14 +719,14 @@ func (s *Service) StartJob(c *gin.Context) {
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("StartJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	job, err := models.GetJobById(id)
 	if err != nil {
-		s.logger.Errorf("error when GetJobById, err: %v", err)
+		s.logger.Errorf("StartJob error when GetJobById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -746,7 +746,7 @@ func (s *Service) StopJob(c *gin.Context) {
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("StopJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -766,14 +766,14 @@ func (s *Service) RestartJob(c *gin.Context) {
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("RestartJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 	job, err := models.GetJobById(id)
 	if err != nil {
-		s.logger.Errorf("error when GetJobById, err: %v", err)
+		s.logger.Errorf("RestartJob error when GetJobById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -795,7 +795,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	idRaw := c.Query("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
-		s.logger.Errorf("error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
+		s.logger.Errorf("GetLogStream error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
@@ -815,7 +815,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	header.Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 
-	defer s.logger.Debug("log file stream exit.")
+	defer s.logger.Debug("GetLogStream log file stream exit.")
 
 	w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
 	w.(http.Flusher).Flush()

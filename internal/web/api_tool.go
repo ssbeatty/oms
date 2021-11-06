@@ -171,7 +171,7 @@ func (s *Service) DeleteFile(c *gin.Context) {
 func (s *Service) ExportData(c *gin.Context) {
 	marshal, err := s.ExportDbData()
 	if err != nil {
-		data := generateResponsePayload(HttpStatusError, "error export data", nil)
+		data := generateResponsePayload(HttpStatusError, "ExportData error when export data", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}

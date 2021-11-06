@@ -123,7 +123,7 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 	}
 	session, err := client.NewSession()
 	if err != nil {
-		s.logger.Errorf("create new session failed, err: %v", err)
+		s.logger.Errorf("RunCmdOneAsync create new session failed, err: %v", err)
 	}
 	defer session.Close()
 
@@ -237,7 +237,7 @@ func (s *Service) GetPathInfoExec(hostId int, path string) []*FileInfo {
 		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
 			newHead, err = client.Stat(filepath.ToSlash(filepath.Join(path, infos[i].Name())))
 			if err != nil {
-				s.logger.Errorf("error when stat file: %s, err: %v", filepath.Join(path, infos[i].Name()), err)
+				s.logger.Errorf("GetPathInfoExec error when stat file: %s, err: %v", filepath.Join(path, infos[i].Name()), err)
 				continue
 			}
 			isDir = newHead.IsDir()
@@ -309,7 +309,7 @@ func (s *Service) ImportDbData(marshal []byte) error {
 		tag := data.Tags[index]
 		ok := models.ExistedTag(tag.Name)
 		if !ok {
-			s.logger.Infof("Insert Tag %s", tag.Name)
+			s.logger.Infof("ImportDbData error when Insert Tag %s", tag.Name)
 			_, _ = models.InsertTag(tag.Name)
 		}
 	}
@@ -317,7 +317,7 @@ func (s *Service) ImportDbData(marshal []byte) error {
 		group := data.Groups[index]
 		ok := models.ExistedGroup(group.Name)
 		if !ok {
-			s.logger.Errorf("Insert Group %s", group.Name)
+			s.logger.Errorf("ImportDbData error when Insert Group %s", group.Name)
 			_, _ = models.InsertGroup(group.Name, group.Params, group.Mode)
 		}
 	}
@@ -325,7 +325,7 @@ func (s *Service) ImportDbData(marshal []byte) error {
 		host := data.Hosts[index]
 		ok := models.ExistedHost(host.Name, host.Addr)
 		if !ok {
-			s.logger.Errorf("Insert Host %s", host.Name)
+			s.logger.Errorf("ImportDbData error when Insert Host %s", host.Name)
 			tags := make([]string, 0)
 			for i := 0; i < len(host.Tags); i++ {
 				tags = append(tags, strconv.Itoa(host.Tags[i].Id))
@@ -352,7 +352,7 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	}
 	session, err := client.NewSessionWithPty(20, 20)
 	if err != nil {
-		s.logger.Errorf("create new session failed, err: %v", err)
+		s.logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
