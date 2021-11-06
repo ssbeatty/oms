@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/gobuffalo/packr"
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"oms/internal/utils"
 )
