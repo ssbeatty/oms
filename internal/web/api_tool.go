@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"github.com/gin-gonic/gin"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -119,6 +120,13 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 
 	if file != nil {
 		fh, err := file.Stat()
+		mode := fh.Mode() & fs.ModeType
+		if mode == 0 {
+			// proc
+			buf, _ := ioutil.ReadAll(file)
+			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+		}
+
 		if err != nil {
 			s.logger.Errorf("DownLoadFile error when Stat file, err: %v", err)
 			http.ServeContent(c.Writer, c.Request, "download", time.Now(), file)

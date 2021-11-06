@@ -235,7 +235,11 @@ func (s *Service) GetPathInfoExec(hostId int, path string) []*FileInfo {
 		var isDir bool
 		var newHead os.FileInfo
 		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
-			newHead, _ = client.Stat(filepath.ToSlash(filepath.Join(path, infos[i].Name())))
+			newHead, err = client.Stat(filepath.ToSlash(filepath.Join(path, infos[i].Name())))
+			if err != nil {
+				s.logger.Errorf("error when stat file: %s, err: %v", filepath.Join(path, infos[i].Name()), err)
+				continue
+			}
 			isDir = newHead.IsDir()
 		} else {
 			isDir = infos[i].IsDir()

@@ -15,20 +15,20 @@ import (
 )
 
 const (
-	HttpStatusOk        = 200
-	HttpStatusError     = 400
+	HttpStatusOk        = "200"
+	HttpStatusError     = "400"
 	HttpResponseSuccess = "success"
 )
 
 type Response struct {
-	Code int         `json:"code"`
+	Code string      `json:"code"`
 	Msg  string      `json:"msg"`
 	Data interface{} `json:"data,omitempty"`
 }
 
 var parser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 
-func generateResponsePayload(code int, msg string, data interface{}) Response {
+func generateResponsePayload(code string, msg string, data interface{}) Response {
 	return Response{code, msg, data}
 }
 
