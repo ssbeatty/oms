@@ -1,9 +1,10 @@
 package web
 
 import (
+	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -116,25 +117,36 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 		return
 	}
 	file := s.DownloadFile(id, path)
-	defer file.Close()
 
 	if file != nil {
+		defer file.Close()
+
 		fh, err := file.Stat()
 		if err != nil {
 			s.logger.Errorf("error when Stat file, err: %v", err)
-			http.ServeContent(c.Writer, c.Request, "download", time.Now(), file)
+			c.String(http.StatusOK, "file stat error")
+			return
 		}
-		mode := fh.Mode() & fs.ModeType
-		if mode == 0 {
-			// proc
-			buf, _ := ioutil.ReadAll(file)
-			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+
+		extraHeaders := map[string]string{
+			"Content-Disposition": fmt.Sprintf("inline; filename=\"%s\"", fh.Name()),
+		}
+
+		reader := bufio.NewReader(file)
+
+		if fh.Size() != 0 {
+			c.DataFromReader(http.StatusOK, fh.Size(), "text/plain", reader, extraHeaders)
+			return
 		} else {
-			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
+			buf, err := ioutil.ReadAll(file)
+			if err != nil {
+				s.logger.Errorf("read virtual file error: %v", err)
+			}
+			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
 		}
 	} else {
-		data := generateResponsePayload(HttpStatusError, "download file error", nil)
-		c.JSON(http.StatusOK, data)
+		c.String(http.StatusOK, "file not existed")
+		return
 	}
 }
 
