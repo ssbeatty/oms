@@ -42,7 +42,7 @@ func NewServerConfig(path string) (*Conf, error) {
 			return nil, err
 		}
 	} else {
-		box := packr.NewBox("../configs")
+		box := packr.NewBox("../../configs")
 		data, err = box.Find("config.yaml.example")
 		if err != nil {
 			return nil, err
