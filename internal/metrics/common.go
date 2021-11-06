@@ -5,6 +5,7 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/tunnel"
+	"oms/pkg/transport"
 	"time"
 )
 
@@ -21,6 +22,7 @@ type Manager struct {
 	currentSSHClient prometheus.Gauge
 	currentJobs      prometheus.Gauge
 	currentTunnels   prometheus.Gauge
+	currentSessions  prometheus.Gauge
 }
 
 func NewManager(ssh *ssh.Manager, task *task.Manager, tunnel *tunnel.Manager) *Manager {
@@ -45,6 +47,10 @@ func NewManager(ssh *ssh.Manager, task *task.Manager, tunnel *tunnel.Manager) *M
 		Name: "task_register_nums",
 		Help: "Current Num of Task.",
 	})
+	manager.currentSessions = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "current_session_nums",
+		Help: "Current Nums of SSH Session.",
+	})
 
 	return manager
 }
@@ -54,6 +60,9 @@ func (m *Manager) Init() *Manager {
 	prometheus.MustRegister(m.currentSSHClient)
 	prometheus.MustRegister(m.currentTunnels)
 	prometheus.MustRegister(m.currentJobs)
+	prometheus.MustRegister(m.currentSessions)
+
+	transport.RegisterSessionGauge(m.currentSessions)
 
 	go func() {
 		for {

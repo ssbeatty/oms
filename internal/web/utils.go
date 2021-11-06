@@ -215,7 +215,7 @@ func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*
 	// do upload
 	for i := 0; i < len(files); i++ {
 		addr := fmt.Sprintf("%s:%d", host.Addr, host.Port)
-		s.sshManager.UploadFileOneAsync(client, files[i], remote, addr, files[i].Filename)
+		go s.sshManager.UploadFileOneAsync(client, files[i], remote, addr, files[i].Filename)
 	}
 	wg.Done()
 }

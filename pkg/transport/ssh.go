@@ -21,6 +21,14 @@ const (
 	KillSignal     = "0x09"
 )
 
+var gauge Gauge
+
+type Gauge interface {
+	Set(float64)
+	Inc()
+	Dec()
+}
+
 type Client struct {
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
@@ -35,10 +43,18 @@ type Session struct {
 ssh基础服务
 */
 
+// RegisterSessionGauge call register a gauge listen session num
+func RegisterSessionGauge(g Gauge) {
+	gauge = g
+}
+
 func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	session, err := c.sshClient.NewSession()
 	if err != nil {
 		return nil, err
+	}
+	if gauge != nil {
+		gauge.Inc()
 	}
 	stdin, err := session.StdinPipe()
 	if err != nil {
@@ -64,6 +80,9 @@ func (c *Client) NewSession() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
+	if gauge != nil {
+		gauge.Inc()
+	}
 	stdin, err := session.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -87,6 +106,9 @@ func (s *Session) Kill() error {
 }
 
 func (s *Session) Close() error {
+	if gauge != nil {
+		gauge.Dec()
+	}
 	return s.sshSession.Close()
 }
 
