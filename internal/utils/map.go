@@ -10,7 +10,7 @@ type SafeMap struct {
 	len   int64
 }
 
-func NewSageMap() *SafeMap {
+func NewSafeMap() *SafeMap {
 	return &SafeMap{
 		inner: &sync.Map{},
 	}

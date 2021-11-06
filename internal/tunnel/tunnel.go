@@ -23,7 +23,7 @@ type Manager struct {
 
 func NewManager(sshManager *ssh.Manager) *Manager {
 	manager := &Manager{
-		tunnels:    utils.NewSageMap(),
+		tunnels:    utils.NewSafeMap(),
 		closer:     make(chan bool),
 		sshManager: sshManager,
 		logger:     logger.NewLogger("tunnelManager"),
@@ -32,13 +32,13 @@ func NewManager(sshManager *ssh.Manager) *Manager {
 	return manager
 }
 
+func (m *Manager) GetTunnelList() *utils.SafeMap {
+	return m.tunnels
+}
+
 func (m *Manager) Init() *Manager {
 	go m.Start()
 	return m
-}
-
-func (m *Manager) Length() int {
-	return m.tunnels.Length()
 }
 
 func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {

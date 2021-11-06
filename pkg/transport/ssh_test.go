@@ -1,4 +1,4 @@
-package transport
+package transport_test
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/utils"
 	"oms/pkg/cache"
+	"oms/pkg/transport"
 	"testing"
 	"time"
 )
@@ -25,7 +26,7 @@ func (h *Host) serialize() int64 {
 }
 
 var host Host
-var client *Client
+var client *transport.Client
 
 func init() {
 	data, err := ioutil.ReadFile("./hosts")
@@ -37,7 +38,7 @@ func init() {
 		return
 	}
 
-	client, err = New(host.Addr, host.User, host.PassWord, nil, host.Port)
+	client, err = transport.New(host.Addr, host.User, host.PassWord, nil, host.Port)
 	if err != nil {
 		return
 	}
@@ -111,13 +112,13 @@ func TestNewClientWithSftp(t *testing.T) {
 	err := client.NewSftpClient()
 	assert.Nil(t, err)
 
-	h, _ := client.sftpClient.Lstat("/bin")
+	h, _ := client.GetSftpClient().Lstat("/bin")
 	t.Log(h.Mode()&fs.ModeType == fs.ModeSymlink)
 
-	s, _ := client.sftpClient.ReadLink("/bin")
+	s, _ := client.GetSftpClient().ReadLink("/bin")
 	t.Log(s)
 
-	t.Log(client.sftpClient.Getwd())
+	t.Log(client.GetSftpClient().Getwd())
 
 	infos, _ := client.ReadDir("/")
 	for _, info := range infos {
@@ -129,9 +130,9 @@ func TestNewClientWithSftp(t *testing.T) {
 }
 
 func TestSSHStat(t *testing.T) {
-	status := NewStatus()
+	status := transport.NewStatus()
 	for i := 0; i < 10; i++ {
-		GetAllStats(client.sshClient, status, nil)
+		transport.GetAllStats(client.GetSSHClient(), status, nil)
 		t.Log(status.CPU)
 		time.Sleep(time.Second)
 	}

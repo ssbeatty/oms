@@ -84,7 +84,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 			return
 		case <-ticker.C:
 			var resp []FTaskResp
-			w.engine.sshManager.FileList().Range(func(key, value interface{}) bool {
+			w.engine.sshManager.GetFileList().Range(func(key, value interface{}) bool {
 				task := value.(*ssh.TaskItem)
 				percent := float32(task.RSize) * 100.0 / float32(task.Total)
 				resp = append(resp, FTaskResp{
@@ -98,7 +98,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 				})
 				task.CSize = task.RSize
 				if task.Status == ssh.TaskDone || task.Status == ssh.TaskFailed {
-					w.engine.sshManager.FileList().Delete(key)
+					w.engine.sshManager.GetFileList().Delete(key)
 				}
 				return true
 			})

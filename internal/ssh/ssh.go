@@ -1,7 +1,7 @@
 package ssh
 
 import (
-	log "github.com/sirupsen/logrus"
+	"io"
 	"oms/internal/models"
 	"oms/internal/utils"
 	"oms/pkg/cache"
@@ -30,13 +30,17 @@ type Manager struct {
 
 func NewManager() *Manager {
 	return &Manager{
-		fileList: utils.NewSageMap(),
+		fileList: utils.NewSafeMap(),
 		sshPoll:  cache.NewCache(1000),
 		logger:   logger.NewLogger("sshManager"),
 	}
 }
 
-func (m *Manager) FileList() *utils.SafeMap {
+func (m *Manager) GetSSHList() *cache.Cache {
+	return m.sshPoll
+}
+
+func (m *Manager) GetFileList() *utils.SafeMap {
 	return m.fileList
 }
 
@@ -73,31 +77,6 @@ func (m *Manager) NewClient(host string, port int, user string, password string,
 	return cli, nil
 }
 
-func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool) (err error) {
-	session, err := client.NewSessionWithPty(20, 20)
-	if err != nil {
-		return err
-	}
-	errChan := make(chan error)
-	go func(c string) {
-		err = session.Run(c)
-		if err != nil {
-			log.Errorf("RunTaskWithQuit run task error, %v", err)
-			errChan <- err
-		}
-	}(cmd)
-	defer session.Close()
-
-	select {
-	case <-quitCh:
-		// 理论上pty下不需要kill
-		log.Info("task quit.")
-	case err := <-errChan:
-		return err
-	}
-	return
-}
-
 func (m *Manager) GetStatus(host *models.Host) bool {
 	client, err := m.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -115,4 +94,28 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 	host.Status = true
 	_ = models.UpdateHostStatus(host)
 	return true
+}
+
+func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, writer io.Writer) (err error) {
+	session, err := client.NewSessionWithPty(20, 20)
+	if err != nil {
+		return err
+	}
+	session.SetStdout(writer)
+
+	errChan := make(chan error)
+	go func(c string) {
+		err = session.Run(c)
+		if err != nil {
+			errChan <- err
+		}
+	}(cmd)
+	defer session.Close()
+
+	select {
+	case <-quitCh:
+		return
+	case err := <-errChan:
+		return err
+	}
 }

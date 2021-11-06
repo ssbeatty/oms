@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"io/ioutil"
+	"oms/internal/metrics"
 	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/tunnel"
@@ -22,15 +23,19 @@ type Service struct {
 	taskManager   *task.Manager
 	tunnelManager *tunnel.Manager
 	sshManager    *ssh.Manager
+	metrics       *metrics.Manager
 }
 
 func NewService(addr string, port int) *Service {
 	sshManager := ssh.NewManager()
+	taskManager := task.NewManager(sshManager).Init()
+	tunnelManager := tunnel.NewManager(sshManager).Init()
 	service := &Service{
 		addr:          fmt.Sprintf("%s:%d", addr, port),
 		sshManager:    sshManager,
-		taskManager:   task.NewManager(sshManager).Init(),
-		tunnelManager: tunnel.NewManager(sshManager).Init(),
+		taskManager:   taskManager,
+		tunnelManager: tunnelManager,
+		metrics:       metrics.NewManager(sshManager, taskManager, tunnelManager).Init(),
 		logger:        logger.NewLogger("web"),
 	}
 
@@ -67,6 +72,7 @@ func (s *Service) InitRouter() *Service {
 	r := gin.New()
 
 	r.Use(gin.Recovery())
+	r.Use(CORS)
 
 	// static files
 	box := packr.NewBox("../../web/static")
