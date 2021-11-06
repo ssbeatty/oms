@@ -12,13 +12,11 @@ import (
 	"oms/pkg/logger"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 const (
-	LocalMode    = "local"
-	RemoteMode   = "remote"
-	ConnDeadLine = 20 * time.Second
+	LocalMode  = "local"
+	RemoteMode = "remote"
 )
 
 type SSHTunnel struct {

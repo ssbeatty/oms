@@ -33,11 +33,11 @@ func SetLevelAndFormat(l Level, formatter log.Formatter) {
 
 func NewLogger(service string) *Logger {
 	l := log.New()
+	l.SetFormatter(logFormat)
 	logger := &Logger{
 		entry: l.WithField("service", service),
 	}
 	logger.SetLevel(logLevel)
-	l.SetFormatter(logFormat)
 	return logger
 }
 

@@ -2,24 +2,37 @@ package server
 
 import (
 	"oms/internal/config"
+	"oms/internal/ssh"
+	"oms/internal/task"
+	"oms/internal/tunnel"
 	"oms/internal/web"
 )
 
-type Service struct {
-	cfg        *config.Conf
-	webService *web.Service
+type Server struct {
+	cfg           *config.Conf
+	webService    *web.Service
+	taskManager   *task.Manager
+	tunnelManager *tunnel.Manager
+	sshManager    *ssh.Manager
 }
 
-func NewService(cfg *config.Conf) *Service {
-	service := &Service{
-		cfg: cfg,
+func NewServer(cfg *config.Conf) *Server {
+	sshManager := ssh.NewManager()
+	taskManager := task.NewManager(sshManager).Init()
+	tunnelManager := tunnel.NewManager(sshManager).Init()
+
+	service := &Server{
+		cfg:           cfg,
+		sshManager:    sshManager,
+		taskManager:   taskManager,
+		tunnelManager: tunnelManager,
 	}
 
 	return service
 }
 
-func (s *Service) Run() {
-	s.webService = web.NewService(s.cfg.App.Addr, s.cfg.App.Port)
+func (s *Server) Run() {
+	s.webService = web.NewService(s.cfg.App, s.sshManager, s.taskManager, s.tunnelManager)
 	s.webService.SetRelease()
 	// block
 	s.webService.InitRouter().Run()

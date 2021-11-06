@@ -32,10 +32,12 @@ func NewManager(sshManager *ssh.Manager) *Manager {
 	return manager
 }
 
+// GetTunnelList 获取tunnels poll
 func (m *Manager) GetTunnelList() *utils.SafeMap {
 	return m.tunnels
 }
 
+// Init 启动并注册数据库的tunnel到tunnels poll
 func (m *Manager) Init() *Manager {
 	go m.Start()
 	return m
@@ -96,6 +98,7 @@ func (m *Manager) Close() {
 	close(m.closer)
 }
 
+// addTunnel create new tunnel
 func (m *Manager) addTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
 	client, err := m.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
@@ -109,6 +112,7 @@ func (m *Manager) addTunnel(modelTunnel *models.Tunnel, host *models.Host) error
 	return nil
 }
 
+// RemoveTunnel 从tunnels poll删除tunnel 并停止
 func (m *Manager) RemoveTunnel(id int) {
 	val, ok := m.tunnels.Load(id)
 	if !ok {
@@ -121,6 +125,7 @@ func (m *Manager) RemoveTunnel(id int) {
 	m.tunnels.Delete(id)
 }
 
+// AddTunnel 新建tunnel model并注册在tunnels poll
 func (m *Manager) AddTunnel(hostId int, mode, src, dest string) (*models.Tunnel, error) {
 	host, err := models.GetHostById(hostId)
 	if err != nil {

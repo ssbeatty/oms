@@ -168,9 +168,18 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 
 func GetAllHost() ([]*Host, error) {
 	var hosts []*Host
-	err := db.Preload("Jobs").
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
+	err := db.Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
 		Find(&hosts).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return hosts, nil
+}
+
+func GetAllHostWithOutPreload() ([]*Host, error) {
+	var hosts []*Host
+	err := db.Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}

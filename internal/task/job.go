@@ -95,15 +95,17 @@ func (j *Job) Run() {
 		j.logger.Errorf("error when new ssh client, err: %v", err)
 		return
 	}
-	session, err := client.NewSessionWithPty(20, 20)
-	if err != nil {
-		j.logger.Errorf("create new session failed, err: %v", err)
-	}
-	defer session.Close()
 
-	session.SetStdout(j.std)
 	j.UpdateStatus(JobStatusRunning)
 	if j.Type == JobTypeCron {
+		session, err := client.NewSessionWithPty(20, 20)
+		if err != nil {
+			j.logger.Errorf("create new session failed, err: %v", err)
+		}
+		defer session.Close()
+
+		session.SetStdout(j.std)
+
 		err = session.Run(j.cmd)
 		if err != nil {
 			j.logger.Errorf("error when run cmd, err: %v", err)

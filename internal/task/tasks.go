@@ -18,13 +18,13 @@ func (m *Manager) NewCronStatusJob() *CronStatusJob {
 }
 
 func (c *CronStatusJob) Run() {
-	c.engine.logger.Info("======================Task GetHostStatus start======================")
-	hosts, err := models.GetAllHost()
+	c.engine.logger.Info("======================Task CronStatusJob start======================")
+	hosts, err := models.GetAllHostWithOutPreload()
 	if err != nil {
-		c.engine.logger.Errorf("error when GetAllHost, err: %v", err)
+		c.engine.logger.Errorf("error when GetAllHostWithOutPreload, err: %v", err)
 	}
 	for i := 0; i < len(hosts); i++ {
 		go c.engine.sshManager.GetStatus(hosts[i])
 	}
-	c.engine.logger.Info("======================Task GetHostStatus end ======================")
+	c.engine.logger.Info("======================Task CronStatusJob end ======================")
 }

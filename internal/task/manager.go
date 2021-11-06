@@ -38,6 +38,7 @@ func NewManager(sshManager *ssh.Manager) *Manager {
 	}
 }
 
+// Init 启动crontab daemon, 注册全局任务, 创建日志文件夹并初始化job
 func (m *Manager) Init() *Manager {
 	m.taskService.Start()
 
@@ -64,6 +65,7 @@ func (m *Manager) Init() *Manager {
 	return m
 }
 
+// GetJobList 获取task poll对象
 func (m *Manager) GetJobList() *utils.SafeMap {
 	return m.taskPoll
 }
@@ -105,6 +107,7 @@ func (m *Manager) UnRegister(id int) error {
 	return nil
 }
 
+// NewJobWithRegister 新建一个job并注册到task poll
 func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error {
 	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
 	realJob.status.Store(JobStatus(status))
@@ -117,8 +120,9 @@ func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error 
 	return nil
 }
 
+// RemoveJob 从task poll删除，并删除model
 func (m *Manager) RemoveJob(id int) error {
-	m.logger.Infof("recv singinl to remove job: %d", id)
+	m.logger.Infof("received signal to remove job: %d", id)
 	err := m.UnRegister(id)
 	if err != nil {
 		return err
@@ -131,26 +135,19 @@ func (m *Manager) RemoveJob(id int) error {
 	return nil
 }
 
+// StartJob 从models注册并启动job
 func (m *Manager) StartJob(modelJob *models.Job) error {
-	m.logger.Infof("recv singinl to start job: %d", modelJob.Id)
-	if key, ok := m.taskPoll.Load(modelJob.Id); ok {
-		job := key.(*Job)
-		job.status.Store(JobStatusReady)
-		err := m.Register(modelJob.Id, job)
-		if err != nil {
-			return err
-		}
-	} else {
-		err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
-		if err != nil {
-			return err
-		}
+	m.logger.Infof("received signal to start job: %d", modelJob.Id)
+	err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
+// StopJob 从task poll删除job
 func (m *Manager) StopJob(id int) error {
-	m.logger.Infof("recv singinl to stop job: %d", id)
+	m.logger.Infof("received signal to stop job: %d", id)
 	err := m.UnRegister(id)
 	if err != nil {
 		return err
@@ -166,6 +163,7 @@ func (m *Manager) GetJob(id int) (*Job, bool) {
 	return nil, false
 }
 
+// initJobFromModels 从数据库加载所有的job并继承状态
 func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 	m.logger.Info("init all job without stopped or fatal.")
 	for _, modelJob := range modelJobs {

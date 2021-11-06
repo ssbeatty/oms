@@ -2,7 +2,6 @@ package ssh
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"mime/multipart"
 	"oms/pkg/transport"
@@ -49,7 +48,7 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 
 	file, err := fileH.Open()
 	if err != nil {
-		log.Errorf("error when open multipart file, err: %v", err)
+		m.logger.Errorf("error when open multipart file, err: %v", err)
 		task.Status = TaskFailed
 		return
 	}
@@ -68,21 +67,20 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
 	}
 	if _, err := c.GetSftpClient().Stat(remoteDir); err != nil {
-		log.Println("sftp: Mkdir all", remoteDir)
 		if err := c.MkdirAll(remoteDir); err != nil {
 			task.Status = TaskFailed
-			log.Errorf("error when sftp create dirs, err: %v", err)
+			m.logger.Errorf("error when sftp create dirs, err: %v", err)
 		}
 	}
 	r, err := c.GetSftpClient().Create(remoteFile)
 	if err != nil {
-		log.Errorf("error when sftp create file, err: %v", err)
+		m.logger.Errorf("error when sftp create file, err: %v", err)
 		task.Status = TaskFailed
 		return
 	}
 
 	defer func() {
-		log.Debugf("upload file goroutine exit.")
+		m.logger.Debugf("upload file goroutine exit.")
 		_ = file.Close()
 		_ = r.Close()
 		close(ch)
@@ -106,7 +104,7 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 	}
 	task.Status = TaskDone
 
-	log.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
+	m.logger.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
 }
 
 func (m *Manager) NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*transport.Client, error) {

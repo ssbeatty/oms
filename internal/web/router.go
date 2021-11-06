@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"io/ioutil"
+	"oms/internal/config"
 	"oms/internal/metrics"
 	"oms/internal/ssh"
 	"oms/internal/task"
@@ -26,12 +27,9 @@ type Service struct {
 	metrics       *metrics.Manager
 }
 
-func NewService(addr string, port int) *Service {
-	sshManager := ssh.NewManager()
-	taskManager := task.NewManager(sshManager).Init()
-	tunnelManager := tunnel.NewManager(sshManager).Init()
+func NewService(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, tunnelManager *tunnel.Manager) *Service {
 	service := &Service{
-		addr:          fmt.Sprintf("%s:%d", addr, port),
+		addr:          fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
 		sshManager:    sshManager,
 		taskManager:   taskManager,
 		tunnelManager: tunnelManager,

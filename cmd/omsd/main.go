@@ -30,6 +30,6 @@ func main() {
 		logger.SetLevelAndFormat(logger.InfoLevel, &log.TextFormatter{})
 	}
 
-	srv := server.NewService(conf)
+	srv := server.NewServer(conf)
 	srv.Run()
 }
