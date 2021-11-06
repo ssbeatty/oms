@@ -167,7 +167,11 @@ func (m *Manager) GetJob(id int) (*Job, bool) {
 func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 	m.logger.Info("init all job without stopped or fatal.")
 	for _, modelJob := range modelJobs {
-		err := m.NewJobWithRegister(modelJob, modelJob.Status)
+		var status = modelJob.Status
+		if JobStatus(modelJob.Status) == JobStatusRunning {
+			status = string(JobStatusReady)
+		}
+		err := m.NewJobWithRegister(modelJob, status)
 		if err != nil {
 			m.logger.Errorf("error when register a new job, err: %v", err)
 		}

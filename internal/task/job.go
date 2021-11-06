@@ -82,6 +82,8 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 }
 
 func (j *Job) Run() {
+	j.engine.logger.Infof("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
+	j.logger.Info("job start running.")
 	if j.Status() == JobStatusStop || j.Status() == JobStatusFatal {
 		return
 	}
