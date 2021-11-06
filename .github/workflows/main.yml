@@ -2,7 +2,7 @@ name: BUILD Linux
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.**'
 
 jobs:
   build:
@@ -37,6 +37,6 @@ jobs:
           body: Release for new version
           files: |
             ./release/*
-            ./conf/config.yaml.example
+            ./configs/config.yaml.example
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -9,6 +9,7 @@ import (
 	"oms/internal/utils"
 	"oms/pkg/cache"
 	"oms/pkg/transport"
+	"os"
 	"testing"
 	"time"
 )
@@ -74,7 +75,7 @@ func TestLongTimeCmd(t *testing.T) {
 		quitCh <- true
 	}()
 
-	ssh.RunTaskWithQuit(client, "sleep 60", quitCh)
+	ssh.RunTaskWithQuit(client, "sleep 60", quitCh, os.Stdout)
 }
 
 func TestConnectionPing(t *testing.T) {
