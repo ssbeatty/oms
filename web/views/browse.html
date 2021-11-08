@@ -93,7 +93,7 @@
             $("#fromId").val(hostId);
             var formData = new FormData($("#uploadForm")[0]);
             $.ajax({
-                "url" : "/tools/upload",
+                "url" : "/tools/upload_file",
                 "type" : "post",
                 "data" : formData,
                 "success" : callBack,

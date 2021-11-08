@@ -51,7 +51,7 @@ func InitModels(dsn, dbName, user, pass, driver string) error {
 		dataSource = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 			dsnArgs[0], user, pass, dbName, dsnArgs[1],
 		)
-		d, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		d, err = gorm.Open(postgres.Open(dataSource), &gorm.Config{})
 		db = &DataBase{d, nil}
 	} else {
 		dataSource = "oms.db"

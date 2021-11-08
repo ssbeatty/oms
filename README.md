@@ -22,20 +22,23 @@ go get -u github.com/gobuffalo/packr/packr
 
 # 打包
 packr build
-or
-GOOS=windows GOARCH=amd64 packr build
 ```
 
 2. 启动 创建config.yaml在可执行文件同级 运行即可(例如conf/conf.yaml)
 ```shell script
-# 数据库配置 如果使用默认配置文件则使用sqlite
-db_driver: sqlite
+# 支持mysql postgres sqlite(默认,仅调试)
+app:
+  name: oms
+  addr: 127.0.0.1
+  port: 8080
+  mode: dev
 
-mysql:
+db:
+  driver: sqlite
   user: root
   password: 123456
-  urls: 127.0.0.1:3306
-  db: oms
+  dsn: 127.0.0.1:3306
+  db_name: oms
 ```
 
 3. 关于配置, 默认使用内嵌在二进制文件中的`conf/config.yaml.example`, 如果当前目录存在`config.yaml`则以此文件优先。
@@ -55,11 +58,11 @@ mysql:
 6. 使用组和标签的匹配以及模仿saltstack的匹配。
 ```shell script
 -L 列表匹配
--L "192.168.1.1,192.168.1.2"
+-L 192.168.1.1,192.168.1.2
 -E 正则
--E ".*？"
+-E .*?
 -G 通配符
--L "192.168.1.*"
+-G 192.168.1.*
 以上匹配都只针对主机的addr
 ```
 7. 后台定时任务判断主机的状态。

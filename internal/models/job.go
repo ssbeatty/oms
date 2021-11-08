@@ -58,7 +58,7 @@ func InsertJob(name, t, spec, cmd string, host *Host) (*Job, error) {
 		Cmd:    cmd,
 		HostId: host.Id,
 	}
-	err := db.Preload("Host").Create(&job).Error
+	err := db.Create(&job).Error
 	if err != nil {
 		return nil, err
 	}

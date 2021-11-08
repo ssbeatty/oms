@@ -48,7 +48,7 @@ func InsertTunnel(mode, src, dest string, host *Host) (*Tunnel, error) {
 		Destination: dest,
 		HostId:      host.Id,
 	}
-	err := db.Preload("Host").Create(&tunnel).Error
+	err := db.Create(&tunnel).Error
 	if err != nil {
 		return nil, err
 	}

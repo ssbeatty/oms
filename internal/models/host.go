@@ -9,27 +9,44 @@ import (
 // Host Struct
 type Host struct {
 	Id       int    `json:"id"`
-	Name     string `gorm:"size:100;not null" json:"name"`
+	Name     string `gorm:"size:128;not null" json:"name"`
 	User     string `gorm:"size:128;not null" json:"user"`
 	Addr     string `gorm:"size:128;not null" json:"addr"`
 	Port     int    `gorm:"default:22" json:"port"`
 	PassWord string `gorm:"size:128;not null" json:"-"`
-	KeyFile  string `gorm:"type:text" json:"-"`
-
-	Status bool `gorm:"default:false" json:"status"`
-
-	GroupId int      `json:"group_id"`
-	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
-	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
-	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
-	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
+	// Deprecated: Use PrivateKey instead.
+	KeyFile      string     `gorm:"type:text" json:"-"`
+	Status       bool       `gorm:"default:false" json:"status"`
+	PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
+	PrivateKeyID int        `json:"private_key_id"`
+	GroupId      int        `json:"group_id"`
+	Group        Group      `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
+	Tags         []Tag      `gorm:"many2many:host_tag" json:"tags"`
+	Tunnels      []Tunnel   `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
+	Jobs         []Job      `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
 }
 
-func GetHostById(id int) (*Host, error) {
+// PrivateKey TODO add host私钥
+type PrivateKey struct {
+	Id      int    `json:"id"`
+	Name    string `gorm:"size:128;not null" json:"name"`
+	KeyFile string `gorm:"type:text" json:"-"`
+}
+
+func GetHostByIdWithPreload(id int) (*Host, error) {
 	host := Host{}
 	err := db.Where("id = ?", id).
 		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
 		First(&host).Error
+	if err != nil {
+		return nil, err
+	}
+	return &host, nil
+}
+
+func GetHostById(id int) (*Host, error) {
+	host := Host{}
+	err := db.Where("id = ?", id).First(&host).Error
 	if err != nil {
 		return nil, err
 	}
@@ -190,9 +207,7 @@ func GetAllHostWithOutPreload() ([]*Host, error) {
 func GetHostByGlob(glob string) ([]*Host, error) {
 	var hosts []*Host
 	glob = strings.Replace(glob, "*", "%", -1)
-	err := db.Where("addr LIKE ?", glob).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Find(&hosts).Error
+	err := db.Where("addr LIKE ?", glob).Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -202,9 +217,7 @@ func GetHostByGlob(glob string) ([]*Host, error) {
 func GetHostByReg(regStr string) ([]*Host, error) {
 	var hosts []*Host
 	var hostsR []*Host
-	err := db.Find(&hosts).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Error
+	err := db.Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -220,9 +233,7 @@ func GetHostByReg(regStr string) ([]*Host, error) {
 
 func GetHostByAddr(addr string) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Where("addr = ?", addr).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Find(&hosts).Error
+	err := db.Where("addr = ?", addr).Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}
@@ -231,9 +242,7 @@ func GetHostByAddr(addr string) ([]*Host, error) {
 
 func GetHostsByTag(tag *Tag) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Model(&tag).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Association("Hosts").Find(&hosts)
+	err := db.Model(&tag).Association("Hosts").Find(&hosts)
 	if err != nil {
 		return nil, err
 	}
@@ -242,9 +251,7 @@ func GetHostsByTag(tag *Tag) ([]*Host, error) {
 
 func GetHostsByGroup(group *Group) ([]*Host, error) {
 	var hosts []*Host
-	err := db.Where("group_id = ?", group.Id).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Find(&hosts).Error
+	err := db.Where("group_id = ?", group.Id).Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}

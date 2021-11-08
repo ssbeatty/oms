@@ -96,7 +96,6 @@ func (s *Service) InitRouter() *Service {
 
 	// tools
 	r.GET("/tools/cmd", s.RunCmd)
-	r.POST("/tools/upload", s.FileUpload)
 	r.GET("/tools/browse", s.GetPathInfo)
 	r.GET("/tools/download", s.DownLoadFile)
 	r.POST("/tools/delete", s.DeleteFile)

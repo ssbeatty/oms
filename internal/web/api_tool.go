@@ -37,35 +37,6 @@ func (s *Service) RunCmd(c *gin.Context) {
 
 }
 
-func (s *Service) FileUpload(c *gin.Context) {
-	var remoteFile string
-	id, err := strconv.Atoi(c.PostForm("id"))
-	if err != nil {
-		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	form, _ := c.MultipartForm()
-	files := form.File["files"]
-	remote := c.PostForm("remote")
-	if remote == "" {
-		remoteFile = remote
-	} else {
-		if remote[len(remote)-1] == '/' {
-			remoteFile = remote
-		} else {
-			remoteFile = remote + "/"
-		}
-	}
-	pType := c.PostForm("type")
-	hosts := s.ParseHostList(pType, id)
-
-	results := s.UploadFile(hosts, files, remoteFile)
-	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
-	c.JSON(http.StatusOK, data)
-
-}
-
 func (s *Service) FileUploadUnBlock(c *gin.Context) {
 	var remoteFile string
 	id, err := strconv.Atoi(c.PostForm("id"))

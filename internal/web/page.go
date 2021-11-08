@@ -103,15 +103,21 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 	}
 	defer wsConn.Close()
 
-	host, _ := models.GetHostById(id)
+	host, err := models.GetHostById(id)
+	if err != nil {
+		s.logger.Errorf("can not get ")
+		return
+	}
 	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		s.logger.Errorf("transport new client failed, err: %v", err)
+		return
 	}
 
 	ssConn, err := NewSshConn(cols, rows, client)
 	if err != nil {
 		s.logger.Errorf("new ssh connect failed, err: %v", err)
+		return
 	}
 	ws := NewWSConnect(wsConn, nil)
 	defer ssConn.Close()

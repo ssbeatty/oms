@@ -57,7 +57,7 @@ func (s *Service) GetOneHost(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	hosts, err := models.GetHostById(id)
+	hosts, err := models.GetHostByIdWithPreload(id)
 	if err != nil {
 		s.logger.Errorf("GetOneHost error when GetHostById, err: %v", err)
 		data = generateResponsePayload(HttpStatusError, "can not get hosts", nil)

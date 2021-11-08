@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
+	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"mime/multipart"
 	"oms/internal/models"
@@ -70,6 +71,14 @@ func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 			}
 		} else {
 			args := strings.Split(group.Params, " ")
+			if len(args) < 2 {
+				log.Errorf("group params error, params: %s", group.Params)
+				return nil
+			} else {
+				if strings.Contains(args[1], "\"") {
+					args[1] = strings.ReplaceAll(args[1], "\"", "")
+				}
+			}
 			switch args[0] {
 			case "-G":
 				hosts, err := models.GetHostByGlob(args[1])
@@ -159,22 +168,6 @@ func (s *Service) RunCmdExec(hosts []*models.Host, cmd string, sudo bool) []*Res
 	return results
 }
 
-func (s *Service) UploadFile(hosts []*models.Host, files []*multipart.FileHeader, remotePath string) []*Result {
-	var results []*Result
-	channel := make(chan *Result, len(hosts))
-	defer close(channel)
-	wg := sync.WaitGroup{}
-	for _, host := range hosts {
-		wg.Add(1)
-		go s.UploadFileOneSync(host, remotePath, files, channel, &wg)
-	}
-	wg.Wait()
-	for i := 0; i < len(hosts); i++ {
-		results = append(results, <-channel)
-	}
-	return results
-}
-
 func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.FileHeader, remotePath string) {
 	wg := sync.WaitGroup{}
 	for _, host := range hosts {
@@ -182,29 +175,6 @@ func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.Fil
 		go s.UploadFileOneAsync(host, remotePath, files, &wg)
 	}
 	wg.Wait()
-}
-
-func (s *Service) UploadFileOneSync(host *models.Host, remote string, files []*multipart.FileHeader, ch chan *Result, wg *sync.WaitGroup) {
-	var result *Result
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
-	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
-		ch <- result
-		return
-	}
-	// do upload
-	for i := 0; i < len(files); i++ {
-		err = client.UploadFileOne(files[i], remote)
-		if err != nil {
-			s.logger.Error(err)
-			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
-		} else {
-			result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: "success"}
-		}
-	}
-
-	ch <- result
-	wg.Done()
 }
 
 func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*multipart.FileHeader, wg *sync.WaitGroup) {
@@ -222,7 +192,10 @@ func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*
 
 func (s *Service) GetPathInfoExec(hostId int, path string) []*FileInfo {
 	var results []*FileInfo
-	host, _ := models.GetHostById(hostId)
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return nil
+	}
 	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return results
@@ -251,7 +224,10 @@ func (s *Service) GetPathInfoExec(hostId int, path string) []*FileInfo {
 }
 
 func (s *Service) DownloadFile(hostId int, path string) *sftp.File {
-	host, _ := models.GetHostById(hostId)
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return nil
+	}
 	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return nil
@@ -264,7 +240,10 @@ func (s *Service) DownloadFile(hostId int, path string) *sftp.File {
 }
 
 func (s *Service) DeleteFileOrDir(hostId int, path string) error {
-	host, _ := models.GetHostById(hostId)
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return err
+	}
 	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
