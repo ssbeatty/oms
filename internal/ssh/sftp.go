@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"oms/internal/utils"
 	"oms/pkg/transport"
-	"path/filepath"
 )
 
 const (
 	DefaultBlockSize = 1024 * 4
-	TaskRunning      = "running"
-	TaskDone         = "done"
-	TaskFailed       = "failed"
+	FileTaskRunning  = "running"
+	FileTaskDone     = "done"
+	FileTaskFailed   = "failed"
 )
 
 type TaskItem struct {
 	Status   string
-	Total    int64
+	Total    int64      // 文件总字节
 	ch       chan int64 // 当前字节的channel
 	RSize    int64      // 已传输字节
 	CSize    int64      // 当前字节
@@ -25,6 +25,7 @@ type TaskItem struct {
 	Host     string
 }
 
+// manageChannel 更新file task pool中file task的传输字节数
 func (m *Manager) manageChannel(ch chan int64, key string) {
 	for val := range ch {
 		item, ok := m.fileList.Load(key)
@@ -36,46 +37,35 @@ func (m *Manager) manageChannel(ch chan int64, key string) {
 	}
 }
 
+// UploadFileOneAsync 上传文件并将addr/filename维护到file task pool
 func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileHeader, remote string, addr string, filename string) {
 	ch := make(chan int64, 10)
 	task := &TaskItem{
 		Total:    fileH.Size,
 		ch:       ch,
 		FileName: fileH.Filename,
-		Status:   TaskRunning,
+		Status:   FileTaskRunning,
 		Host:     addr,
 	}
 
 	file, err := fileH.Open()
 	if err != nil {
 		m.logger.Errorf("error when open multipart file, err: %v", err)
-		task.Status = TaskFailed
+		task.Status = FileTaskFailed
 		return
 	}
 
-	var remoteFile, remoteDir string
-	if remote != "" {
-		if remote[len(remote)-1] == '/' {
-			remoteFile = filepath.ToSlash(filepath.Join(remote, filepath.Base(fileH.Filename)))
-			remoteDir = remote
-		} else {
-			remoteFile = remote
-			remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
-		}
-	} else {
-		remoteFile = fileH.Filename
-		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
-	}
+	remoteFile, remoteDir := utils.ParseUploadPath(remote, fileH.Filename)
 	if _, err := c.GetSftpClient().Stat(remoteDir); err != nil {
 		if err := c.MkdirAll(remoteDir); err != nil {
-			task.Status = TaskFailed
+			task.Status = FileTaskFailed
 			m.logger.Errorf("error when sftp create dirs, err: %v", err)
 		}
 	}
 	r, err := c.GetSftpClient().Create(remoteFile)
 	if err != nil {
 		m.logger.Errorf("error when sftp create file, err: %v", err)
-		task.Status = TaskFailed
+		task.Status = FileTaskFailed
 		return
 	}
 
@@ -85,8 +75,8 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 		_ = r.Close()
 		close(ch)
 		// 遇到关闭连接的情况
-		if task.Status != TaskDone {
-			task.Status = TaskFailed
+		if task.Status != FileTaskDone {
+			task.Status = FileTaskFailed
 		}
 	}()
 
@@ -102,11 +92,12 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 			break
 		}
 	}
-	task.Status = TaskDone
+	task.Status = FileTaskDone
 
 	m.logger.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
 }
 
+// NewClientWithSftp 创建新的ssh client并创建sftp客户端
 func (m *Manager) NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*transport.Client, error) {
 	client, err := m.NewClient(host, port, user, password, KeyBytes)
 	if err != nil {

@@ -9,14 +9,17 @@ import (
 )
 
 type Server struct {
-	cfg           *config.Conf
-	webService    *web.Service
+	cfg *config.Conf
+	// all services
+	webService *web.Service
+	// all managers
 	taskManager   *task.Manager
 	tunnelManager *tunnel.Manager
 	sshManager    *ssh.Manager
 }
 
 func NewServer(cfg *config.Conf) *Server {
+	// do init all manager
 	sshManager := ssh.NewManager()
 	taskManager := task.NewManager(sshManager).Init()
 	tunnelManager := tunnel.NewManager(sshManager).Init()

@@ -18,11 +18,16 @@ type Manager struct {
 	taskManager   *task.Manager
 	tunnelManager *tunnel.Manager
 
-	currentFiles     prometheus.Gauge
+	// 当前上传的文件数
+	currentFiles prometheus.Gauge
+	// 缓存的ssh client数
 	currentSSHClient prometheus.Gauge
-	currentJobs      prometheus.Gauge
-	currentTunnels   prometheus.Gauge
-	currentSessions  prometheus.Gauge
+	// 内存中的job数
+	currentJobs prometheus.Gauge
+	// 内存中的隧道数
+	currentTunnels prometheus.Gauge
+	// 当前的ssh session数
+	currentSessions prometheus.Gauge
 }
 
 func NewManager(ssh *ssh.Manager, task *task.Manager, tunnel *tunnel.Manager) *Manager {
@@ -56,6 +61,7 @@ func NewManager(ssh *ssh.Manager, task *task.Manager, tunnel *tunnel.Manager) *M
 }
 
 func (m *Manager) Init() *Manager {
+	// register in prometheus
 	prometheus.MustRegister(m.currentFiles)
 	prometheus.MustRegister(m.currentSSHClient)
 	prometheus.MustRegister(m.currentTunnels)

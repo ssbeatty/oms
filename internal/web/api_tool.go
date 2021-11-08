@@ -21,6 +21,11 @@ func (s *Service) RunCmd(c *gin.Context) {
 	}
 	pType := c.Query("type")
 	cmd := c.Query("cmd")
+	if cmd == "" {
+		data := generateResponsePayload(HttpStatusError, "cmd can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	sudoRaw := c.Query("sudo")
 	// default false
 	sudo, _ := strconv.ParseBool(sudoRaw)

@@ -135,7 +135,7 @@ func (j *Job) Run() {
 			return nil
 		}
 		err = backoff.RetryNotify(operation, exp, func(err error, duration time.Duration) {
-			j.engine.logger.Debug(fmt.Sprintf("Job cmd: %s Failed, retry after %v, detail in log.", j.Cmd(), duration))
+			j.engine.logger.Debug(fmt.Sprintf("Job cmd: %s Failed, retry after %v, detail in log.", j.cmd, duration))
 		})
 		if err != nil {
 			j.UpdateStatus(JobStatusFatal)

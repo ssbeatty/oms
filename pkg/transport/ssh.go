@@ -76,6 +76,10 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 	}, nil
 }
 
+func (c *Client) NewPty() (*Session, error) {
+	return c.NewSessionWithPty(20, 20)
+}
+
 func (c *Client) NewSession() (*Session, error) {
 	session, err := c.sshClient.NewSession()
 	if err != nil {

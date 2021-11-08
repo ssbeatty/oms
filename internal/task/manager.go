@@ -17,7 +17,7 @@ import (
 )
 
 type Manager struct {
-	// cron schedule
+	// cron schedule engine
 	taskService *schedule.Schedule
 	// all cron & task in map
 	taskPoll *utils.SafeMap
@@ -40,11 +40,11 @@ func NewManager(sshManager *ssh.Manager) *Manager {
 
 // Init 启动crontab daemon, 注册全局任务, 创建日志文件夹并初始化job
 func (m *Manager) Init() *Manager {
+	// init schedule engine
 	m.taskService.Start()
 
 	// init all build in cron
-	statusJob := m.NewCronStatusJob()
-	if err := m.taskService.AddByJob("build-in-loop-status", "*/5 * * * *", statusJob); err != nil {
+	if err := m.taskService.AddByFunc("build-in-loop-status", "*/5 * * * *", m.CronStatusJob); err != nil {
 		m.logger.Errorf("init build-in-loop-status error!", err)
 	}
 
@@ -54,6 +54,7 @@ func (m *Manager) Init() *Manager {
 		m.logger.Errorf("error when make all tmp path, err: %v", err)
 	}
 
+	// once do init all job in database
 	m.onceJob.Do(func() {
 		jobs, err := models.GetAllJob()
 		if err != nil {
@@ -156,6 +157,7 @@ func (m *Manager) StopJob(id int) error {
 	return nil
 }
 
+// GetJob 从task poll获取job
 func (m *Manager) GetJob(id int) (*Job, bool) {
 	if key, ok := m.taskPoll.Load(id); ok {
 		return key.(*Job), true
@@ -168,6 +170,7 @@ func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 	m.logger.Info("init all job without stopped or fatal.")
 	for _, modelJob := range modelJobs {
 		var status = modelJob.Status
+		// running 一般是没有正常退出
 		if JobStatus(modelJob.Status) == JobStatusRunning {
 			status = string(JobStatusReady)
 		}

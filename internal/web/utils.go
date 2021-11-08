@@ -126,13 +126,14 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 	var result *Result
 	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
-		ch <- result
+		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		return
 	}
-	session, err := client.NewSession()
+	session, err := client.NewPty()
 	if err != nil {
 		s.logger.Errorf("RunCmdOneAsync create new session failed, err: %v", err)
+		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		return
 	}
 	defer session.Close()
 
@@ -147,8 +148,13 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
-	ch <- result
-	wg.Done()
+	select {
+	case ch <- result:
+		wg.Done()
+	case <-time.After(5 * time.Minute):
+		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: "run cmd async timeout."}
+		wg.Done()
+	}
 }
 
 // RunCmdExec 用于http接口
