@@ -45,7 +45,7 @@ func (m *Manager) Init() *Manager {
 
 func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
 	for _, modelTunnel := range modelTunnels {
-		err := m.addTunnel(modelTunnel, &modelTunnel.Host)
+		err := m.AddTunnel(modelTunnel, &modelTunnel.Host)
 		if err != nil {
 			m.logger.Errorf("error when add tunnel, err: %v", err)
 		}
@@ -98,8 +98,8 @@ func (m *Manager) Close() {
 	close(m.closer)
 }
 
-// addTunnel create new tunnel
-func (m *Manager) addTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
+// AddTunnel create new tunnel
+func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
 	client, err := m.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
 		return err
@@ -123,21 +123,4 @@ func (m *Manager) RemoveTunnel(id int) {
 	defer realTunnel.Close()
 
 	m.tunnels.Delete(id)
-}
-
-// AddTunnel 新建tunnel model并注册在tunnels poll
-func (m *Manager) AddTunnel(hostId int, mode, src, dest string) (*models.Tunnel, error) {
-	host, err := models.GetHostById(hostId)
-	if err != nil {
-		return nil, err
-	}
-	t, err := models.InsertTunnel(mode, src, dest, host)
-	if err != nil {
-		return nil, err
-	}
-	err = m.addTunnel(t, host)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
 }
