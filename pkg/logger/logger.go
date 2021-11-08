@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	logLevel  Level = DebugLevel
-	logFormat log.Formatter
+	logLevel  Level         = DebugLevel
+	logFormat log.Formatter = &log.TextFormatter{}
 )
 
 type Logger struct {
