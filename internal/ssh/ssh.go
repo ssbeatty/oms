@@ -109,6 +109,8 @@ func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, wri
 		if err != nil {
 			errChan <- err
 		}
+		// can quit
+		quitCh <- true
 	}(cmd)
 	defer session.Close()
 

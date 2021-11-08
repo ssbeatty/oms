@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"oms/internal/config"
 	"oms/internal/models"
@@ -22,7 +23,9 @@ func main() {
 
 	// init db
 	db := conf.Db
-	models.InitModels(db.Dsn, db.DbName, db.UserName, db.PassWord, db.Driver)
+	if err := models.InitModels(db.Dsn, db.DbName, db.UserName, db.PassWord, db.Driver); err != nil {
+		panic(fmt.Sprintf("init db error: %v", err))
+	}
 
 	if conf.App.Mode == "dev" {
 		logger.SetLevelAndFormat(logger.DebugLevel, &log.TextFormatter{})
