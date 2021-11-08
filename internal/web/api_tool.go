@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -99,21 +100,27 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 			return
 		}
 
-		extraHeaders := map[string]string{
-			"Content-Disposition": fmt.Sprintf("inline; filename=\"%s\"", fh.Name()),
-		}
-
-		reader := bufio.NewReader(file)
-
-		if fh.Size() != 0 {
-			c.DataFromReader(http.StatusOK, fh.Size(), "text/plain", reader, extraHeaders)
-			return
-		} else {
-			buf, err := ioutil.ReadAll(file)
-			if err != nil {
-				s.logger.Errorf("read virtual file error: %v", err)
+		mode := fh.Mode() & fs.ModeType
+		// this is a read able file
+		if mode == 0 {
+			extraHeaders := map[string]string{
+				"Content-Disposition": fmt.Sprintf("inline; filename=\"%s\"", fh.Name()),
 			}
-			http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+
+			reader := bufio.NewReader(file)
+
+			if fh.Size() != 0 {
+				c.DataFromReader(http.StatusOK, fh.Size(), "text/plain", reader, extraHeaders)
+				return
+			} else {
+				buf, err := ioutil.ReadAll(file)
+				if err != nil {
+					s.logger.Errorf("read virtual file error: %v", err)
+				}
+				http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+			}
+		} else {
+			c.String(http.StatusOK, fmt.Sprintf("read error, file type is [%s]", mode))
 		}
 	} else {
 		c.String(http.StatusOK, "file not existed")
