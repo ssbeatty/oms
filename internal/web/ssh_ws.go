@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	MinSizeOfResizeMsg = 12
+)
+
 type wsResize struct {
 	Cols int `json:"cols"`
 	Rows int `json:"rows"`
@@ -87,18 +91,18 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 				return
 			}
 
-			// 每次传输一个char
-			if len(wsData) > 1 {
+			// 每次传输一个或多个char
+			if len(wsData) > MinSizeOfResizeMsg {
 				// resize 或者 粘贴
-				wsResize := wsResize{}
-				err := json.Unmarshal(wsData, &wsResize)
+				resize := wsResize{}
+				err := json.Unmarshal(wsData, &resize)
 				if err != nil {
 					s.logger.Errorf("unmarshal resize error: %v", err)
 					// 粘贴内容
 					goto SEND
 				}
-				if wsResize.Cols > 0 && wsResize.Rows > 0 {
-					if err := s.Session.WindowChange(wsResize.Rows, wsResize.Cols); err != nil {
+				if resize.Cols > 0 && resize.Rows > 0 {
+					if err := s.Session.WindowChange(resize.Rows, resize.Cols); err != nil {
 						s.logger.Errorf("ssh pty change windows size failed, err: %v", err)
 					}
 				}
