@@ -36,6 +36,10 @@ func NewWSConnect(conn *websocket.Conn, engine *Service) *WSConnect {
 	return c
 }
 
+func (w *WSConnect) DeleteCache(key interface{}) {
+	w.tmp.Delete(key)
+}
+
 func (w *WSConnect) StoreCache(key, val interface{}) {
 	w.tmp.Store(key, val)
 }

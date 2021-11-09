@@ -13,9 +13,8 @@ import (
 
 const (
 	TaskTickerInterval = 2
-	RequestTypeHost    = "host"
-	RequestTypeGroup   = "group"
-	RequestTypeTag     = "tag"
+	WSStatusSuccess    = "0"
+	WSStatusError      = "-1"
 	SSHTimeDeadline    = 30 * time.Second
 )
 
@@ -51,12 +50,12 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 
 	err := json.Unmarshal(msg, req)
 	if err != nil {
-		w.WriteMsg(Response{Code: "-1", Msg: "can not parse payload"})
+		w.WriteMsg(Response{Code: WSStatusError, Msg: "can not parse payload"})
 		return
 	}
 	hosts := w.engine.ParseHostList(req.Type, req.Id)
 	if len(hosts) == 0 {
-		w.WriteMsg(Response{Code: "-2", Msg: "host empty"})
+		w.WriteMsg(Response{Code: WSStatusError, Msg: "host empty"})
 		return
 	}
 	for _, host := range hosts {
@@ -67,7 +66,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 
 	for i := 0; i < len(hosts); i++ {
 		res := <-ch
-		w.WriteMsg(Response{Code: "0", Msg: "success", Data: res})
+		w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: res})
 	}
 
 	close(ch)
@@ -76,6 +75,15 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 	w.logger.Infof("handler task status recv a message: %s", msg)
 	ticker := time.NewTicker(TaskTickerInterval * time.Second)
+
+	// 一个连接只能有一个订阅
+	const fTaskFlag = "f_task_existed"
+	val, ok := w.LoadCache(fTaskFlag)
+	if ok && val.(bool) {
+		return
+	} else {
+		w.StoreCache(fTaskFlag, true)
+	}
 
 	for {
 		select {
@@ -103,10 +111,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 				return true
 			})
 			if len(resp) > 0 {
-				w.WriteMsg(Response{Code: "0", Msg: "success", Data: resp})
-			} else {
-				w.WriteMsg(Response{Code: "-1", Msg: "file task empty"})
-				return
+				w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
 			}
 		}
 	}
@@ -126,20 +131,20 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 
 	err := json.Unmarshal(msg, req)
 	if err != nil {
-		w.WriteMsg(Response{Code: "-1", Msg: "can not parse payload"})
+		w.WriteMsg(Response{Code: WSStatusError, Msg: "can not parse payload"})
 		return
 	}
 	hosts := w.engine.ParseHostList(req.Type, req.Id)
 	if len(hosts) == 0 {
-		w.WriteMsg(Response{Code: "-2", Msg: "parse host array empty"})
+		w.WriteMsg(Response{Code: WSStatusError, Msg: "parse host array empty"})
 		return
 	}
 
 	client, err := w.engine.sshManager.NewClient(hosts[0].Addr, hosts[0].Port, hosts[0].User, hosts[0].PassWord, []byte(hosts[0].KeyFile))
 	if err != nil {
-		w.WriteMsg(Response{Code: "-3", Msg: fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)})
+		w.WriteMsg(Response{Code: WSStatusError, Msg: fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)})
 	}
 	transport.GetAllStats(client.GetSSHClient(), status, nil)
 	w.StoreCache("status", status)
-	w.WriteMsg(Response{Code: "0", Msg: "success", Data: status})
+	w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: status})
 }
