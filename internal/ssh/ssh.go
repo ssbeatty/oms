@@ -97,7 +97,7 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 }
 
 func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, writer io.Writer) (err error) {
-	session, err := client.NewSessionWithPty(20, 20)
+	session, err := client.NewPty()
 	if err != nil {
 		return err
 	}

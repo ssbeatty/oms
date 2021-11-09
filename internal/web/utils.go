@@ -148,13 +148,8 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
-	select {
-	case ch <- result:
-		wg.Done()
-	case <-time.After(5 * time.Minute):
-		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: "run cmd async timeout."}
-		wg.Done()
-	}
+	ch <- result
+	wg.Done()
 }
 
 // RunCmdExec 用于http接口
