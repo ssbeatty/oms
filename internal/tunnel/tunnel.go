@@ -49,12 +49,11 @@ func (m *Manager) initTunnelFromModels(modelTunnels []*models.Tunnel) {
 		if err != nil {
 			m.logger.Errorf("error when add tunnel, err: %v", err)
 		}
-		m.updateTunnelStatus()
-
 	}
+	m.updateAllTunnelStatus()
 }
 
-func (m *Manager) updateTunnelStatus() {
+func (m *Manager) updateAllTunnelStatus() {
 	m.tunnels.Range(func(key, value interface{}) bool {
 		id := key.(int)
 		realTunnel := value.(*tunnel.SSHTunnel)
@@ -65,6 +64,10 @@ func (m *Manager) updateTunnelStatus() {
 			if !models.ExistedTunnel(id) {
 				m.RemoveTunnel(id)
 			}
+		}
+		// re connect
+		if !realTunnel.Status() {
+			go realTunnel.Start()
 		}
 		return true
 	})
@@ -86,12 +89,22 @@ func (m *Manager) Start() {
 	for {
 		select {
 		case <-m.closer:
+			m.Clear()
 			m.logger.Debug("tunnel manager exit.")
+			return
 		case <-ticker.C:
-			m.updateTunnelStatus()
+			m.updateAllTunnelStatus()
 		}
 	}
 
+}
+
+func (m *Manager) Clear() {
+	m.tunnels.Range(func(key, value interface{}) bool {
+		realTunnel := value.(*tunnel.SSHTunnel)
+		realTunnel.Close()
+		return true
+	})
 }
 
 func (m *Manager) Close() {

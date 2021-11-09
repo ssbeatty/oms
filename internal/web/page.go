@@ -105,7 +105,7 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 
 	host, err := models.GetHostById(id)
 	if err != nil {
-		s.logger.Errorf("can not get ")
+		s.logger.Errorf("can not get host")
 		return
 	}
 	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
