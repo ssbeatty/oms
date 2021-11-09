@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -59,9 +58,8 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 		return
 	}
 	for _, host := range hosts {
-		ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(SSHTimeDeadline))
 		// TODO sudo 由host本身管理
-		go w.engine.RunCmdWithContext(host, req.Cmd, true, ch, ctx)
+		go w.engine.RunCmdWithContext(host, req.Cmd, true, ch)
 	}
 
 	for i := 0; i < len(hosts); i++ {

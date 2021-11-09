@@ -321,9 +321,9 @@ func (s *Service) ImportDbData(marshal []byte) error {
 	return nil
 }
 
-// RunCmdWithContext 使用在websocket接口上
-func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *Result, ctx context.Context) {
+func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *Result, ctx context.Context) {
 	var msg []byte
+	var errMsg string
 	var result *Result
 
 	quit := make(chan bool, 1)
@@ -335,7 +335,7 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 		ch <- result
 		return
 	}
-	session, err := client.NewSessionWithPty(20, 20)
+	session, err := client.NewPty()
 	if err != nil {
 		s.logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
@@ -344,13 +344,12 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	}
 
 	go func() {
+		defer session.Close()
 		select {
 		case <-ctx.Done():
-			_ = session.Close()
-			result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: "command timeout!"}
-			ch <- result
+			errMsg = "cmd timeout"
+			return
 		case <-quit:
-			_ = session.Close()
 			return
 		}
 	}()
@@ -366,5 +365,15 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
+	if errMsg != "" {
+		result.Msg = errMsg
+	}
 	ch <- result
+}
+
+// RunCmdWithContext 使用在websocket接口上
+func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *Result) {
+	ctx, cancel := context.WithTimeout(context.Background(), SSHTimeDeadline)
+	defer cancel()
+	s.runCmdWithContext(host, cmd, sudo, ch, ctx)
 }
