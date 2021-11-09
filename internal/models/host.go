@@ -15,15 +15,15 @@ type Host struct {
 	Port     int    `gorm:"default:22" json:"port"`
 	PassWord string `gorm:"size:128;not null" json:"-"`
 	// Deprecated: Use PrivateKey instead.
-	KeyFile      string     `gorm:"type:text" json:"-"`
-	Status       bool       `gorm:"default:false" json:"status"`
-	PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
-	PrivateKeyID int        `json:"private_key_id"`
-	GroupId      int        `json:"group_id"`
-	Group        Group      `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
-	Tags         []Tag      `gorm:"many2many:host_tag" json:"tags"`
-	Tunnels      []Tunnel   `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
-	Jobs         []Job      `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
+	KeyFile string `gorm:"type:text" json:"-"`
+	Status  bool   `gorm:"default:false" json:"status"`
+	// PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
+	// PrivateKeyID int        `json:"private_key_id"`
+	GroupId int      `json:"group_id"`
+	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
+	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
+	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
+	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
 }
 
 // PrivateKey TODO add host私钥
