@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"oms/pkg/logger"
 	"oms/pkg/transport"
@@ -9,16 +10,9 @@ import (
 	"time"
 )
 
-const (
-	wsMsgCmd    = "cmd"
-	wsMsgResize = "resize"
-)
-
-type wsMsg struct {
-	Type string `json:"type"`
-	Cmd  string `json:"cmd"`
-	Cols int    `json:"cols"`
-	Rows int    `json:"rows"`
+type wsResize struct {
+	Cols int `json:"cols"`
+	Rows int `json:"rows"`
 }
 
 type wsBufferWriter struct {
@@ -86,36 +80,34 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 		case <-exitCh:
 			return
 		default:
-			//read websocket msg
+			// read websocket msg
 			_, wsData, err := wsConn.ReadMessage()
 			if err != nil {
 				s.logger.Errorf("reading webSocket message failed, err: %v", err)
 				return
 			}
-			// 按照字符发送的，所以用json代价太大了。。
-			// unmarshal bytes into struct
-			msgObj := wsMsg{
-				Type: "cmd",
-				Cmd:  "",
-				Rows: 40,
-				Cols: 180,
-			}
 
-			switch msgObj.Type {
-			case wsMsgResize:
-				if msgObj.Cols > 0 && msgObj.Rows > 0 {
-					if err := s.Session.WindowChange(msgObj.Rows, msgObj.Cols); err != nil {
+			// 每次传输一个char
+			if len(wsData) > 1 {
+				// resize 或者 粘贴
+				wsResize := wsResize{}
+				err := json.Unmarshal(wsData, &wsResize)
+				if err != nil {
+					s.logger.Errorf("unmarshal resize error: %v", err)
+					// 粘贴内容
+					goto SEND
+				}
+				if wsResize.Cols > 0 && wsResize.Rows > 0 {
+					if err := s.Session.WindowChange(wsResize.Rows, wsResize.Cols); err != nil {
 						s.logger.Errorf("ssh pty change windows size failed, err: %v", err)
 					}
 				}
-			case wsMsgCmd:
-				decodeBytes := wsData
-				if err != nil {
-					s.logger.Errorf("websocket cmd string base64 decoding failed, err: %v", err)
-				}
-				if _, err := s.Session.Write(decodeBytes); err != nil {
-					s.logger.Errorf("ws cmd bytes write to ssh.stdin pipe failed, err: %v", err)
-				}
+				break
+			}
+		SEND:
+			decodeBytes := wsData
+			if _, err := s.Session.Write(decodeBytes); err != nil {
+				s.logger.Errorf("ws cmd bytes write to ssh.stdin pipe failed, err: %v", err)
 			}
 		}
 	}
@@ -127,7 +119,7 @@ func (s *SSHSession) SendComboOutput(wsConn *websocket.Conn, exitCh chan bool) {
 
 	//every 120ms write combine output bytes into websocket response
 	tick := time.NewTicker(time.Millisecond * time.Duration(120))
-	//for range time.Tick(120 * time.Millisecond){}
+
 	defer tick.Stop()
 	for {
 		select {

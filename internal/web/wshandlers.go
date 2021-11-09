@@ -97,7 +97,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 					Percent: percent,
 				})
 				task.CSize = task.RSize
-				if task.Status == ssh.TaskDone || task.Status == ssh.TaskFailed {
+				if task.Status == ssh.FileTaskDone || task.Status == ssh.FileTaskFailed {
 					w.engine.sshManager.GetFileList().Delete(key)
 				}
 				return true
