@@ -452,13 +452,13 @@ func (s *Service) GetOneTunnel(c *gin.Context) {
 
 func (s *Service) PostTunnel(c *gin.Context) {
 	mode := c.PostForm("mode")
-	src := c.PostForm("src")
+	src := c.PostForm("source")
 	if src == "" {
 		data := generateResponsePayload(HttpStatusError, "src can not be empty", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	dest := c.PostForm("dest")
+	dest := c.PostForm("destination")
 	if dest == "" {
 		data := generateResponsePayload(HttpStatusError, "dest can not be empty", nil)
 		c.JSON(http.StatusOK, data)
@@ -515,8 +515,8 @@ func (s *Service) PutTunnel(c *gin.Context) {
 	}
 
 	mode := c.PostForm("mode")
-	src := c.PostForm("src")
-	dest := c.PostForm("dest")
+	src := c.PostForm("source")
+	dest := c.PostForm("destination")
 	tunnel, err := models.UpdateTunnel(id, mode, src, dest)
 	if err != nil {
 		s.logger.Errorf("PutTunnel error when UpdateTunnel, err: %v", err)
