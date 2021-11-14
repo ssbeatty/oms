@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"bytes"
 	"errors"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -151,15 +150,7 @@ func (s *Session) Write(b []byte) (int, error) {
 
 // Output run done and return output
 func (s *Session) Output(cmd string) ([]byte, error) {
-	var stderr bytes.Buffer
-	s.SetStderr(&stderr)
-
-	msg, err := s.sshSession.Output(cmd)
-	if err != nil {
-		return stderr.Bytes(), err
-	} else {
-		return msg, nil
-	}
+	return s.sshSession.Output(cmd)
 }
 
 // AuthWithAgent use already authed user
