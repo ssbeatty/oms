@@ -3,9 +3,9 @@
 
 **API文档**
 
-[markdown](./doc/lv1/API.md)
+[markdown](./api/v1/README.md)
 
-[swagger](./doc/lv1/swaggerAPI.json)
+[swagger](./api/v1/swagger.json)
 
 #### 项目依赖
 https://github.com/gin-gonic/gin
