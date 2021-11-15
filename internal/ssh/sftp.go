@@ -81,7 +81,9 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 	}()
 
 	key := fmt.Sprintf("%s/%s", addr, filename)
-	m.fileList.Store(key, task)
+	if _, ok := m.fileList.Load(key); !ok {
+		m.fileList.Store(key, task)
+	}
 
 	go m.manageChannel(ch, key)
 

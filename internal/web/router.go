@@ -139,6 +139,15 @@ func (s *Service) InitRouter() *Service {
 		apiV1.POST("/job/start", s.StartJob)
 		apiV1.POST("/job/stop", s.StopJob)
 		apiV1.POST("/job/restart", s.RestartJob)
+
+		// tools
+		apiV1.GET("/tools/cmd", s.RunCmd)
+		apiV1.GET("/tools/browse", s.GetPathInfo)
+		apiV1.GET("/tools/download", s.DownLoadFile)
+		apiV1.POST("/tools/delete", s.DeleteFile)
+		apiV1.GET("/tools/export", s.ExportData)
+		apiV1.POST("/tools/import", s.ImportData)
+		apiV1.POST("/tools/upload_file", s.FileUploadUnBlock)
 	}
 	s.engine = r
 	return s
