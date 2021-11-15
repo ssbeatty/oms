@@ -14,10 +14,7 @@
 go install github.com/gobuffalo/packr/packr
 
 # clone
-git clone https://github.com/ssbeatty/oms.git
-cd oms
-git submodule init
-git submodule update
+git clone --recurse-submodules https://github.com/ssbeatty/oms.git
 
 # build frontend
 cd web/omsUI
