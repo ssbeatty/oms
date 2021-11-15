@@ -1,0 +1,3 @@
+[submodule "web/omsUI"]
+	path = web/omsUI
+	url = https://github.com/lixin59/omsUI.git

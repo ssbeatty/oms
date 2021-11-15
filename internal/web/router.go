@@ -3,11 +3,10 @@ package web
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
-	"io/ioutil"
+	"net/http"
 	"oms/internal/config"
 	"oms/internal/metrics"
 	"oms/internal/ssh"
@@ -67,15 +66,17 @@ func prometheusHandler() gin.HandlerFunc {
 }
 
 func (s *Service) InitRouter() *Service {
-	r := gin.New()
-
-	r.Use(gin.Recovery())
-	r.Use(CORS)
+	r := gin.Default()
 
 	// static files
-	box := packr.NewBox("../../web/static")
-	r.StaticFS("/static", box)
-	t, _ := loadTemplate()
+	box := packr.NewBox("../../web/omsUI/dist/assets")
+	r.StaticFS("/assets", box)
+
+	// load template
+	t, err := loadTemplate()
+	if err != nil {
+		panic("error when load template.")
+	}
 	r.SetHTMLTemplate(t)
 
 	// metrics
@@ -83,29 +84,19 @@ func (s *Service) InitRouter() *Service {
 
 	// common api
 	r.GET("/", GetIndexPage)
-	r.GET("/page/groupPage", GetGroupPage)
-	r.GET("/page/tool", GetToolPage)
-	r.GET("/page/shell", GetShellPage)
-	r.GET("/page/file", GetFilePage)
-	r.GET("/page/browse", GetFileBrowsePage)
-	r.GET("/page/ssh", GetSshPage)
+	r.NoRoute(func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/")
+	})
 
 	// websocket
 	r.GET("/ws/index", s.GetWebsocketIndex)
 	r.GET("/ws/ssh/:id", s.GetWebsocketSsh)
 
-	// tools
-	r.GET("/tools/cmd", s.RunCmd)
-	r.GET("/tools/browse", s.GetPathInfo)
-	r.GET("/tools/download", s.DownLoadFile)
-	r.POST("/tools/delete", s.DeleteFile)
-	r.GET("/tools/export", s.ExportData)
-	r.POST("/tools/import", s.ImportData)
-	r.POST("/tools/upload_file", s.FileUploadUnBlock)
-
 	// restapi
 	apiV1 := r.Group("/api/v1")
 	{
+		apiV1.Use(CORS)
+
 		apiV1.GET("/host", s.GetHosts)
 		apiV1.GET("/host/:id", s.GetOneHost)
 		apiV1.POST("/host", s.PostHost)
@@ -165,21 +156,15 @@ func (s *Service) SetRelease() {
 }
 
 func loadTemplate() (*template.Template, error) {
-	box := packr.NewBox("../../web/views")
+	const indexFile = "index.html"
+	box := packr.NewBox("../../web/omsUI/dist")
 	t := template.New("")
-	if err := box.Walk(
-		func(name string, file packd.File) error {
-			h, err := ioutil.ReadAll(file)
-			if err != nil {
-				return err
-			}
-			t, err = t.New(name).Parse(string(h))
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-	); err != nil {
+	data, err := box.Find(indexFile)
+	if err != nil {
+		return nil, err
+	}
+	t, err = t.New(indexFile).Parse(string(data))
+	if err != nil {
 		return nil, err
 	}
 	return t, nil
