@@ -1,3 +1,4 @@
 [submodule "web/omsUI"]
 	path = web/omsUI
+	branch = master
 	url = https://github.com/lixin59/omsUI.git
