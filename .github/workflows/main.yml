@@ -32,14 +32,38 @@ jobs:
       - name: Set Node
         uses: actions/setup-node@v2
         with:
-          node-version: '12'
+          node-version: '14'
 
       - name: Node build
         run: |
           cd web/omsUI
-          npm install
+          npm install yarn
+          node_modules/.bin/yarn
           npm run build
 
       - name: Make all
         run: |
           make all
+
+      - name: Draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: Release for new version
+          files: |
+            ./release/*
+            ./configs/config.yaml.example
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker login
+        run: |
+          docker login docker.pkg.github.com -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GitHub Packages
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: ssbeatty/oms/oms
+          tag_with_ref: true
