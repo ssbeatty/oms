@@ -6,6 +6,7 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
+	"mime"
 	"net/http"
 	"oms/internal/config"
 	"oms/internal/metrics"
@@ -71,6 +72,11 @@ func (s *Service) InitRouter() *Service {
 	// static files
 	box := packr.NewBox("../../web/omsUI/dist/assets")
 	r.StaticFS("/assets", box)
+
+	err := mime.AddExtensionType(".js", "application/javascript")
+	if err != nil {
+		s.logger.Errorf("error when add extension type, err: %v", err)
+	}
 
 	// load template
 	t, err := loadTemplate()
