@@ -45,7 +45,7 @@ func (m *Manager) Init() *Manager {
 
 	// init all build in cron
 	if err := m.taskService.AddByFunc("build-in-loop-status", "*/5 * * * *", m.CronStatusJob); err != nil {
-		m.logger.Errorf("init build-in-loop-status error!", err)
+		m.logger.Errorf("init build-in-loop-status error: %v", err)
 	}
 
 	// path for job log
@@ -111,7 +111,7 @@ func (m *Manager) UnRegister(id int) error {
 // NewJobWithRegister 新建一个job并注册到task poll
 func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error {
 	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
-	realJob.status.Store(JobStatus(status))
+	realJob.UpdateStatus(JobStatus(status))
 	if err := m.Register(modelJob.Id, realJob); err != nil {
 		return err
 	}

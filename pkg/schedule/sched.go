@@ -75,8 +75,8 @@ func (s *Schedule) IsExists(jid string) bool {
 
 func (s *Schedule) Remove(id string) {
 	if s.IsExists(id) {
-		delete(s.ids, id)
 		s.inner.Remove(s.ids[id])
+		delete(s.ids, id)
 	}
 }
 

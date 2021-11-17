@@ -76,7 +76,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 		spec:   spec,
 		engine: m,
 	}
-	job.status.Store(JobStatusReady)
+	job.UpdateStatus(JobStatusReady)
 
 	return job
 }
@@ -100,7 +100,7 @@ func (j *Job) Run() {
 
 	j.UpdateStatus(JobStatusRunning)
 	if j.Type == JobTypeCron {
-		session, err := client.NewSessionWithPty(20, 20)
+		session, err := client.NewPty()
 		if err != nil {
 			j.logger.Errorf("create new session failed, err: %v", err)
 		}

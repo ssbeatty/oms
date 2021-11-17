@@ -67,7 +67,7 @@ func InsertJob(name, t, spec, cmd string, host *Host) (*Job, error) {
 
 func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
 	job := Job{Id: id}
-	err := db.Where("id = ?", id).First(&job).Error
+	err := db.Preload("Host").Where("id = ?", id).First(&job).Error
 	if err != nil {
 		return nil, err
 	}
