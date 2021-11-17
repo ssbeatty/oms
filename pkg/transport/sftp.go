@@ -83,24 +83,7 @@ func (c *Client) IsDir(path string) bool {
 }
 
 func (c *Client) MkdirAll(dirPath string) error {
-
-	parentDir := filepath.ToSlash(filepath.Dir(dirPath))
-	_, err := c.sftpClient.Stat(parentDir)
-	if err != nil {
-		if err.Error() == "file does not exist" {
-			err := c.MkdirAll(parentDir)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	err = c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
 }
 
 func (c *Client) Remove(path string) error {
