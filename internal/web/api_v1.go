@@ -835,7 +835,6 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	//http chunked
 	header.Set("Transfer-Encoding", "chunked")
 	header.Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 
 	defer s.logger.Debug("GetLogStream log file stream exit.")
 
@@ -852,11 +851,17 @@ func (s *Service) GetLogStream(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	for line := range t.Lines {
-		_, err := w.Write([]byte(line.Text))
-		if err != nil {
+
+	for {
+		select {
+		case line := <-t.Lines:
+			_, err := w.Write([]byte(line.Text))
+			if err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+		case <-w.CloseNotify():
 			return
 		}
-		w.(http.Flusher).Flush()
 	}
 }
