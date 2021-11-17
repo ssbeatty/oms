@@ -83,34 +83,40 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 		w.StoreCache(fTaskFlag, true)
 	}
 
+	var sendCurrentFileStatus = func() {
+		var resp []FTaskResp
+		w.engine.sshManager.GetFileList().Range(func(key, value interface{}) bool {
+			task := value.(*ssh.TaskItem)
+			percent := float32(task.RSize) * 100.0 / float32(task.Total)
+			resp = append(resp, FTaskResp{
+				File:    task.FileName,
+				Dest:    task.Host,
+				Current: utils.IntChangeToSize(task.RSize),
+				Total:   utils.IntChangeToSize(task.Total),
+				Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/TaskTickerInterval)),
+				Status:  task.Status,
+				Percent: percent,
+			})
+			task.CSize = task.RSize
+			if task.Status == ssh.FileTaskDone || task.Status == ssh.FileTaskFailed {
+				w.engine.sshManager.GetFileList().Delete(key)
+			}
+			return true
+		})
+		if len(resp) > 0 {
+			w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
+		}
+	}
+
+	sendCurrentFileStatus()
+
 	for {
 		select {
 		case <-w.closer:
 			w.logger.Debug("file task status exit.")
 			return
 		case <-ticker.C:
-			var resp []FTaskResp
-			w.engine.sshManager.GetFileList().Range(func(key, value interface{}) bool {
-				task := value.(*ssh.TaskItem)
-				percent := float32(task.RSize) * 100.0 / float32(task.Total)
-				resp = append(resp, FTaskResp{
-					File:    task.FileName,
-					Dest:    task.Host,
-					Current: utils.IntChangeToSize(task.RSize),
-					Total:   utils.IntChangeToSize(task.Total),
-					Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/TaskTickerInterval)),
-					Status:  task.Status,
-					Percent: percent,
-				})
-				task.CSize = task.RSize
-				if task.Status == ssh.FileTaskDone || task.Status == ssh.FileTaskFailed {
-					w.engine.sshManager.GetFileList().Delete(key)
-				}
-				return true
-			})
-			if len(resp) > 0 {
-				w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
-			}
+			sendCurrentFileStatus()
 		}
 	}
 }
