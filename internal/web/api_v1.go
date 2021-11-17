@@ -836,8 +836,6 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	header.Set("Transfer-Encoding", "chunked")
 	header.Set("Content-Type", "text/plain")
 
-	defer s.logger.Debug("GetLogStream log file stream exit.")
-
 	w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
 	w.(http.Flusher).Flush()
 
@@ -851,6 +849,15 @@ func (s *Service) GetLogStream(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
+
+	defer func() {
+		err := t.Stop()
+		if err != nil {
+			s.logger.Errorf("error when stop tail, err: %v", err)
+			return
+		}
+		s.logger.Debug("GetLogStream log file stream exit.")
+	}()
 
 	for {
 		select {
