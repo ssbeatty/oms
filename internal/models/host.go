@@ -143,6 +143,10 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 			}
 			host.Tags = tagObjs
 		}
+	} else {
+		if err := db.Model(&host).Association("Tags").Clear(); err != nil {
+			log.Errorf("UpdateHost error when Association tag Clear, err: %v", err)
+		}
 	}
 
 	if hostname != "" {
@@ -164,7 +168,11 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 		host.KeyFile = keyText
 	}
 	if groupId != 0 {
-		host.GroupId = groupId
+		group := Group{}
+		err := db.Where("id = ?", groupId).First(&group).Error
+		if err == nil {
+			host.Group = group
+		}
 		if err := db.Save(&host).Error; err != nil {
 			return nil, err
 		}
