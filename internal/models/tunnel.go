@@ -11,6 +11,15 @@ type Tunnel struct {
 	Host        Host   `json:"-"`
 }
 
+func GetTunnelsByHostId(id int) ([]*Tunnel, error) {
+	var tunnels []*Tunnel
+	err := db.Where("host_id = ?", id).Preload("Host").Find(&tunnels).Error
+	if err != nil {
+		return nil, err
+	}
+	return tunnels, nil
+}
+
 func GetAllTunnel() ([]*Tunnel, error) {
 	var tunnels []*Tunnel
 	err := db.Preload("Host").Find(&tunnels).Error

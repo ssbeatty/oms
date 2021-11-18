@@ -11,13 +11,13 @@ type Job struct {
 	Host   Host   `json:"-"`
 }
 
-func GetJobByHostId(id int) (*Job, error) {
-	job := Job{}
-	err := db.Where("host_id = ?", id).Preload("Host").First(&job).Error
+func GetJobsByHostId(id int) ([]*Job, error) {
+	var jobs []*Job
+	err := db.Where("host_id = ?", id).Preload("Host").Find(&jobs).Error
 	if err != nil {
 		return nil, err
 	}
-	return &job, nil
+	return jobs, nil
 }
 
 func GetAllJob() ([]*Job, error) {

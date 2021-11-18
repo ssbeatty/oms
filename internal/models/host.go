@@ -35,9 +35,7 @@ type PrivateKey struct {
 
 func GetHostByIdWithPreload(id int) (*Host, error) {
 	host := Host{}
-	err := db.Where("id = ?", id).
-		Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		First(&host).Error
+	err := db.Where("id = ?", id).Preload(clause.Associations).First(&host).Error
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +119,7 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 
 func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, keyText string) (*Host, error) {
 	host := Host{Id: id}
-	err := db.Where("id = ?", id).Preload(clause.Associations).First(&host).Error
+	err := db.Where("id = ?", id).First(&host).Error
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +187,7 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 
 func GetAllHost() ([]*Host, error) {
 	var hosts []*Host
-	err := db.Preload("Jobs").Preload("Tags").Preload("Group").Preload("Tunnels").
-		Find(&hosts).Error
+	err := db.Preload(clause.Associations).Find(&hosts).Error
 	if err != nil {
 		return nil, err
 	}

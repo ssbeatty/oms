@@ -419,7 +419,16 @@ func (s *Service) DeleteTag(c *gin.Context) {
 // api for table tunnel
 
 func (s *Service) GetTunnels(c *gin.Context) {
-	tunnels, err := models.GetAllTunnel()
+	var err error
+	var tunnels []*models.Tunnel
+
+	idRaw := c.Query("host_id")
+	hostId, _ := strconv.Atoi(idRaw)
+	if hostId > 0 {
+		tunnels, err = models.GetTunnelsByHostId(hostId)
+	} else {
+		tunnels, err = models.GetAllTunnel()
+	}
 	if err != nil {
 		s.logger.Errorf("GetTunnels error when GetAllTunnel, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get tunnels", nil)
@@ -570,7 +579,17 @@ func (s *Service) DeleteTunnel(c *gin.Context) {
 // api for table job
 
 func (s *Service) GetJobs(c *gin.Context) {
-	jobs, err := models.GetAllJob()
+	var err error
+	var jobs []*models.Job
+
+	idRaw := c.Query("host_id")
+	hostId, _ := strconv.Atoi(idRaw)
+	if hostId > 0 {
+		jobs, err = models.GetJobsByHostId(hostId)
+	} else {
+		jobs, err = models.GetAllJob()
+	}
+
 	if err != nil {
 		s.logger.Errorf("GetJobs error when GetAllJob, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not get jobs", nil)
