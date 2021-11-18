@@ -68,6 +68,7 @@ func prometheusHandler() gin.HandlerFunc {
 
 func (s *Service) InitRouter() *Service {
 	r := gin.Default()
+	r.Use(CORS)
 
 	// static files
 	box := packr.NewBox("../../web/omsUI/dist/assets")
@@ -101,8 +102,6 @@ func (s *Service) InitRouter() *Service {
 	// restapi
 	apiV1 := r.Group("/api/v1")
 	{
-		apiV1.Use(CORS)
-
 		apiV1.GET("/host", s.GetHosts)
 		apiV1.GET("/host/:id", s.GetOneHost)
 		apiV1.POST("/host", s.PostHost)
@@ -145,6 +144,9 @@ func (s *Service) InitRouter() *Service {
 		apiV1.GET("/tools/export", s.ExportData)
 		apiV1.POST("/tools/import", s.ImportData)
 		apiV1.POST("/tools/upload_file", s.FileUploadUnBlock)
+
+		// steam version
+		apiV1.POST("/tools/upload", s.FileUploadV2)
 	}
 	s.engine = r
 	return s

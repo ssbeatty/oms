@@ -3,12 +3,17 @@ package web
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"io/fs"
 	"io/ioutil"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -187,4 +192,37 @@ func (s *Service) ImportData(c *gin.Context) {
 	}
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) FileUploadV2(c *gin.Context) {
+	// todo 使用steam传输
+	mediaType, params, err := mime.ParseMediaType(c.Request.Header.Get("Content-Type"))
+	if err != nil {
+		c.String(http.StatusOK, "parse content type error")
+		return
+	}
+	if strings.HasPrefix(mediaType, "multipart/") {
+		partReader := multipart.NewReader(c.Request.Body, params["boundary"])
+		buf := make([]byte, 4096)
+		for {
+			part, err := partReader.NextPart()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			fmt.Println(part.FormName())
+			if part.FileName() == "" {
+				all, _ := ioutil.ReadAll(part)
+				fmt.Println(string(all))
+			} else {
+				fmt.Println(part.FileName())
+				for {
+					_, err = part.Read(buf)
+					if errors.Is(err, io.EOF) {
+						break
+					}
+				}
+			}
+		}
+	}
+	c.String(http.StatusOK, "done")
 }

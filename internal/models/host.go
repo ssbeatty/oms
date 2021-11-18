@@ -1,8 +1,8 @@
 package models
 
 import (
+	"gorm.io/gorm/clause"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -82,16 +82,11 @@ func DeleteHostById(id int) error {
 	return nil
 }
 
-func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) (*Host, error) {
+func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, keyText string) (*Host, error) {
 	var tagObjs []Tag
-	for _, tagIdStr := range tags {
-		tagId, err := strconv.Atoi(tagIdStr)
-		if err != nil {
-			log.Errorf("InsertHost error when Atoi tagArray idRaw, idRaw: %s, err: %v", tagIdStr, err)
-			continue
-		}
+	for _, tagId := range tags {
 		tag := Tag{}
-		err = db.Where("id = ?", tagId).First(&tag).Error
+		err := db.Where("id = ?", tagId).First(&tag).Error
 		if err != nil {
 			log.Errorf("InsertHost error when First tag, err: %v", err)
 			continue
@@ -112,27 +107,28 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 		return nil, err
 	}
 	if groupId != 0 {
+		group := Group{}
+		err := db.Where("id = ?", groupId).First(&group).Error
+		if err != nil {
+			return &host, nil
+		}
 		host.GroupId = groupId
 		db.Save(&host)
+		host.Group = group
 	}
 	return &host, nil
 }
 
-func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []string, keyText string) (*Host, error) {
+func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, keyText string) (*Host, error) {
 	host := Host{Id: id}
-	err := db.Where("id = ?", id).First(&host).Error
+	err := db.Where("id = ?", id).Preload(clause.Associations).First(&host).Error
 	if err != nil {
 		return nil, err
 	}
 
 	if len(tags) > 0 {
 		var tagObjs []Tag
-		for _, tagIdStr := range tags {
-			tagId, err := strconv.Atoi(tagIdStr)
-			if err != nil {
-				log.Errorf("UpdateHost error when Atoi tagIdStr, err: %v", err)
-				continue
-			}
+		for _, tagId := range tags {
 			tag := Tag{}
 			err = db.Where("id = ?", tagId).First(&tag).Error
 			if err != nil {

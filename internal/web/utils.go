@@ -11,7 +11,6 @@ import (
 	"oms/internal/models"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -306,9 +305,9 @@ func (s *Service) ImportDbData(marshal []byte) error {
 		ok := models.ExistedHost(host.Name, host.Addr)
 		if !ok {
 			s.logger.Errorf("ImportDbData error when Insert Host %s", host.Name)
-			tags := make([]string, 0)
+			tags := make([]int, 0)
 			for i := 0; i < len(host.Tags); i++ {
-				tags = append(tags, strconv.Itoa(host.Tags[i].Id))
+				tags = append(tags, host.Tags[i].Id)
 			}
 			_, _ = models.InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
 		}

@@ -70,7 +70,7 @@ func (s *Service) GetOneHost(c *gin.Context) {
 
 func (s *Service) PostHost(c *gin.Context) {
 	var keyRaw string
-	var tagArray []string
+	var tagArray []int
 	var passFlag bool
 
 	hostname := c.PostForm("hostname")
@@ -137,7 +137,7 @@ func (s *Service) PostHost(c *gin.Context) {
 }
 
 func (s *Service) PutHost(c *gin.Context) {
-	var tagArray []string
+	var tagArray []int
 	var keyRaw string
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(c.PostForm("id"))
