@@ -621,7 +621,7 @@ func (s *Service) PostJob(c *gin.Context) {
 		return
 	}
 	_, err := parser.Parse(spec)
-	if err != nil {
+	if err != nil && dType == string(task.JobTypeCron) {
 		msg := fmt.Sprintf("PostJob got a error spec, err: %s", err.Error())
 		s.logger.Error(msg)
 		data := generateResponsePayload(HttpStatusError, msg, nil)
@@ -682,16 +682,16 @@ func (s *Service) PutJob(c *gin.Context) {
 		return
 	}
 	name := c.PostForm("name")
+	dType := c.PostForm("type")
 	spec := c.PostForm("spec")
 	_, err = parser.Parse(spec)
-	if err != nil && spec != "" {
+	if err != nil && spec != "" && dType == string(task.JobTypeCron) {
 		msg := fmt.Sprintf("PutJob got a error spec, err: %s", err.Error())
 		s.logger.Error(msg)
 		data := generateResponsePayload(HttpStatusError, msg, nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	dType := c.PostForm("type")
 	cmd := c.PostForm("cmd")
 	job, err := models.UpdateJob(id, name, dType, spec, cmd)
 	if err != nil {

@@ -62,6 +62,7 @@ func InsertJob(name, t, spec, cmd string, host *Host) (*Job, error) {
 	if err != nil {
 		return nil, err
 	}
+	job.Host = *host
 	return &job, nil
 }
 
@@ -80,7 +81,7 @@ func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
 	if spec != "" {
 		job.Spec = spec
 	}
-	if spec != "" {
+	if cmd != "" {
 		job.Cmd = cmd
 	}
 	err = db.Save(&job).Error

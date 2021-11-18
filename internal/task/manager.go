@@ -77,15 +77,9 @@ func (m *Manager) Register(id int, job *Job) error {
 		m.logger.Info("task is running already.")
 		return errors.New("task is running already")
 	}
-	switch job.Type {
-	case JobTypeCron:
-		err := m.taskService.AddByJob(job.Name(), job.spec, job)
-		if err != nil {
-			m.logger.Errorf("error when register job, err: %v", err)
-			return err
-		}
-	case JobTypeTask:
-		go job.Run()
+	err := m.startJob(job)
+	if err != nil {
+		return err
 	}
 
 	m.taskPoll.Store(id, job)
@@ -95,9 +89,8 @@ func (m *Manager) Register(id int, job *Job) error {
 
 // UnRegister 关闭task & 从poll删除
 func (m *Manager) UnRegister(id int) error {
-	key, ok := m.taskPoll.Load(id)
+	job, ok := m.GetJob(id)
 	if ok {
-		job := key.(*Job)
 		job.Close()
 		defer m.taskPoll.Delete(id)
 	} else {
@@ -112,6 +105,7 @@ func (m *Manager) UnRegister(id int) error {
 func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error {
 	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
 	realJob.UpdateStatus(JobStatus(status))
+
 	if err := m.Register(modelJob.Id, realJob); err != nil {
 		return err
 	}
@@ -136,9 +130,41 @@ func (m *Manager) RemoveJob(id int) error {
 	return nil
 }
 
+func (m *Manager) startJob(job *Job) error {
+	switch job.Type {
+	case JobTypeCron:
+		existed := m.taskService.IsExists(job.Name())
+		if existed {
+			return nil
+		}
+		err := m.taskService.AddByJob(job.Name(), job.spec, job)
+		if err != nil {
+			m.logger.Errorf("error when register job, err: %v", err)
+			return err
+		}
+	case JobTypeTask:
+		switch job.Status() { //nolint:exhaustive
+		case JobStatusReady, JobStatusDone:
+			go job.Run()
+		default:
+			return nil
+		}
+	}
+	return nil
+}
+
 // StartJob 从models注册并启动job
 func (m *Manager) StartJob(modelJob *models.Job) error {
 	m.logger.Infof("received signal to start job: %d", modelJob.Id)
+	job, ok := m.GetJob(modelJob.Id)
+	if ok {
+		job.UpdateStatus(JobStatusReady)
+		err := m.startJob(job)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
 	if err != nil {
 		return err
@@ -170,7 +196,7 @@ func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 	m.logger.Info("init all job without stopped or fatal.")
 	for _, modelJob := range modelJobs {
 		var status = modelJob.Status
-		// running 一般是没有正常退出
+		// running 一般是没有正常退出 每次启动除了stop和fatal都要ready
 		if JobStatus(modelJob.Status) == JobStatusRunning {
 			status = string(JobStatusReady)
 		}

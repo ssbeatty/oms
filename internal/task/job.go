@@ -91,6 +91,7 @@ func (j *Job) Run() {
 		if j.Status() == JobStatusRunning {
 			j.UpdateStatus(JobStatusDone)
 		}
+		j.engine.logger.Debugf("job, name: %s, cmd: %s, exit.", j.name, j.cmd)
 	}()
 	client, err := j.engine.sshManager.NewClient(j.host.Addr, j.host.Port, j.host.User, j.host.PassWord, []byte(j.host.KeyFile))
 	if err != nil {
