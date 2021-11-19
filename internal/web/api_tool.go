@@ -3,6 +3,8 @@ package web
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -12,6 +14,9 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"oms/internal/ssh"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -78,27 +83,27 @@ func (s *Service) FileUploadUnBlock(c *gin.Context) {
 }
 
 func (s *Service) GetPathInfo(c *gin.Context) {
-	path := c.Query("path")
+	p := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	results := s.GetPathInfoExec(id, path)
+	results := s.GetPathInfoExec(id, p)
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
 	c.JSON(http.StatusOK, data)
 }
 
 func (s *Service) DownLoadFile(c *gin.Context) {
-	path := c.Query("path")
+	p := c.Query("path")
 	id, err := strconv.Atoi(c.Query("id"))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	file := s.DownloadFile(id, path)
+	file := s.DownloadFile(id, p)
 
 	if file != nil {
 		defer file.Close()
@@ -140,14 +145,14 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 
 func (s *Service) DeleteFile(c *gin.Context) {
 	var data Response
-	path := c.PostForm("path")
+	p := c.PostForm("path")
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	err = s.DeleteFileOrDir(id, path)
+	err = s.DeleteFileOrDir(id, p)
 	if err != nil {
 		data = generateResponsePayload(HttpStatusError, "remove file error", nil)
 	} else {
@@ -195,34 +200,113 @@ func (s *Service) ImportData(c *gin.Context) {
 }
 
 func (s *Service) FileUploadV2(c *gin.Context) {
-	// todo 使用steam传输
-	mediaType, params, err := mime.ParseMediaType(c.Request.Header.Get("Content-Type"))
-	if err != nil {
-		c.String(http.StatusOK, "parse content type error")
+	var id int
+	var remoteFile, dType string
+	files := make(map[string]int)
+
+	fileHeaders := c.GetHeader("X-Files")
+	if fileHeaders == "" {
+		data := generateResponsePayload(HttpStatusError, "header X-Files empty", nil)
+		c.JSON(http.StatusOK, data)
 		return
 	}
+	err := json.Unmarshal([]byte(fileHeaders), &files)
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "parse header X-Files error", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	mediaType, params, err := mime.ParseMediaType(c.Request.Header.Get("Content-Type"))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "parse content type error", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	// 文件必须放到formData的末尾 否则解析会失败
 	if strings.HasPrefix(mediaType, "multipart/") {
 		partReader := multipart.NewReader(c.Request.Body, params["boundary"])
-		buf := make([]byte, 4096)
 		for {
 			part, err := partReader.NextPart()
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			fmt.Println(part.FormName())
 			if part.FileName() == "" {
-				all, _ := ioutil.ReadAll(part)
-				fmt.Println(string(all))
-			} else {
-				fmt.Println(part.FileName())
-				for {
-					_, err = part.Read(buf)
-					if errors.Is(err, io.EOF) {
-						break
+				// 如果不是文件放在form里
+				all, err := ioutil.ReadAll(part)
+				if err != nil {
+					s.logger.Errorf("file upload v2 error when read_all form part, err: %v", err)
+					continue
+				}
+				switch part.FormName() {
+				case "type":
+					dType = string(all)
+				case "remote":
+					remote := string(all)
+					if remote == "" {
+						remoteFile = remote
+					} else {
+						if remote[len(remote)-1] == '/' {
+							remoteFile = remote
+						} else {
+							remoteFile = remote + "/"
+						}
 					}
+				case "id":
+					id, err = strconv.Atoi(string(all))
+					if err != nil {
+						data := generateResponsePayload(HttpStatusError, "parse params id error", nil)
+						c.JSON(http.StatusOK, data)
+						return
+					}
+				}
+			} else {
+				hosts := s.ParseHostList(dType, id)
+				// 每一个文件对应一个context如果 文件传输一半终止了 其下面所有的传输终止
+				ctx, cancel := context.WithCancel(context.Background())
+
+				p := path.Join("tmp", fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), part.FileName()))
+				tempFile := ssh.TempFile{
+					Name: part.FileName(),
+					Size: files[part.FileName()],
+					Path: p,
+				}
+				tmp, err := os.OpenFile(tempFile.Path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, os.ModePerm)
+				if err != nil {
+					data := generateResponsePayload(HttpStatusError, "create tmp file error", nil)
+					c.JSON(http.StatusOK, data)
+					return
+				}
+
+				// 在传输每个文件到tmp的同时就开始复制其到sftp客户端
+				go s.UploadFileStream(hosts, &tempFile, remoteFile, ctx)
+
+				n, err := io.Copy(tmp, part)
+				if err != nil {
+					// 这里多半是浏览器取消了请求
+					if int(n) != files[part.FileName()] {
+						cancel() // cancel all
+
+						err = tmp.Close()
+						if err != nil {
+							s.logger.Errorf("close file %s error, err: %v", tmp.Name(), err)
+						}
+						os.Remove(tempFile.Path)
+					}
+					data := generateResponsePayload(HttpStatusError, "io copy error", nil)
+					c.JSON(http.StatusOK, data)
+					return
+				}
+
+				// 传输完成这个句柄是一定要关闭的
+				err = tmp.Close()
+				if err != nil {
+					s.logger.Errorf("close file %s error, err: %v", tmp.Name(), err)
 				}
 			}
 		}
 	}
-	c.String(http.StatusOK, "done")
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
 }

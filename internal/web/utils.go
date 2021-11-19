@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"oms/internal/models"
+	"oms/internal/ssh"
 	"os"
 	"path/filepath"
 	"strings"
@@ -175,6 +176,19 @@ func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.Fil
 		go s.UploadFileOneAsync(host, remotePath, files, &wg)
 	}
 	wg.Wait()
+}
+
+func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remotePath string, ctx context.Context) {
+	for _, host := range hosts {
+		go func(host *models.Host) {
+			client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+			if err != nil {
+				return
+			}
+			addr := fmt.Sprintf("%s:%d", host.Addr, host.Port)
+			s.sshManager.UploadFileStream(client, remotePath, addr, tmp, ctx)
+		}(host)
+	}
 }
 
 func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*multipart.FileHeader, wg *sync.WaitGroup) {
