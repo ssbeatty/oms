@@ -76,7 +76,7 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 }
 
 func (c *Client) NewPty() (*Session, error) {
-	return c.NewSessionWithPty(20, 20)
+	return c.NewSessionWithPty(200, 40)
 }
 
 func (c *Client) NewSession() (*Session, error) {

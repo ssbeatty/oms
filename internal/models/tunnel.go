@@ -121,3 +121,12 @@ func DeleteTunnelById(id int) error {
 	}
 	return nil
 }
+
+func RefreshTunnel(tunnel *Tunnel) error {
+	err := db.First(&tunnel).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -59,7 +59,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	}
 	for _, host := range hosts {
 		// TODO sudo 由host本身管理
-		go w.engine.RunCmdWithContext(host, req.Cmd, true, ch)
+		go w.engine.RunCmdWithContext(host, req.Cmd, false, ch)
 	}
 
 	for i := 0; i < len(hosts); i++ {

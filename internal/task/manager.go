@@ -164,10 +164,11 @@ func (m *Manager) StartJob(modelJob *models.Job) error {
 			return err
 		}
 		return nil
-	}
-	err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
-	if err != nil {
-		return err
+	} else {
+		err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

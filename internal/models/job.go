@@ -123,3 +123,13 @@ func DeleteJobById(id int) error {
 	}
 	return nil
 }
+
+// RefreshJob 刷新job的状态
+func RefreshJob(job *Job) error {
+	err := db.First(&job).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

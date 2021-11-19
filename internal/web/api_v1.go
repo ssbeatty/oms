@@ -520,6 +520,8 @@ func (s *Service) PostTunnel(c *gin.Context) {
 		return
 	}
 
+	_ = models.RefreshTunnel(tunnel)
+
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnel)
 	c.JSON(http.StatusOK, data)
 }
@@ -570,6 +572,8 @@ func (s *Service) PutTunnel(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
+
+	_ = models.RefreshTunnel(tunnel)
 
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, tunnel)
 	c.JSON(http.StatusOK, data)
@@ -740,12 +744,9 @@ func (s *Service) PutJob(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	err = s.taskManager.UnRegister(id)
-	if err != nil {
-		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
+	// 这个错误忽略是为了修改时候只要确认停止即可
+	_ = s.taskManager.UnRegister(id)
+
 	err = s.taskManager.NewJobWithRegister(job, string(task.JobStatusReady))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
@@ -800,7 +801,9 @@ func (s *Service) StartJob(c *gin.Context) {
 		return
 	}
 
-	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	_ = models.RefreshJob(job)
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
 }
 
@@ -813,14 +816,23 @@ func (s *Service) StopJob(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	err = s.taskManager.StopJob(id)
+	job, err := models.GetJobById(id)
+	if err != nil {
+		s.logger.Errorf("StartJob error when GetJobById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get job", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = s.taskManager.StopJob(job.Id)
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 
-	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	_ = models.RefreshJob(job)
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
 }
 
@@ -849,7 +861,9 @@ func (s *Service) RestartJob(c *gin.Context) {
 		return
 	}
 
-	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	_ = models.RefreshJob(job)
+
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
 	c.JSON(http.StatusOK, data)
 }
 
@@ -865,8 +879,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 
 	job, ok := s.taskManager.GetJob(id)
 	if !ok {
-		data := generateResponsePayload(HttpStatusError, "can not found job", nil)
-		c.JSON(http.StatusOK, data)
+		c.String(http.StatusOK, "job stopped")
 		return
 	}
 
@@ -876,7 +889,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	header.Set("Transfer-Encoding", "chunked")
 	header.Set("Content-Type", "text/plain")
 
-	w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
+	_, _ = w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
 	w.(http.Flusher).Flush()
 
 	t, err := tail.TailFile(job.Log(), tail.Config{
