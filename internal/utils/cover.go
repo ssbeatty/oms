@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"strconv"
+	"strings"
 )
 
 func InetNtoA(ip int64) string {
@@ -28,5 +30,43 @@ func IntChangeToSize(s int64) string {
 		return fmt.Sprintf("%.2fmb", float64(s)/1048576.0)
 	} else {
 		return fmt.Sprintf("%.2fgb", float64(s)/1073741824.0)
+	}
+}
+
+func isPort(p string) bool {
+	port, err := strconv.Atoi(p)
+	if err != nil {
+		return false
+	}
+	if port > 0 && port < 65535 {
+		return true
+	} else {
+		return false
+	}
+}
+
+// IsAddr 判断string是否为ip地址
+// :9091 127.0.0.1:9090 0.0.0.0:9090
+func IsAddr(address string) bool {
+	if !strings.Contains(address, ":") {
+		return false
+	}
+	args := strings.Split(address, ":")
+	switch len(args) {
+	case 0:
+		return false
+	case 1:
+		return isPort(args[0])
+	case 2:
+		if args[0] == "" {
+			args[0] = "0.0.0.0"
+		}
+		ip := net.ParseIP(args[0])
+		if ip == nil {
+			return false
+		}
+		return isPort(args[1])
+	default:
+		return false
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"oms/internal/models"
 	"oms/internal/task"
+	"oms/internal/utils"
 	"strconv"
 )
 
@@ -467,9 +468,19 @@ func (s *Service) PostTunnel(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
+	if !utils.IsAddr(src) {
+		data := generateResponsePayload(HttpStatusError, "src not an address", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	dest := c.PostForm("destination")
 	if dest == "" {
 		data := generateResponsePayload(HttpStatusError, "dest can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	if !utils.IsAddr(dest) {
+		data := generateResponsePayload(HttpStatusError, "dest not an address", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -525,7 +536,17 @@ func (s *Service) PutTunnel(c *gin.Context) {
 
 	mode := c.PostForm("mode")
 	src := c.PostForm("source")
+	if src != "" && !utils.IsAddr(src) {
+		data := generateResponsePayload(HttpStatusError, "src not an address", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	dest := c.PostForm("destination")
+	if dest != "" && !utils.IsAddr(dest) {
+		data := generateResponsePayload(HttpStatusError, "dest not an address", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	tunnel, err := models.UpdateTunnel(id, mode, src, dest)
 	if err != nil {
 		s.logger.Errorf("PutTunnel error when UpdateTunnel, err: %v", err)
