@@ -206,14 +206,14 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 
 	fileHeaders := c.GetHeader("X-Files")
 	if fileHeaders == "" {
-		data := generateResponsePayload(HttpStatusError, "header X-Files empty", nil)
-		c.JSON(http.StatusOK, data)
+		c.Request.URL.Path += "_file"
+		s.engine.HandleContext(c)
 		return
 	}
 	err := json.Unmarshal([]byte(fileHeaders), &files)
 	if err != nil {
-		data := generateResponsePayload(HttpStatusError, "parse header X-Files error", nil)
-		c.JSON(http.StatusOK, data)
+		c.Request.URL.Path += "_file"
+		s.engine.HandleContext(c)
 		return
 	}
 
