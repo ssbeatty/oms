@@ -10,11 +10,10 @@ import (
 	"oms/pkg/transport"
 	"os"
 	"sync/atomic"
-	"time"
 )
 
 const (
-	DefaultBlockSize = 1024 * 4
+	DefaultBlockSize = 65535
 	FileTaskRunning  = "running"
 	FileTaskDone     = "done"
 	FileTaskFailed   = "failed"
@@ -189,14 +188,13 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		n, err := file.Read(readBuf)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				time.Sleep(20 * time.Millisecond)
+				//time.Sleep(20 * time.Millisecond)
 				continue
 			}
 			return
 		}
 		ch <- int64(n)
 		size -= n
-
 		_, err = r.Write(readBuf)
 		if err != nil {
 			m.logger.Errorf("error when write to sftp file, err: %v", err)

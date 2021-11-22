@@ -211,7 +211,7 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 		return
 	}
 	err := json.Unmarshal([]byte(fileHeaders), &files)
-	if err != nil {
+	if err != nil || len(files) == 0 {
 		c.Request.URL.Path += "_file"
 		s.engine.HandleContext(c)
 		return
