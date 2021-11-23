@@ -195,7 +195,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		}
 		ch <- int64(n)
 		size -= n
-		_, err = r.Write(readBuf)
+		_, err = r.Write(readBuf[:n])
 		if err != nil {
 			m.logger.Errorf("error when write to sftp file, err: %v", err)
 			return
