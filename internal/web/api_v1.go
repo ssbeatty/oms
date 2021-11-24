@@ -12,6 +12,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/task"
 	"oms/internal/utils"
+	"os"
 	"strconv"
 )
 
@@ -868,6 +869,7 @@ func (s *Service) RestartJob(c *gin.Context) {
 }
 
 func (s *Service) GetLogStream(c *gin.Context) {
+	var offset int64
 	idRaw := c.Query("id")
 	id, err := strconv.Atoi(idRaw)
 	if err != nil {
@@ -879,7 +881,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 
 	job, ok := s.taskManager.GetJob(id)
 	if !ok {
-		c.String(http.StatusOK, "job stopped")
+		c.String(http.StatusOK, "job is stopped")
 		return
 	}
 
@@ -887,15 +889,29 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	header := w.Header()
 	//http chunked
 	header.Set("Transfer-Encoding", "chunked")
-	header.Set("Content-Type", "text/plain")
+	header.Set("Content-Type", "text/plain;charset=utf-8")
+	// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/X-Content-Type-Options
+	// 取消浏览器的MIME嗅探算法
+	header.Set("X-Content-Type-Options", "nosniff")
 
-	_, _ = w.Write([]byte(fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())))
+	_, _ = fmt.Fprintln(w, fmt.Sprintf("[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd()))
 	w.(http.Flusher).Flush()
+
+	stat, err := os.Stat(job.Log())
+	if err != nil {
+		c.String(http.StatusOK, "log file not existed")
+		return
+	}
+	if stat.Size() > 2000 {
+		offset = -2000
+	} else {
+		offset = -stat.Size()
+	}
 
 	t, err := tail.TailFile(job.Log(), tail.Config{
 		Follow:   true,
 		Poll:     true,
-		Location: &tail.SeekInfo{Offset: -2000, Whence: io.SeekEnd},
+		Location: &tail.SeekInfo{Offset: offset, Whence: io.SeekEnd},
 	})
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "tail file error", nil)
@@ -918,7 +934,7 @@ func (s *Service) GetLogStream(c *gin.Context) {
 			if line == nil {
 				continue
 			}
-			_, err := w.Write([]byte(line.Text))
+			_, err := fmt.Fprintln(w, line.Text)
 			if err != nil {
 				return
 			}

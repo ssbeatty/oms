@@ -6,7 +6,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"oms/internal/models"
 	"oms/internal/ssh"
-	"oms/pkg/logger"
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
@@ -39,7 +38,6 @@ type Job struct {
 	host     *models.Host
 	cmd      string
 	status   atomic.Value
-	logger   *logger.Logger
 	log      string // log path
 	quit     chan bool
 	std      *lumberjack.Logger
@@ -49,7 +47,6 @@ type Job struct {
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models.Host) *Job {
-	l := logger.NewLogger("job")
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
@@ -61,7 +58,6 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 		MaxAge:     20,   //days
 		Compress:   true, // disabled by default
 	}
-	l.SetOutput(std)
 
 	job := &Job{
 		ID:     id,
@@ -70,7 +66,6 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 		host:   host,
 		cmd:    cmd,
 		quit:   make(chan bool, 1),
-		logger: l,
 		log:    tmp,
 		std:    std,
 		spec:   spec,
@@ -81,12 +76,25 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 	return job
 }
 
+func (j *Job) _log(level, format string, elems ...interface{}) {
+	_, _ = fmt.Fprintln(
+		j.std, fmt.Sprintf(fmt.Sprintf("%s [%s] %s", time.Now().Format(time.RFC3339), level, format), elems...))
+}
+
+func (j *Job) info(format string, elems ...interface{}) {
+	j._log("info", format, elems...)
+}
+
+func (j *Job) error(format string, elems ...interface{}) {
+	j._log("error", format, elems...)
+}
+
 func (j *Job) Run() {
 	j.engine.logger.Infof("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
-	j.logger.Info("job start running.")
 	if j.Status() == JobStatusStop || j.Status() == JobStatusFatal {
 		return
 	}
+	j.info("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
 	defer func() {
 		if j.Status() == JobStatusRunning {
 			j.UpdateStatus(JobStatusDone)
@@ -95,7 +103,7 @@ func (j *Job) Run() {
 	}()
 	client, err := j.engine.sshManager.NewClient(j.host.Addr, j.host.Port, j.host.User, j.host.PassWord, []byte(j.host.KeyFile))
 	if err != nil {
-		j.logger.Errorf("error when new ssh client, err: %v", err)
+		j.error("error when new ssh client, err: %v", err)
 		return
 	}
 
@@ -103,7 +111,7 @@ func (j *Job) Run() {
 	if j.Type == JobTypeCron {
 		session, err := client.NewPty()
 		if err != nil {
-			j.logger.Errorf("create new session failed, err: %v", err)
+			j.error("create new session failed, err: %v", err)
 		}
 		defer session.Close()
 
@@ -111,7 +119,7 @@ func (j *Job) Run() {
 
 		err = session.Run(j.cmd)
 		if err != nil {
-			j.logger.Errorf("error when run cmd, err: %v", err)
+			j.error("error when run cmd, err: %v", err)
 			j.UpdateStatus(JobStatusBackoff)
 			return
 		}
