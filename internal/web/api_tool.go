@@ -83,10 +83,10 @@ func (s *Service) FileUploadUnBlock(c *gin.Context) {
 }
 
 func (s *Service) GetPathInfo(c *gin.Context) {
-	p := c.Query("path")
-	id, err := strconv.Atoi(c.Query("id"))
+	p := c.Query("id")
+	id, err := strconv.Atoi(c.Query("host_id"))
 	if err != nil {
-		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		data := generateResponsePayload(HttpStatusError, "parse id error", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -96,8 +96,8 @@ func (s *Service) GetPathInfo(c *gin.Context) {
 }
 
 func (s *Service) DownLoadFile(c *gin.Context) {
-	p := c.Query("path")
-	id, err := strconv.Atoi(c.Query("id"))
+	p := c.Query("id")
+	id, err := strconv.Atoi(c.Query("host_id"))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
@@ -145,8 +145,8 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 
 func (s *Service) DeleteFile(c *gin.Context) {
 	var data Response
-	p := c.PostForm("path")
-	id, err := strconv.Atoi(c.PostForm("id"))
+	p := c.PostForm("id")
+	id, err := strconv.Atoi(c.PostForm("host_id"))
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
 		c.JSON(http.StatusOK, data)
@@ -155,6 +155,26 @@ func (s *Service) DeleteFile(c *gin.Context) {
 	err = s.DeleteFileOrDir(id, p)
 	if err != nil {
 		data = generateResponsePayload(HttpStatusError, "remove file error", nil)
+	} else {
+		data = generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) MakeDirRemote(c *gin.Context) {
+	var data Response
+	p := c.PostForm("id")
+	id, err := strconv.Atoi(c.PostForm("host_id"))
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	dirName := c.PostForm("dir")
+
+	err = s.MakeDir(id, p, dirName)
+	if err != nil {
+		data = generateResponsePayload(HttpStatusError, "mkdir error", nil)
 	} else {
 		data = generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	}

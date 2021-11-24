@@ -143,6 +143,7 @@ func (s *Service) InitRouter() *Service {
 		// tools
 		apiV1.GET("/tools/cmd", s.RunCmd)
 		apiV1.GET("/tools/browse", s.GetPathInfo)
+		apiV1.POST("/tools/mkdir", s.MakeDirRemote)
 		apiV1.GET("/tools/download", s.DownLoadFile)
 		apiV1.POST("/tools/delete", s.DeleteFile)
 		apiV1.GET("/tools/export", s.ExportData)

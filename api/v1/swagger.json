@@ -29,6 +29,10 @@
     {
       "name": "other",
       "description": "其他接口"
+    },
+    {
+      "name": "job",
+      "description": "cron和进程管理"
     }
   ],
   "schemes": [
@@ -363,6 +367,9 @@
                       "status": {
                         "type": "boolean"
                       },
+                      "private_key_id": {
+                        "type": "number"
+                      },
                       "group_id": {
                         "type": "number"
                       },
@@ -400,19 +407,75 @@
                             "name"
                           ]
                         }
+                      },
+                      "tunnels": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "number"
+                            },
+                            "mode": {
+                              "type": "string"
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "destination": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "number"
+                            },
+                            "error_msg": {
+                              "type": "string"
+                            },
+                            "host_id": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      },
+                      "jobs": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "number"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "spec": {
+                              "type": "string"
+                            },
+                            "cmd": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "host_id": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "type",
+                            "spec",
+                            "cmd",
+                            "status",
+                            "host_id"
+                          ]
+                        }
                       }
-                    },
-                    "required": [
-                      "id",
-                      "name",
-                      "user",
-                      "addr",
-                      "port",
-                      "status",
-                      "group_id",
-                      "group",
-                      "tags"
-                    ]
+                    }
                   }
                 }
               }
@@ -510,6 +573,9 @@
                     "status": {
                       "type": "boolean"
                     },
+                    "private_key_id": {
+                      "type": "number"
+                    },
                     "group_id": {
                       "type": "number"
                     },
@@ -541,7 +607,78 @@
                           "name": {
                             "type": "string"
                           }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    },
+                    "tunnels": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "mode": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "destination": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "number"
+                          },
+                          "error_msg": {
+                            "type": "string"
+                          },
+                          "host_id": {
+                            "type": "number"
+                          }
                         }
+                      }
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "spec": {
+                            "type": "string"
+                          },
+                          "cmd": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "host_id": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type",
+                          "spec",
+                          "cmd",
+                          "status",
+                          "host_id"
+                        ]
                       }
                     }
                   }
@@ -1088,14 +1225,14 @@
             "type": "string"
           },
           {
-            "name": "src",
+            "name": "source",
             "in": "formData",
             "required": false,
             "description": "目标地址",
             "type": "string"
           },
           {
-            "name": "dest",
+            "name": "destination",
             "in": "formData",
             "required": false,
             "description": "监听地址",
@@ -1171,14 +1308,14 @@
             "type": "string"
           },
           {
-            "name": "src",
+            "name": "source",
             "in": "formData",
             "required": true,
             "description": "目标地址",
             "type": "string"
           },
           {
-            "name": "dest",
+            "name": "destination",
             "in": "formData",
             "required": true,
             "description": "监听地址",
@@ -1391,7 +1528,7 @@
         }
       }
     },
-    "/tools/download": {
+    "/api/v1/tools/download": {
       "get": {
         "tags": [
           "tools"
@@ -1400,14 +1537,14 @@
         "description": "返回文件流",
         "parameters": [
           {
-            "name": "id",
+            "name": "host_id",
             "in": "query",
             "required": true,
             "description": "host的ID",
             "type": "string"
           },
           {
-            "name": "path",
+            "name": "id",
             "in": "query",
             "required": true,
             "description": "文件路径",
@@ -1426,7 +1563,59 @@
         }
       }
     },
-    "/tools/delete": {
+    "/api/v1/tools/mkdir": {
+      "post": {
+        "tags": [
+          "tools"
+        ],
+        "summary": "创建文件夹",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "host_id",
+            "in": "formData",
+            "required": true,
+            "description": "主机的ID",
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "创建文件夹的父路径",
+            "type": "string"
+          },
+          {
+            "name": "dir",
+            "in": "formData",
+            "required": true,
+            "description": "文件夹名称",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tools/delete": {
       "post": {
         "tags": [
           "tools"
@@ -1438,14 +1627,14 @@
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "host_id",
             "in": "formData",
             "required": true,
             "description": "host的ID",
             "type": "string"
           },
           {
-            "name": "path",
+            "name": "id",
             "in": "formData",
             "required": true,
             "description": "文件路径",
@@ -1474,7 +1663,7 @@
         }
       }
     },
-    "/tools/cmd": {
+    "/api/v1/tools/cmd": {
       "get": {
         "tags": [
           "tools"
@@ -1550,7 +1739,7 @@
         }
       }
     },
-    "/tools/upload_file": {
+    "/api/v1/tools/upload": {
       "post": {
         "tags": [
           "tools"
@@ -1561,6 +1750,14 @@
           "multipart/form-data"
         ],
         "parameters": [
+          {
+            "name": "X-Files",
+            "in": "header",
+            "description": "X-Files (Only:)",
+            "required": true,
+            "type": "string",
+            "default": ""
+          },
           {
             "name": "id",
             "in": "formData",
@@ -1612,7 +1809,7 @@
         }
       }
     },
-    "/tools/browse": {
+    "/api/v1/tools/browse": {
       "get": {
         "tags": [
           "tools"
@@ -1621,17 +1818,17 @@
         "description": "",
         "parameters": [
           {
-            "name": "id",
+            "name": "host_id",
             "in": "query",
             "required": true,
             "description": "host的ID",
             "type": "string"
           },
           {
-            "name": "path",
+            "name": "id",
             "in": "query",
             "required": true,
-            "description": "远端路径",
+            "description": "远端路径 如果为空默认为home目录",
             "type": "string"
           }
         ],
@@ -1649,29 +1846,72 @@
                   "type": "string"
                 },
                 "data": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "name": {
-                        "type": "string"
-                      },
-                      "mod_time": {
-                        "type": "string"
-                      },
-                      "size": {
-                        "type": "number"
-                      },
-                      "is_dir": {
-                        "type": "boolean"
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "modDate": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "number"
+                          },
+                          "parentId": {
+                            "type": "string"
+                          },
+                          "isDir": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "modDate",
+                          "size",
+                          "parentId",
+                          "isDir"
+                        ]
                       }
                     },
-                    "required": [
-                      "name",
-                      "mod_time",
-                      "size",
-                      "is_dir"
-                    ]
+                    "folderChains": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "modDate": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "number"
+                          },
+                          "isDir": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "modDate",
+                          "size",
+                          "isDir"
+                        ]
+                      }
+                    }
                   }
                 }
               }
@@ -1727,6 +1967,433 @@
               "title": "empty object",
               "properties": {}
             }
+          }
+        }
+      }
+    },
+    "/api/v1/job": {
+      "put": {
+        "tags": [
+          "job"
+        ],
+        "summary": "修改job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "job的ID",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "formData",
+            "required": false,
+            "description": "job名称",
+            "type": "string"
+          },
+          {
+            "name": "spec",
+            "in": "formData",
+            "required": false,
+            "description": "cron表达式",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "formData",
+            "required": false,
+            "description": "类型",
+            "type": "string"
+          },
+          {
+            "name": "cmd",
+            "in": "formData",
+            "required": false,
+            "description": "命令",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "spec": {
+                      "type": "string"
+                    },
+                    "cmd": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "新增job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "formData",
+            "required": true,
+            "description": "job名称",
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "formData",
+            "required": true,
+            "description": "job类型，cron或task",
+            "type": "string"
+          },
+          {
+            "name": "spec",
+            "in": "formData",
+            "required": false,
+            "description": "cron表达式，cron类型必填\n分 时 日 月 周",
+            "type": "string"
+          },
+          {
+            "name": "cmd",
+            "in": "formData",
+            "required": true,
+            "description": "命令",
+            "type": "string"
+          },
+          {
+            "name": "host_id",
+            "in": "formData",
+            "required": true,
+            "description": "主机ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "spec": {
+                      "type": "string"
+                    },
+                    "cmd": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job"
+        ],
+        "summary": "获取所有job",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "spec": {
+                        "type": "string"
+                      },
+                      "cmd": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "host_id": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type",
+                      "spec",
+                      "cmd",
+                      "status",
+                      "host_id"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/job/stop": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "停止job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "要停止的job的ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {}
+          }
+        }
+      }
+    },
+    "/api/v1/job/:id": {
+      "delete": {
+        "tags": [
+          "job"
+        ],
+        "summary": "删除job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "job的ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "job"
+        ],
+        "summary": "通过ID获取job",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "任务ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$schema": "http://json-schema.org/draft-04/schema#",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "spec": {
+                      "type": "string"
+                    },
+                    "cmd": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "host_id": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/job/start": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "启动job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "要启动job的ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "type": "object",
+              "title": "empty object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/job/restart": {
+      "post": {
+        "tags": [
+          "job"
+        ],
+        "summary": "重启job",
+        "description": "",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "formData",
+            "required": true,
+            "description": "job的ID",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {}
           }
         }
       }

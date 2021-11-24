@@ -10,7 +10,9 @@ import (
 	"mime/multipart"
 	"oms/internal/models"
 	"oms/internal/ssh"
+	"oms/internal/utils"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -25,10 +27,22 @@ type Result struct {
 }
 
 type FileInfo struct {
-	Name    string    `json:"name"`
-	ModTime time.Time `json:"mod_time"`
-	Size    int64     `json:"size"`
-	IsDir   bool      `json:"is_dir"`
+	Id            string    `json:"id"`
+	Name          string    `json:"name"`
+	ModTime       time.Time `json:"modDate"`
+	Size          int64     `json:"size"`
+	IsDir         bool      `json:"isDir,omitempty"`
+	IsSymlink     bool      `json:"isSymlink,omitempty"`
+	IsHidden      bool      `json:"isHidden,omitempty"`
+	Ext           string    `json:"ext,omitempty"`
+	ChildrenCount int       `json:"childrenCount,omitempty"`
+	ParentId      string    `json:"parentId,omitempty"`
+	ChildrenIds   []string  `json:"children_ids,omitempty"`
+}
+
+type FilePath struct {
+	Files        []*FileInfo `json:"files"`
+	FolderChains []*FileInfo `json:"folderChains"`
 }
 
 type ExportData struct {
@@ -204,37 +218,93 @@ func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*
 	wg.Done()
 }
 
-func (s *Service) GetPathInfoExec(hostId int, path string) []*FileInfo {
+func (s *Service) GetPathInfoExec(hostId int, p string) *FilePath {
+	filePath := &FilePath{}
 	var results []*FileInfo
+	var folderChains []*FileInfo
+
 	host, err := models.GetHostById(hostId)
 	if err != nil {
 		return nil
 	}
 	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
-		return results
+		return filePath
 	}
-	infos, err := client.ReadDir(path)
+	switch p {
+	case ".", "..":
+		p, err = client.RealPath(p)
+		if err != nil {
+			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			return nil
+		}
+	case "", "~":
+		p, err = client.RealPath(".")
+		if err != nil {
+			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			return nil
+		}
+	}
+	infos, err := client.ReadDir(p)
 	if err != nil {
-		return results
+		return filePath
 	}
 	for i := 0; i < len(infos); i++ {
-		var isDir bool
+		var isDir, isSymlink bool
 		var newHead os.FileInfo
+		var childrenIds []string
+		fId := filepath.ToSlash(filepath.Join(p, infos[i].Name()))
 		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
-			newHead, err = client.Stat(filepath.ToSlash(filepath.Join(path, infos[i].Name())))
+			newHead, err = client.Stat(fId)
 			if err != nil {
-				s.logger.Errorf("GetPathInfoExec error when stat file: %s, err: %v", filepath.Join(path, infos[i].Name()), err)
+				s.logger.Errorf("GetPathInfoExec error when stat file: %s, err: %v", filepath.Join(p, infos[i].Name()), err)
 				continue
 			}
+			isSymlink = true
 			isDir = newHead.IsDir()
 		} else {
 			isDir = infos[i].IsDir()
 		}
-		info := FileInfo{Name: infos[i].Name(), Size: infos[i].Size(), ModTime: infos[i].ModTime(), IsDir: isDir}
+		if isDir {
+			infos2, _ := client.ReadDir(fId)
+			for i := 0; i < len(infos2); i++ {
+				fId2 := filepath.ToSlash(filepath.Join(fId, infos2[i].Name()))
+				childrenIds = append(childrenIds, fId2)
+			}
+		}
+		info := FileInfo{
+			Id:        fId,
+			Name:      infos[i].Name(),
+			Size:      infos[i].Size(),
+			ModTime:   infos[i].ModTime(),
+			IsDir:     isDir,
+			IsSymlink: isSymlink,
+			Ext:       utils.GetFileExt(infos[i].Name()),
+			ParentId:  p,
+		}
 		results = append(results, &info)
 	}
-	return results
+
+	for {
+		folderChains = append(folderChains, &FileInfo{
+			Id:    p,
+			Name:  path.Base(p),
+			IsDir: true,
+		})
+		if p == path.Dir(p) {
+			break
+		} else {
+			p = path.Dir(p)
+		}
+	}
+	// Reverse
+	for i, j := 0, len(folderChains)-1; i < j; i, j = i+1, j-1 {
+		folderChains[i], folderChains[j] = folderChains[j], folderChains[i]
+	}
+
+	filePath.Files = results
+	filePath.FolderChains = folderChains
+	return filePath
 }
 
 func (s *Service) DownloadFile(hostId int, path string) *sftp.File {
@@ -274,6 +344,33 @@ func (s *Service) DeleteFileOrDir(hostId int, path string) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) MakeDir(hostId int, p, dir string) error {
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return err
+	}
+	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	if err != nil {
+		return err
+	}
+	switch p {
+	case ".", "..":
+		p, err = client.RealPath(p)
+		if err != nil {
+			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			return nil
+		}
+	case "", "~":
+		p, err = client.RealPath(".")
+		if err != nil {
+			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			return nil
+		}
+	}
+	realPath := filepath.ToSlash(filepath.Join(p, dir))
+	return client.MkdirAll(realPath)
 }
 
 func (s *Service) ExportDbData() ([]byte, error) {
