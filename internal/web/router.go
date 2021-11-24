@@ -14,11 +14,14 @@ import (
 	"oms/internal/task"
 	"oms/internal/tunnel"
 	"oms/pkg/logger"
+	"os/exec"
+	"runtime"
 )
 
 type Service struct {
 	engine *gin.Engine
 	addr   string
+	port   int
 	logger *logger.Logger
 
 	taskManager   *task.Manager
@@ -30,6 +33,7 @@ type Service struct {
 func NewService(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, tunnelManager *tunnel.Manager) *Service {
 	service := &Service{
 		addr:          fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
+		port:          conf.Port,
 		sshManager:    sshManager,
 		taskManager:   taskManager,
 		tunnelManager: tunnelManager,
@@ -154,8 +158,20 @@ func (s *Service) InitRouter() *Service {
 
 func (s *Service) Run() {
 	s.logger.Infof("Listening and serving HTTP on %s", s.addr)
-	if err := s.engine.Run(s.addr); err != nil {
-		panic(err)
+	go func() {
+		if err := s.engine.Run(s.addr); err != nil {
+			panic(err)
+		}
+	}()
+
+	// todo mac
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "start", fmt.Sprintf("http://127.0.0.1:%d", s.port))
+		err := cmd.Start()
+		if err != nil {
+			s.logger.Errorf("start server in browser error: %v", err)
+			return
+		}
 	}
 }
 

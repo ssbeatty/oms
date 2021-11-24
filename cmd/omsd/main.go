@@ -8,12 +8,15 @@ import (
 	"oms/internal/models"
 	"oms/internal/server"
 	"oms/pkg/logger"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
 	// flags & init conf
-	var configPath *string
-	configPath = flag.String("config", "", "path of config")
+
+	configPath := flag.String("config", "", "path of config")
 	flag.Parse()
 
 	conf, err := config.NewServerConfig(*configPath)
@@ -33,6 +36,13 @@ func main() {
 		logger.SetLevelAndFormat(logger.InfoLevel, &log.TextFormatter{})
 	}
 
+	// run server
 	srv := server.NewServer(conf)
 	srv.Run()
+
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	<-done
 }
