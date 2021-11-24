@@ -915,12 +915,16 @@ func (s *Service) GetLogStream(c *gin.Context) {
 	for {
 		select {
 		case line := <-t.Lines:
+			if line == nil {
+				continue
+			}
 			_, err := w.Write([]byte(line.Text))
 			if err != nil {
 				return
 			}
 			w.(http.Flusher).Flush()
 		case <-w.CloseNotify():
+			s.logger.Debug("log stream got done notify.")
 			return
 		}
 	}
