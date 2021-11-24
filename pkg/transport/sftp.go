@@ -83,7 +83,7 @@ func (c *Client) IsDir(path string) bool {
 }
 
 func (c *Client) MkdirAll(dirPath string) error {
-	return c.sftpClient.Mkdir(filepath.ToSlash(dirPath))
+	return c.sftpClient.MkdirAll(filepath.ToSlash(dirPath))
 }
 
 func (c *Client) Remove(path string) error {
