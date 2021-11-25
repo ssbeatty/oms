@@ -10,9 +10,11 @@ import (
 	"oms/pkg/transport"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 const (
+	TaskTickerInterval = 2
 	DefaultBlockSize = 65535
 	FileTaskRunning  = "running"
 	FileTaskDone     = "done"
@@ -21,10 +23,9 @@ const (
 
 type TaskItem struct {
 	Status   string
-	Total    int64      // 文件总字节
-	ch       chan int64 // 当前字节的channel
-	RSize    int64      // 已传输字节
-	CSize    int64      // 当前字节
+	Total    int64 // 文件总字节
+	RSize    int64 // 已传输字节
+	CSize    int64 // 当前字节
 	FileName string
 	Host     string
 }
@@ -36,24 +37,78 @@ type TempFile struct {
 	Num  int32
 }
 
-// manageChannel 更新file task pool中file task的传输字节数
-func (m *Manager) manageChannel(ch chan int64, key string) {
-	for val := range ch {
-		item, ok := m.fileList.Load(key)
-		if !ok {
-			continue
+type FTaskResp struct {
+	File    string  `json:"file"`
+	Dest    string  `json:"dest"`
+	Speed   string  `json:"speed"`
+	Current string  `json:"current"`
+	Total   string  `json:"total"`
+	Status  string  `json:"status"`
+	Percent float32 `json:"percent"`
+}
+
+func (m *Manager) UpdateTaskStatus(task *TaskItem, status string) {
+	task.Status = status
+	m.notify <- true
+}
+
+func (m *Manager) doNotifyFileTaskList() {
+	ticker := time.NewTicker(TaskTickerInterval * time.Second)
+
+	doSendFileTaskListInfo := func() {
+		if m.fileList.Length() == 0 {
+			return
 		}
-		task := item.(*TaskItem)
-		task.RSize += val
+		var resp []FTaskResp
+		m.fileList.Range(func(key, value interface{}) bool {
+			task := value.(*TaskItem)
+			percent := float32(task.RSize) * 100.0 / float32(task.Total)
+			resp = append(resp, FTaskResp{
+				File:    task.FileName,
+				Dest:    task.Host,
+				Current: utils.IntChangeToSize(task.RSize),
+				Total:   utils.IntChangeToSize(task.Total),
+				Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/2)),
+				Status:  task.Status,
+				Percent: percent,
+			})
+			task.CSize = task.RSize
+			if task.Status == FileTaskDone || task.Status == FileTaskFailed {
+				m.fileList.Delete(key)
+			}
+			return true
+		})
+		m.subClients.Range(func(key, value interface{}) bool {
+			ch := value.(chan []FTaskResp)
+			ch <- resp
+
+			return true
+		})
+	}
+	for {
+		select {
+		case <- ticker.C :
+			doSendFileTaskListInfo()
+		case <- m.notify:
+			doSendFileTaskListInfo()
+		}
+	}
+}
+
+func (m *Manager) RegisterFileListSub(key string, notifyCh chan []FTaskResp) {
+	m.subClients.Store(key, notifyCh)
+}
+
+func (m *Manager) RemoveFileListSub(key string) {
+	if val, ok := m.subClients.LoadAndDelete(key); ok {
+		close(val.(chan []FTaskResp))
 	}
 }
 
 // UploadFileOneAsync 上传文件并将addr/filename维护到file task pool
 func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileHeader, remote string, addr string, filename string) {
-	ch := make(chan int64, 10)
 	task := &TaskItem{
 		Total:    fileH.Size,
-		ch:       ch,
 		FileName: fileH.Filename,
 		Status:   FileTaskRunning,
 		Host:     addr,
@@ -62,21 +117,21 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 	file, err := fileH.Open()
 	if err != nil {
 		m.logger.Errorf("error when open multipart file, err: %v", err)
-		task.Status = FileTaskFailed
+		m.UpdateTaskStatus(task, FileTaskFailed)
 		return
 	}
 
 	remoteFile, remoteDir := utils.ParseUploadPath(remote, fileH.Filename)
 	if _, err := c.GetSftpClient().Stat(remoteDir); err != nil {
 		if err := c.MkdirAll(remoteDir); err != nil {
-			task.Status = FileTaskFailed
+			m.UpdateTaskStatus(task, FileTaskFailed)
 			m.logger.Errorf("error when sftp create dirs, err: %v", err)
 		}
 	}
 	r, err := c.GetSftpClient().Create(remoteFile)
 	if err != nil {
 		m.logger.Errorf("error when sftp create file, err: %v", err)
-		task.Status = FileTaskFailed
+		m.UpdateTaskStatus(task, FileTaskFailed)
 		return
 	}
 
@@ -84,41 +139,39 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 		m.logger.Debugf("upload file goroutine exit.")
 		_ = file.Close()
 		_ = r.Close()
-		close(ch)
 		// 遇到关闭连接的情况
 		if task.Status != FileTaskDone {
-			task.Status = FileTaskFailed
+			m.UpdateTaskStatus(task, FileTaskFailed)
 		}
 	}()
 
 	key := fmt.Sprintf("%s/%s", addr, filename)
-	if _, ok := m.fileList.Load(key); !ok {
-		m.fileList.Store(key, task)
+	if val, ok := m.fileList.Load(key); ok {
+		if val.(*TaskItem).Status == FileTaskRunning {
+			return
+		} else {
+			m.fileList.Store(key, task)
+		}
 	} else {
-		return
+		m.fileList.Store(key, task)
 	}
-
-	go m.manageChannel(ch, key)
 
 	for {
 		n, err := io.CopyN(r, file, DefaultBlockSize)
-		ch <- n
 		if err != nil {
 			break
 		}
+		task.RSize += n
 	}
-	task.Status = FileTaskDone
+	m.UpdateTaskStatus(task, FileTaskDone)
 
 	m.logger.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
 }
 
 func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr string, tmp *TempFile, ctx context.Context) {
-	ch := make(chan int64, 10)
-	defer close(ch)
 
 	task := &TaskItem{
 		Total:    int64(tmp.Size),
-		ch:       ch,
 		FileName: tmp.Name,
 		Status:   FileTaskRunning,
 		Host:     addr,
@@ -126,10 +179,14 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 
 	// 重复文件跳过
 	key := fmt.Sprintf("%s/%s", addr, tmp.Name)
-	if _, ok := m.fileList.Load(key); !ok {
-		m.fileList.Store(key, task)
+	if val, ok := m.fileList.Load(key); ok {
+		if val.(*TaskItem).Status == FileTaskRunning {
+			return
+		} else {
+			m.fileList.Store(key, task)
+		}
 	} else {
-		return
+		m.fileList.Store(key, task)
 	}
 
 	// 引用计数
@@ -151,7 +208,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 	remoteFile, remoteDir := utils.ParseUploadPath(remote, tmp.Name)
 	if _, err := c.GetSftpClient().Stat(remoteDir); err != nil {
 		if err := c.MkdirAll(remoteDir); err != nil {
-			task.Status = FileTaskFailed
+			m.UpdateTaskStatus(task, FileTaskFailed)
 			m.logger.Errorf("error when sftp create dirs, err: %v", err)
 			return
 		}
@@ -159,7 +216,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 	r, err := c.GetSftpClient().Create(remoteFile)
 	if err != nil {
 		m.logger.Errorf("error when sftp create file, err: %v", err)
-		task.Status = FileTaskFailed
+		m.UpdateTaskStatus(task, FileTaskFailed)
 		return
 	}
 
@@ -169,7 +226,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		_ = r.Close()
 		// 遇到关闭连接的情况
 		if task.Status != FileTaskDone {
-			task.Status = FileTaskFailed
+			m.UpdateTaskStatus(task, FileTaskFailed)
 		}
 	}()
 
@@ -179,8 +236,6 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 			_ = file.Close()
 		}
 	}()
-
-	go m.manageChannel(ch, key)
 
 	readBuf := make([]byte, DefaultBlockSize)
 	size := tmp.Size
@@ -193,7 +248,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 			}
 			return
 		}
-		ch <- int64(n)
+		task.RSize += int64(n)
 		size -= n
 		_, err = r.Write(readBuf[:n])
 		if err != nil {
@@ -201,7 +256,7 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 			return
 		}
 	}
-	task.Status = FileTaskDone
+	m.UpdateTaskStatus(task, FileTaskDone)
 
 	m.logger.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
 }

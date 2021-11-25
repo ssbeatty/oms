@@ -43,6 +43,7 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/uuid v1.3.0
+## explicit
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
 ## explicit
@@ -124,6 +125,8 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/reactivex/rxgo/v2 v2.5.0
+## explicit
 # github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0
 github.com/remyoudompheng/bigfft
 # github.com/robfig/cron/v3 v3.0.1

@@ -3,29 +3,18 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"oms/internal/ssh"
-	"oms/internal/utils"
 	"oms/pkg/transport"
 	"time"
 )
 
 const (
-	TaskTickerInterval = 2
 	WSStatusSuccess    = "0"
 	WSStatusError      = "-1"
 	SSHTimeDeadline    = 30 * time.Second
 )
-
-type FTaskResp struct {
-	File    string  `json:"file"`
-	Dest    string  `json:"dest"`
-	Speed   string  `json:"speed"`
-	Current string  `json:"current"`
-	Total   string  `json:"total"`
-	Status  string  `json:"status"`
-	Percent float32 `json:"percent"`
-}
 
 type Request struct {
 	Type string `json:"type"`
@@ -72,51 +61,35 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 
 func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 	w.logger.Infof("handler task status recv a message: %s", msg)
-	ticker := time.NewTicker(TaskTickerInterval * time.Second)
 
 	// 一个连接只能有一个订阅
 	const fTaskFlag = "f_task_existed"
 	val, ok := w.LoadCache(fTaskFlag)
 	if ok && val.(bool) {
+		w.WriteMsg(Response{Code: WSStatusError, Msg: "subscription already exists"})
 		return
 	} else {
 		w.StoreCache(fTaskFlag, true)
 	}
 
-	var sendCurrentFileStatus = func() {
-		var resp []FTaskResp
-		w.engine.sshManager.GetFileList().Range(func(key, value interface{}) bool {
-			task := value.(*ssh.TaskItem)
-			percent := float32(task.RSize) * 100.0 / float32(task.Total)
-			resp = append(resp, FTaskResp{
-				File:    task.FileName,
-				Dest:    task.Host,
-				Current: utils.IntChangeToSize(task.RSize),
-				Total:   utils.IntChangeToSize(task.Total),
-				Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/TaskTickerInterval)),
-				Status:  task.Status,
-				Percent: percent,
-			})
-			task.CSize = task.RSize
-			if task.Status == ssh.FileTaskDone || task.Status == ssh.FileTaskFailed {
-				w.engine.sshManager.GetFileList().Delete(key)
-			}
-			return true
-		})
-		if len(resp) > 0 {
-			w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
-		}
+	notifyCh := make(chan []ssh.FTaskResp)
+	key, err := uuid.NewUUID()
+	if err != nil {
+		w.logger.Errorf("create uuid error: %v.", err)
+		return
 	}
-
-	sendCurrentFileStatus()
+	w.engine.sshManager.RegisterFileListSub(key.String(), notifyCh)
+	defer w.engine.sshManager.RemoveFileListSub(key.String())
 
 	for {
 		select {
 		case <-w.closer:
 			w.logger.Debug("file task status exit.")
 			return
-		case <-ticker.C:
-			sendCurrentFileStatus()
+		case resp := <- notifyCh:
+			if len(resp) > 0 {
+				w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
+			}
 		}
 	}
 }

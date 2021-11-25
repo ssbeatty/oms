@@ -282,6 +282,7 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 					}
 				}
 			} else {
+				// TODO skip repeat file
 				hosts := s.ParseHostList(dType, id)
 				// 每一个文件对应一个context如果 文件传输一半终止了 其下面所有的传输终止
 				ctx, cancel := context.WithCancel(context.Background())

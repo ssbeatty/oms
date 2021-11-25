@@ -7,6 +7,7 @@ import (
 	"oms/pkg/cache"
 	"oms/pkg/logger"
 	"oms/pkg/transport"
+	"sync"
 )
 
 type Config struct {
@@ -18,22 +19,33 @@ type Config struct {
 	Passphrase string
 }
 
+// 对host和port进行hash
 func (h *Config) serialize() int64 {
 	return utils.InetAtoN(h.Host, h.Port)
 }
 
 type Manager struct {
-	fileList *utils.SafeMap
-	sshPoll  *cache.Cache
-	logger   *logger.Logger
+	fileList   *utils.SafeMap
+	sshPoll    *cache.Cache
+	logger     *logger.Logger
+	notify     chan bool
+	subClients sync.Map
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		fileList: utils.NewSafeMap(),
-		sshPoll:  cache.NewCache(1000),
-		logger:   logger.NewLogger("sshManager"),
+		notify:     make(chan bool, 10),
+		subClients: sync.Map{},
+		fileList:   utils.NewSafeMap(),
+		sshPoll:    cache.NewCache(1000),
+		logger:     logger.NewLogger("sshManager"),
 	}
+}
+
+func (m *Manager) Init() *Manager {
+	go m.doNotifyFileTaskList()
+
+	return m
 }
 
 func (m *Manager) GetSSHList() *cache.Cache {
