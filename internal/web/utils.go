@@ -252,7 +252,6 @@ func (s *Service) GetPathInfoExec(hostId int, p string) *FilePath {
 	for i := 0; i < len(infos); i++ {
 		var isDir, isSymlink bool
 		var newHead os.FileInfo
-		var childrenIds []string
 		fId := filepath.ToSlash(filepath.Join(p, infos[i].Name()))
 		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
 			newHead, err = client.Stat(fId)
@@ -264,13 +263,6 @@ func (s *Service) GetPathInfoExec(hostId int, p string) *FilePath {
 			isDir = newHead.IsDir()
 		} else {
 			isDir = infos[i].IsDir()
-		}
-		if isDir {
-			infos2, _ := client.ReadDir(fId)
-			for i := 0; i < len(infos2); i++ {
-				fId2 := filepath.ToSlash(filepath.Join(fId, infos2[i].Name()))
-				childrenIds = append(childrenIds, fId2)
-			}
 		}
 		info := FileInfo{
 			Id:        fId,
