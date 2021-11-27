@@ -50,7 +50,8 @@ func CORS(ctx *gin.Context) {
 	// set response header
 	ctx.Header("Access-Control-Allow-Origin", ctx.Request.Header.Get("Origin"))
 	ctx.Header("Access-Control-Allow-Credentials", "true")
-	ctx.Header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, X-Files")
+	ctx.Header("Access-Control-Allow-Headers",
+		"Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, X-Files")
 	ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 
 	// 默认过滤这两个请求,使用204(No Content)这个特殊的http status code
@@ -59,6 +60,12 @@ func CORS(ctx *gin.Context) {
 		return
 	}
 
+	ctx.Next()
+}
+
+// exportHeaders export header Content-Disposition for axios
+func exportHeaders(ctx *gin.Context) {
+	ctx.Header("Access-Control-Expose-Headers", "Content-Disposition")
 	ctx.Next()
 }
 
@@ -72,7 +79,7 @@ func prometheusHandler() gin.HandlerFunc {
 
 func (s *Service) InitRouter() *Service {
 	r := gin.Default()
-	r.Use(CORS)
+	r.Use(CORS).Use(exportHeaders)
 
 	// static files
 	box := packr.NewBox("../../web/omsUI/dist/assets")

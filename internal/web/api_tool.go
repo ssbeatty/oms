@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -114,18 +113,14 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 			c.String(http.StatusOK, "file stat error")
 			return
 		}
+		c.Header("Content-Type", "application/octet-stream")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fh.Name()))
 
 		mode := fh.Mode() & fs.ModeType
 		// this is a read able file
 		if mode == 0 {
-			extraHeaders := map[string]string{
-				"Content-Disposition": fmt.Sprintf("inline; filename=\"%s\"", fh.Name()),
-			}
-
-			reader := bufio.NewReader(file)
-
 			if fh.Size() != 0 {
-				c.DataFromReader(http.StatusOK, fh.Size(), "text/plain", reader, extraHeaders)
+				http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
 				return
 			} else {
 				buf, err := ioutil.ReadAll(file)
@@ -133,9 +128,11 @@ func (s *Service) DownLoadFile(c *gin.Context) {
 					s.logger.Errorf("read virtual file error: %v", err)
 				}
 				http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+				return
 			}
 		} else {
 			c.String(http.StatusOK, fmt.Sprintf("read error, file type is [%s]", mode))
+			return
 		}
 	} else {
 		c.String(http.StatusOK, "file not existed")
