@@ -218,36 +218,36 @@ func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*
 	wg.Done()
 }
 
-func (s *Service) GetPathInfoExec(hostId int, p string) *FilePath {
+func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {
 	filePath := &FilePath{}
 	var results []*FileInfo
 	var folderChains []*FileInfo
 
 	host, err := models.GetHostById(hostId)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
 	if err != nil {
-		return filePath
+		return nil, err
 	}
 	switch p {
 	case ".", "..":
 		p, err = client.RealPath(p)
 		if err != nil {
 			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
-			return nil
+			return nil, err
 		}
 	case "", "~":
 		p, err = client.RealPath(".")
 		if err != nil {
 			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
-			return nil
+			return nil, err
 		}
 	}
 	infos, err := client.ReadDir(p)
 	if err != nil {
-		return filePath
+		return nil, err
 	}
 	for i := 0; i < len(infos); i++ {
 		var isDir, isSymlink bool
@@ -296,7 +296,7 @@ func (s *Service) GetPathInfoExec(hostId int, p string) *FilePath {
 
 	filePath.Files = results
 	filePath.FolderChains = folderChains
-	return filePath
+	return filePath, nil
 }
 
 func (s *Service) DownloadFile(hostId int, path string) *sftp.File {

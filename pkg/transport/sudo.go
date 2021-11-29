@@ -25,6 +25,8 @@ func (w *sudoWriter) Write(p []byte) (int, error) {
 		w.stdin.Write([]byte(w.pw + "\n"))
 		w.pw = "" // We don't need the password anymore so reset the string
 		return len(p), nil
+	} else if string(p) == "\r\n" || string(p) == "\n" || string(p) == "\r" {
+		return len(p), nil
 	}
 
 	w.m.Lock()

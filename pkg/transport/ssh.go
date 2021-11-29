@@ -17,7 +17,7 @@ import (
 */
 
 const (
-	DefaultTimeout = 30 * time.Second
+	DefaultTimeout = 10 * time.Second
 	KillSignal     = "0x09"
 )
 

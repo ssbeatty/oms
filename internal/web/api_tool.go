@@ -90,7 +90,12 @@ func (s *Service) GetPathInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	results := s.GetPathInfoExec(id, p)
+	results, err := s.GetPathInfoExec(id, p)
+	if err != nil {
+		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
 	c.JSON(http.StatusOK, data)
 }

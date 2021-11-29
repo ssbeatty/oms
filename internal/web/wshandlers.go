@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	WSStatusSuccess    = "0"
-	WSStatusError      = "-1"
-	SSHTimeDeadline    = 30 * time.Second
+	WSStatusSuccess = "0"
+	WSStatusError   = "-1"
+	SSHTimeDeadline = 30 * time.Second
 )
 
 type Request struct {
@@ -48,7 +48,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	}
 	for _, host := range hosts {
 		// TODO sudo 由host本身管理
-		go w.engine.RunCmdWithContext(host, req.Cmd, false, ch)
+		go w.engine.RunCmdWithContext(host, req.Cmd, true, ch)
 	}
 
 	for i := 0; i < len(hosts); i++ {
@@ -86,7 +86,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 		case <-w.closer:
 			w.logger.Debug("file task status exit.")
 			return
-		case resp := <- notifyCh:
+		case resp := <-notifyCh:
 			if len(resp) > 0 {
 				w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
 			}
