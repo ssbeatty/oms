@@ -59,19 +59,18 @@ func (s *Service) GetOneHost(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	hosts, err := models.GetHostByIdWithPreload(id)
+	host, err := models.GetHostByIdWithPreload(id)
 	if err != nil {
 		s.logger.Errorf("GetOneHost error when GetHostById, err: %v", err)
 		data = generateResponsePayload(HttpStatusError, "can not get hosts", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	data = generateResponsePayload(HttpStatusOk, HttpResponseSuccess, hosts)
+	data = generateResponsePayload(HttpStatusOk, HttpResponseSuccess, host)
 	c.JSON(http.StatusOK, data)
 }
 
 func (s *Service) PostHost(c *gin.Context) {
-	var keyRaw string
 	var tagArray []int
 	var passFlag bool
 
@@ -93,40 +92,24 @@ func (s *Service) PostHost(c *gin.Context) {
 	}
 	// if not group param, it is zero
 	groupId, _ := strconv.Atoi(c.PostForm("group"))
+	privateKeyId, _ := strconv.Atoi(c.PostForm("private_key_id"))
 
-	fh, err := c.FormFile("keyFile")
-	if err == nil {
-		ff, err := fh.Open()
-		if err != nil {
-			s.logger.Errorf("PostHost error when Open FormFile, err: %v", err)
-			data := generateResponsePayload(HttpStatusError, "error when open key file", nil)
-			c.JSON(http.StatusOK, data)
-			return
-		}
-		fileBytes, err := ioutil.ReadAll(ff)
-		if err != nil {
-			s.logger.Errorf("PostHost error when ReadAll FormFile, err: %v", err)
-			data := generateResponsePayload(HttpStatusError, "error when read key file", nil)
-			c.JSON(http.StatusOK, data)
-			return
-		}
-		keyRaw = string(fileBytes)
+	if privateKeyId != 0 {
 		passFlag = true
 	}
-
 	if !passFlag {
-		data := generateResponsePayload(HttpStatusError, "must have one of password or keyfile", nil)
+		data := generateResponsePayload(HttpStatusError, "must have one of password or private_key_id", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
 
 	tags := c.PostForm("tags")
-	err = json.Unmarshal([]byte(tags), &tagArray)
+	err := json.Unmarshal([]byte(tags), &tagArray)
 	if err != nil {
 		s.logger.Errorf("PostHost error when parse tagArray, tags: %s, err: %v", tags, err)
 	}
 
-	host, err := models.InsertHost(hostname, user, addr, port, password, groupId, tagArray, keyRaw)
+	host, err := models.InsertHost(hostname, user, addr, port, password, groupId, tagArray, privateKeyId)
 	if err != nil {
 		s.logger.Errorf("PostHost error when InsertHost, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
@@ -140,7 +123,6 @@ func (s *Service) PostHost(c *gin.Context) {
 
 func (s *Service) PutHost(c *gin.Context) {
 	var tagArray []int
-	var keyRaw string
 	idRaw := c.PostForm("id")
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
@@ -155,30 +137,13 @@ func (s *Service) PutHost(c *gin.Context) {
 	port, _ := strconv.Atoi(c.PostForm("port"))
 	password := c.PostForm("password")
 	groupId, _ := strconv.Atoi(c.PostForm("group"))
-	fh, err := c.FormFile("keyFile")
 
-	if err == nil {
-		ff, err := fh.Open()
-		if err != nil {
-			s.logger.Errorf("PutHost error when Open FormFile, err: %v", err)
-			data := generateResponsePayload(HttpStatusError, "error when open key file", nil)
-			c.JSON(http.StatusOK, data)
-			return
-		}
-		fileBytes, err := ioutil.ReadAll(ff)
-		if err != nil {
-			s.logger.Errorf("PutHost error when ReadAll FormFile, err: %v", err)
-			data := generateResponsePayload(HttpStatusError, "error when read key file", nil)
-			c.JSON(http.StatusOK, data)
-			return
-		}
-		keyRaw = string(fileBytes)
-	}
+	privateKeyId, _ := strconv.Atoi(c.PostForm("private_key_id"))
 
 	tags := c.PostForm("tags")
 	_ = json.Unmarshal([]byte(tags), &tagArray)
 
-	host, err := models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagArray, keyRaw)
+	host, err := models.UpdateHost(id, hostname, user, addr, port, password, groupId, tagArray, privateKeyId)
 	if err != nil {
 		s.logger.Errorf("PutHost error when UpdateHost, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "error when update host", nil)
@@ -201,6 +166,155 @@ func (s *Service) DeleteHost(c *gin.Context) {
 	err = models.DeleteHostById(id)
 	if err != nil {
 		s.logger.Errorf("DeleteHost error when DeleteHostById, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not delete host", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	c.JSON(http.StatusOK, data)
+}
+
+// api for table PrivateKey
+
+func (s *Service) GetPrivateKeys(c *gin.Context) {
+	privateKeys, err := models.GetAllPrivateKey()
+	if err != nil {
+		s.logger.Errorf("GetHosts error when GetAllPrivateKey, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "can not get all privateKey", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, privateKeys)
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) GetOnePrivateKey(c *gin.Context) {
+	var data Response
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		s.logger.Errorf("GetOnePrivateKey error when Atoi idRaw, idRaw: %s, err: %v", idRaw, err)
+		data = generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	privateKey, err := models.GetPrivateKeyById(id)
+	if err != nil {
+		s.logger.Errorf("GetOnePrivateKey error when GetPrivateKeyById, err: %v", err)
+		data = generateResponsePayload(HttpStatusError, "can not get hosts", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data = generateResponsePayload(HttpStatusOk, HttpResponseSuccess, privateKey)
+	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) PostPrivateKey(c *gin.Context) {
+	var keyRaw string
+	name := c.PostForm("name")
+	if name == "" {
+		data := generateResponsePayload(HttpStatusError, "name can not be empty", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	passphrase := c.Param("passphrase")
+
+	fh, err := c.FormFile("key_file")
+	if err == nil {
+		ff, err := fh.Open()
+		if err != nil {
+			s.logger.Errorf("PostPrivateKey error when Open FormFile, err: %v", err)
+			data := generateResponsePayload(HttpStatusError, "error when open key file", nil)
+			c.JSON(http.StatusOK, data)
+			return
+		}
+		fileBytes, err := ioutil.ReadAll(ff)
+		if err != nil {
+			s.logger.Errorf("PostPrivateKey error when ReadAll FormFile, err: %v", err)
+			data := generateResponsePayload(HttpStatusError, "error when read key file", nil)
+			c.JSON(http.StatusOK, data)
+			return
+		}
+		keyRaw = string(fileBytes)
+	}
+
+	if keyRaw == "" {
+		data := generateResponsePayload(HttpStatusError, "add an empty key", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	privateKey, err := models.InsertPrivateKey(name, keyRaw, passphrase)
+	if err != nil {
+		s.logger.Errorf("PostPrivateKey error when InsertPrivateKey, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, privateKey)
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) PutPrivateKey(c *gin.Context) {
+	var keyRaw string
+
+	idRaw := c.PostForm("id")
+	id, err := strconv.Atoi(c.PostForm("id"))
+	if err != nil {
+		s.logger.Errorf("PutHost error when Atoi idRaw, idRaw: %s, err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+
+	name := c.PostForm("name")
+	passphrase := c.Param("passphrase")
+
+	fh, err := c.FormFile("key_file")
+	if err == nil {
+		ff, err := fh.Open()
+		if err != nil {
+			s.logger.Errorf("PostPrivateKey error when Open FormFile, err: %v", err)
+			data := generateResponsePayload(HttpStatusError, "error when open key file", nil)
+			c.JSON(http.StatusOK, data)
+			return
+		}
+		fileBytes, err := ioutil.ReadAll(ff)
+		if err != nil {
+			s.logger.Errorf("PostPrivateKey error when ReadAll FormFile, err: %v", err)
+			data := generateResponsePayload(HttpStatusError, "error when read key file", nil)
+			c.JSON(http.StatusOK, data)
+			return
+		}
+		keyRaw = string(fileBytes)
+	}
+
+	privateKey, err := models.UpdatePrivateKey(id, name, keyRaw, passphrase)
+	if err != nil {
+		s.logger.Errorf("PutPrivateKey error when UpdatePrivateKey, err: %v", err)
+		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, privateKey)
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (s *Service) DeletePrivateKey(c *gin.Context) {
+	idRaw := c.Param("id")
+	id, err := strconv.Atoi(idRaw)
+	if err != nil {
+		s.logger.Errorf("DeletePrivateKey error when Atoi idRaw, idRaw: %s, err: %v", idRaw, err)
+		data := generateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		c.JSON(http.StatusOK, data)
+		return
+	}
+	err = models.DeletePrivateKeyById(id)
+	if err != nil {
+		s.logger.Errorf("DeletePrivateKey error when DeletePrivateKeyById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not delete host", nil)
 		c.JSON(http.StatusOK, data)
 		return

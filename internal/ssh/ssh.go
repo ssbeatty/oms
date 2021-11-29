@@ -56,19 +56,21 @@ func (m *Manager) GetFileList() *utils.SafeMap {
 	return m.fileList
 }
 
-func (m *Manager) NewClient(host string, port int, user string, password string, KeyBytes []byte) (*transport.Client, error) {
-	if user == "" {
-		user = "root"
-	}
+func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 	var config = &Config{
-		Host:       host,
-		Port:       port,
-		User:       user,
-		Password:   password,
-		Passphrase: password,
+		Host:     host.Addr,
+		Port:     host.Port,
+		User:     host.User,
+		Password: host.PassWord,
 	}
-	if KeyBytes != nil {
-		config.KeyBytes = KeyBytes
+	if host.PrivateKeyID != 0 {
+		privateKey, err := models.GetPrivateKeyById(host.PrivateKeyID)
+		if err != nil {
+			m.logger.Errorf("error when get private key")
+			return nil, err
+		}
+		config.KeyBytes = []byte(privateKey.KeyFile)
+		config.Passphrase = privateKey.Passphrase
 	}
 	if cli, ok := m.sshPoll.Get(config.serialize()); ok {
 		ss, err := cli.(*transport.Client).NewSession()
@@ -81,7 +83,7 @@ func (m *Manager) NewClient(host string, port int, user string, password string,
 		}
 	}
 
-	cli, err := transport.New(config.Host, config.User, config.Password, config.KeyBytes, config.Port)
+	cli, err := transport.New(config.Host, config.User, config.Password, config.Passphrase, config.KeyBytes, config.Port)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,7 @@ func (m *Manager) NewClient(host string, port int, user string, password string,
 }
 
 func (m *Manager) GetStatus(host *models.Host) bool {
-	client, err := m.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := m.NewClient(host)
 	if err != nil {
 		host.Status = false
 		_ = models.UpdateHostStatus(host)

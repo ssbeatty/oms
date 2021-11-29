@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"oms/internal/models"
 	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os"
@@ -15,10 +16,10 @@ import (
 
 const (
 	TaskTickerInterval = 2
-	DefaultBlockSize = 65535
-	FileTaskRunning  = "running"
-	FileTaskDone     = "done"
-	FileTaskFailed   = "failed"
+	DefaultBlockSize   = 65535
+	FileTaskRunning    = "running"
+	FileTaskDone       = "done"
+	FileTaskFailed     = "failed"
 )
 
 type TaskItem struct {
@@ -87,9 +88,9 @@ func (m *Manager) doNotifyFileTaskList() {
 	}
 	for {
 		select {
-		case <- ticker.C :
+		case <-ticker.C:
 			doSendFileTaskListInfo()
-		case <- m.notify:
+		case <-m.notify:
 			doSendFileTaskListInfo()
 		}
 	}
@@ -262,8 +263,8 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 }
 
 // NewClientWithSftp 创建新的ssh client并创建sftp客户端
-func (m *Manager) NewClientWithSftp(host string, port int, user string, password string, KeyBytes []byte) (*transport.Client, error) {
-	client, err := m.NewClient(host, port, user, password, KeyBytes)
+func (m *Manager) NewClientWithSftp(host *models.Host) (*transport.Client, error) {
+	client, err := m.NewClient(host)
 	if err != nil {
 		return nil, err
 	}

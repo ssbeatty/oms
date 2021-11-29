@@ -119,6 +119,12 @@ func (s *Service) InitRouter() *Service {
 		apiV1.PUT("/host", s.PutHost)
 		apiV1.DELETE("/host/:id", s.DeleteHost)
 
+		apiV1.GET("/private_key", s.GetPrivateKeys)
+		apiV1.GET("/private_key/:id", s.GetOnePrivateKey)
+		apiV1.POST("/private_key", s.PostPrivateKey)
+		apiV1.PUT("/private_key", s.PutPrivateKey)
+		apiV1.DELETE("/private_key/:id", s.DeletePrivateKey)
+
 		apiV1.GET("/group", s.GetGroups)
 		apiV1.GET("/group/:id", s.GetOneGroup)
 		apiV1.POST("/group", s.PostGroup)

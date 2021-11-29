@@ -46,7 +46,7 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 		s.logger.Errorf("can not get host")
 		return
 	}
-	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClient(host)
 	if err != nil {
 		s.logger.Errorf("transport new client failed, err: %v", err)
 		return

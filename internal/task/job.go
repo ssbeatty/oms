@@ -101,7 +101,7 @@ func (j *Job) Run() {
 		}
 		j.engine.logger.Debugf("job, name: %s, cmd: %s, exit.", j.name, j.cmd)
 	}()
-	client, err := j.engine.sshManager.NewClient(j.host.Addr, j.host.Port, j.host.User, j.host.PassWord, []byte(j.host.KeyFile))
+	client, err := j.engine.sshManager.NewClient(j.host)
 	if err != nil {
 		j.error("error when new ssh client, err: %v", err)
 		return

@@ -138,7 +138,7 @@ func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch chan *Result, wg *sync.WaitGroup) {
 	var msg []byte
 	var result *Result
-	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClient(host)
 	if err != nil {
 		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		return
@@ -195,7 +195,7 @@ func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.Fil
 func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remotePath string, ctx context.Context) {
 	for _, host := range hosts {
 		go func(host *models.Host) {
-			client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+			client, err := s.sshManager.NewClientWithSftp(host)
 			if err != nil {
 				return
 			}
@@ -206,7 +206,7 @@ func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remo
 }
 
 func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*multipart.FileHeader, wg *sync.WaitGroup) {
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		return
 	}
@@ -227,7 +227,7 @@ func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (s *Service) DownloadFile(hostId int, path string) *sftp.File {
 	if err != nil {
 		return nil
 	}
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		return nil
 	}
@@ -320,7 +320,7 @@ func (s *Service) DeleteFileOrDir(hostId int, path string) error {
 	if err != nil {
 		return err
 	}
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 	if err != nil {
 		return err
 	}
-	client, err := s.sshManager.NewClientWithSftp(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,8 @@ func (s *Service) ImportDbData(marshal []byte) error {
 			for i := 0; i < len(host.Tags); i++ {
 				tags = append(tags, host.Tags[i].Id)
 			}
-			_, _ = models.InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, host.KeyFile)
+			// todo
+			_, _ = models.InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, 0)
 		}
 	}
 	return nil
@@ -426,7 +427,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	quit := make(chan bool, 1)
 	defer close(quit)
 
-	client, err := s.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := s.sshManager.NewClient(host)
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result

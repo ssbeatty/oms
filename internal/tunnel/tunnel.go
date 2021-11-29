@@ -113,7 +113,7 @@ func (m *Manager) Close() {
 
 // AddTunnel create new tunnel
 func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
-	client, err := m.sshManager.NewClient(host.Addr, host.Port, host.User, host.PassWord, []byte(host.KeyFile))
+	client, err := m.sshManager.NewClient(host)
 	if err != nil {
 		return err
 	}

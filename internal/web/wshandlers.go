@@ -117,7 +117,7 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 		return
 	}
 
-	client, err := w.engine.sshManager.NewClient(hosts[0].Addr, hosts[0].Port, hosts[0].User, hosts[0].PassWord, []byte(hosts[0].KeyFile))
+	client, err := w.engine.sshManager.NewClient(hosts[0])
 	if err != nil {
 		w.WriteMsg(Response{Code: WSStatusError, Msg: fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)})
 	}

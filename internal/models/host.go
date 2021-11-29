@@ -8,29 +8,20 @@ import (
 
 // Host Struct
 type Host struct {
-	Id       int    `json:"id"`
-	Name     string `gorm:"size:128;not null" json:"name"`
-	User     string `gorm:"size:128;not null" json:"user"`
-	Addr     string `gorm:"size:128;not null" json:"addr"`
-	Port     int    `gorm:"default:22" json:"port"`
-	PassWord string `gorm:"size:128;not null" json:"-"`
-	// Deprecated: Use PrivateKey instead.
-	KeyFile string `gorm:"type:text" json:"-"`
-	Status  bool   `gorm:"default:false" json:"status"`
-	// PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
-	// PrivateKeyID int        `json:"private_key_id"`
-	GroupId int      `json:"group_id"`
-	Group   Group    `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
-	Tags    []Tag    `gorm:"many2many:host_tag" json:"tags"`
-	Tunnels []Tunnel `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
-	Jobs    []Job    `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
-}
-
-// PrivateKey TODO add host私钥
-type PrivateKey struct {
-	Id      int    `json:"id"`
-	Name    string `gorm:"size:128;not null" json:"name"`
-	KeyFile string `gorm:"type:text" json:"-"`
+	Id           int        `json:"id"`
+	Name         string     `gorm:"size:128;not null" json:"name"`
+	User         string     `gorm:"size:128;not null" json:"user"`
+	Addr         string     `gorm:"size:128;not null" json:"addr"`
+	Port         int        `gorm:"default:22" json:"port"`
+	PassWord     string     `gorm:"size:128;not null" json:"-"`
+	Status       bool       `gorm:"default:false" json:"status"`
+	PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
+	PrivateKeyID int        `json:"private_key_id"`
+	GroupId      int        `json:"group_id"`
+	Group        Group      `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
+	Tags         []Tag      `gorm:"many2many:host_tag" json:"tags"`
+	Tunnels      []Tunnel   `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
+	Jobs         []Job      `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
 }
 
 func GetHostByIdWithPreload(id int) (*Host, error) {
@@ -80,7 +71,7 @@ func DeleteHostById(id int) error {
 	return nil
 }
 
-func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, keyText string) (*Host, error) {
+func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID int) (*Host, error) {
 	var tagObjs []Tag
 	for _, tagId := range tags {
 		tag := Tag{}
@@ -92,15 +83,15 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 		tagObjs = append(tagObjs, tag)
 	}
 	host := Host{
-		Name:     hostname,
-		User:     user,
-		Addr:     addr,
-		Port:     port,
-		PassWord: password,
-		KeyFile:  keyText,
-		Tags:     tagObjs,
+		Name:         hostname,
+		User:         user,
+		Addr:         addr,
+		Port:         port,
+		PassWord:     password,
+		PrivateKeyID: privateKeyID,
+		Tags:         tagObjs,
 	}
-	err := db.Omit("GroupId").Create(&host).Error
+	err := db.Omit("GroupId", "PrivateKeyID").Create(&host).Error
 	if err != nil {
 		return nil, err
 	}
@@ -111,13 +102,23 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 			return &host, nil
 		}
 		host.GroupId = groupId
-		db.Save(&host)
+		db.Omit("PrivateKeyID").Save(&host)
 		host.Group = group
+	}
+	if privateKeyID != 0 {
+		privateKey := PrivateKey{}
+		err := db.Where("id = ?", privateKeyID).First(&privateKey).Error
+		if err != nil {
+			return &host, nil
+		}
+		host.PrivateKeyID = privateKeyID
+		db.Omit("GroupId").Save(&host)
+		host.PrivateKey = privateKey
 	}
 	return &host, nil
 }
 
-func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, keyText string) (*Host, error) {
+func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID int) (*Host, error) {
 	host := Host{Id: id}
 	err := db.Where("id = ?", id).First(&host).Error
 	if err != nil {
@@ -162,23 +163,37 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 	if password != "" {
 		host.PassWord = password
 	}
-	if keyText != host.KeyFile {
-		host.KeyFile = keyText
-	}
 	if groupId != 0 {
 		group := Group{}
 		err := db.Where("id = ?", groupId).First(&group).Error
 		if err == nil {
 			host.Group = group
 		}
-		if err := db.Save(&host).Error; err != nil {
+		if err := db.Omit("PrivateKeyID").Save(&host).Error; err != nil {
 			return nil, err
 		}
 	} else {
 		if err := db.Model(&host).Association("Group").Clear(); err != nil {
 			log.Errorf("UpdateHost error when Association group Clear, err: %v", err)
 		}
-		if err = db.Omit("GroupId").Save(&host).Error; err != nil {
+		if err = db.Omit("GroupId", "PrivateKeyID").Save(&host).Error; err != nil {
+			return nil, err
+		}
+	}
+	if privateKeyID != 0 {
+		privateKey := PrivateKey{}
+		err := db.Where("id = ?", privateKeyID).First(&privateKey).Error
+		if err == nil {
+			host.PrivateKey = privateKey
+		}
+		if err := db.Omit("GroupId").Save(&host).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		if err := db.Model(&host).Association("PrivateKey").Clear(); err != nil {
+			log.Errorf("UpdateHost error when Association privateKey Clear, err: %v", err)
+		}
+		if err = db.Omit("GroupId", "PrivateKeyID").Save(&host).Error; err != nil {
 			return nil, err
 		}
 	}
@@ -263,7 +278,7 @@ func UpdateHostStatus(host *Host) error {
 	db.Lock()
 	defer db.Unlock()
 
-	if err := db.Omit("GroupId").Save(&host).Error; err != nil {
+	if err := db.Select("Status").Save(&host).Error; err != nil {
 		return err
 	}
 	return nil

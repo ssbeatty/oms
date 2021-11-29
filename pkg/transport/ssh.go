@@ -188,7 +188,7 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 }
 
 // New 创建SSH client
-func New(host, user, password string, KeyBytes []byte, port int) (client *Client, err error) {
+func New(host, user, password, passphrase string, KeyBytes []byte, port int) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
 		User:            user,
 		Timeout:         DefaultTimeout,
@@ -201,7 +201,7 @@ func New(host, user, password string, KeyBytes []byte, port int) (client *Client
 
 	// 1. private key bytes
 	if KeyBytes != nil {
-		if auth, err := AuthWithPrivateKeyBytes(KeyBytes, password); err == nil {
+		if auth, err := AuthWithPrivateKeyBytes(KeyBytes, passphrase); err == nil {
 			clientConfig.Auth = append(clientConfig.Auth, auth)
 		}
 	}

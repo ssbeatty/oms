@@ -39,7 +39,7 @@ func init() {
 		return
 	}
 
-	client, err = transport.New(host.Addr, host.User, host.PassWord, nil, host.Port)
+	client, err = transport.New(host.Addr, host.User, host.PassWord, "", nil, host.Port)
 	if err != nil {
 		return
 	}
