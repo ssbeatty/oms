@@ -13,6 +13,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"oms/internal/ssh"
 	"os"
 	"path"
@@ -221,6 +222,7 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 	var remoteFile, dType string
 	files := make(map[string]int)
 
+	// map [filename(url encode)] = size(int)
 	fileHeaders := c.GetHeader("X-Files")
 	if fileHeaders == "" {
 		c.Request.URL.Path += "_file"
@@ -284,10 +286,13 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 				// 每一个文件对应一个context如果 文件传输一半终止了 其下面所有的传输终止
 				ctx, cancel := context.WithCancel(context.Background())
 
-				p := path.Join("tmp", fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), part.FileName()))
+				fName := part.FileName()
+				escape := url.QueryEscape(fName)
+
+				p := path.Join("tmp", fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
 				tempFile := ssh.TempFile{
-					Name: part.FileName(),
-					Size: files[part.FileName()],
+					Name: fName,
+					Size: files[escape],
 					Path: p,
 				}
 				tmp, err := os.OpenFile(tempFile.Path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -303,7 +308,7 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 				n, err := io.Copy(tmp, part)
 				if err != nil {
 					// 这里多半是浏览器取消了请求
-					if int(n) != files[part.FileName()] {
+					if int(n) != files[escape] {
 						cancel() // cancel all
 
 						err = tmp.Close()
