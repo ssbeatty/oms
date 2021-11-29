@@ -82,7 +82,7 @@ func (s *Schedule) Remove(id string) {
 
 func NewSchedule() *Schedule {
 	return &Schedule{
-		inner: cron.New(),
+		inner: cron.New(cron.WithSeconds()),
 		ids:   make(map[string]cron.EntryID),
 	}
 }

@@ -44,7 +44,7 @@ func (m *Manager) Init() *Manager {
 	m.taskService.Start()
 
 	// init all build in cron
-	if err := m.taskService.AddByFunc("build-in-loop-status", "*/5 * * * *", m.CronStatusJob); err != nil {
+	if err := m.taskService.AddByFunc("build-in-loop-status", "0 * * * * *", m.CronStatusJob); err != nil {
 		m.logger.Errorf("init build-in-loop-status error: %v", err)
 	}
 
