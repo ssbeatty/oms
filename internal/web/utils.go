@@ -34,7 +34,7 @@ type FileInfo struct {
 	IsDir         bool      `json:"isDir,omitempty"`
 	IsSymlink     bool      `json:"isSymlink,omitempty"`
 	IsHidden      bool      `json:"isHidden,omitempty"`
-	Ext           string    `json:"ext,omitempty"`
+	Ext           string    `json:"ext"`
 	ChildrenCount int       `json:"childrenCount,omitempty"`
 	ParentId      string    `json:"parentId,omitempty"`
 	ChildrenIds   []string  `json:"children_ids,omitempty"`

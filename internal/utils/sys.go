@@ -44,7 +44,7 @@ func GetFileExt(path string) string {
 
 	// 特殊的后缀
 	if strings.HasSuffix(path, ".tar.gz") {
-		return ".tar.gz"
+		return "tar.gz"
 	}
 	return args[len(args)-1]
 }
