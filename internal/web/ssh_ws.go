@@ -33,7 +33,7 @@ func (w *wsBufferWriter) Write(p []byte) (int, error) {
 
 func flushComboOutput(w *wsBufferWriter, wsConn *websocket.Conn) error {
 	if w.buffer.Len() != 0 {
-		err := wsConn.WriteMessage(websocket.TextMessage, w.buffer.Bytes())
+		err := wsConn.WriteMessage(websocket.BinaryMessage, w.buffer.Bytes())
 		if err != nil {
 			return err
 		}

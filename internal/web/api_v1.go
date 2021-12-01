@@ -112,7 +112,7 @@ func (s *Service) PostHost(c *gin.Context) {
 	host, err := models.InsertHost(hostname, user, addr, port, password, groupId, tagArray, privateKeyId)
 	if err != nil {
 		s.logger.Errorf("PostHost error when InsertHost, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
+		data := generateResponsePayload(HttpStatusError, "error when update host", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -150,6 +150,9 @@ func (s *Service) PutHost(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
+	// 清理缓存的client
+	defer s.sshManager.RemoveCache(host)
+
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, host)
 	c.JSON(http.StatusOK, data)
 }
@@ -163,13 +166,16 @@ func (s *Service) DeleteHost(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	err = models.DeleteHostById(id)
+	host, err := models.DeleteHostById(id)
 	if err != nil {
 		s.logger.Errorf("DeleteHost error when DeleteHostById, err: %v", err)
 		data := generateResponsePayload(HttpStatusError, "can not delete host", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
+	// 清理缓存的client
+	defer s.sshManager.RemoveCache(host)
+
 	data := generateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
 	c.JSON(http.StatusOK, data)
 }
@@ -202,7 +208,7 @@ func (s *Service) GetOnePrivateKey(c *gin.Context) {
 	privateKey, err := models.GetPrivateKeyById(id)
 	if err != nil {
 		s.logger.Errorf("GetOnePrivateKey error when GetPrivateKeyById, err: %v", err)
-		data = generateResponsePayload(HttpStatusError, "can not get hosts", nil)
+		data = generateResponsePayload(HttpStatusError, "can not get privateKey", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -218,7 +224,7 @@ func (s *Service) PostPrivateKey(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 		return
 	}
-	passphrase := c.Param("passphrase")
+	passphrase := c.PostForm("passphrase")
 
 	fh, err := c.FormFile("key_file")
 	if err == nil {
@@ -248,7 +254,7 @@ func (s *Service) PostPrivateKey(c *gin.Context) {
 	privateKey, err := models.InsertPrivateKey(name, keyRaw, passphrase)
 	if err != nil {
 		s.logger.Errorf("PostPrivateKey error when InsertPrivateKey, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
+		data := generateResponsePayload(HttpStatusError, "error when create privateKey", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -270,7 +276,7 @@ func (s *Service) PutPrivateKey(c *gin.Context) {
 	}
 
 	name := c.PostForm("name")
-	passphrase := c.Param("passphrase")
+	passphrase := c.PostForm("passphrase")
 
 	fh, err := c.FormFile("key_file")
 	if err == nil {
@@ -294,7 +300,7 @@ func (s *Service) PutPrivateKey(c *gin.Context) {
 	privateKey, err := models.UpdatePrivateKey(id, name, keyRaw, passphrase)
 	if err != nil {
 		s.logger.Errorf("PutPrivateKey error when UpdatePrivateKey, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "error when create host", nil)
+		data := generateResponsePayload(HttpStatusError, "error when update privateKey", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -315,7 +321,7 @@ func (s *Service) DeletePrivateKey(c *gin.Context) {
 	err = models.DeletePrivateKeyById(id)
 	if err != nil {
 		s.logger.Errorf("DeletePrivateKey error when DeletePrivateKeyById, err: %v", err)
-		data := generateResponsePayload(HttpStatusError, "can not delete host", nil)
+		data := generateResponsePayload(HttpStatusError, "can not delete private_key", nil)
 		c.JSON(http.StatusOK, data)
 		return
 	}

@@ -90,10 +90,10 @@ func (j *Job) error(format string, elems ...interface{}) {
 }
 
 func (j *Job) Run() {
-	j.engine.logger.Infof("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
 	if j.Status() == JobStatusStop || j.Status() == JobStatusFatal {
 		return
 	}
+	j.engine.logger.Infof("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
 	j.info("job, name: %s, cmd: %s, start running.", j.name, j.cmd)
 	defer func() {
 		if j.Status() == JobStatusRunning {

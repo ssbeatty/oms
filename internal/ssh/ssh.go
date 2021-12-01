@@ -110,6 +110,10 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 	return true
 }
 
+func (m *Manager) RemoveCache(host *models.Host) {
+	m.sshPoll.Remove(utils.InetAtoN(host.Addr, host.Port))
+}
+
 func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, writer io.Writer) (err error) {
 	session, err := client.NewPty()
 	if err != nil {

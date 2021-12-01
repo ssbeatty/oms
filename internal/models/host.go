@@ -54,21 +54,21 @@ func ExistedHost(name string, addr string) bool {
 	return true
 }
 
-func DeleteHostById(id int) error {
+func DeleteHostById(id int) (*Host, error) {
 	host := Host{}
 	err := db.Where("id = ?", id).First(&host).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := db.Model(&host).Association("Tags").Clear(); err != nil {
 		log.Errorf("DeleteHostById error Association tag Clear, err: %v", err)
 	}
 	err = db.Delete(&host).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &host, nil
 }
 
 func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID int) (*Host, error) {
