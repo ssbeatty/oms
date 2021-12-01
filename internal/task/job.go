@@ -50,10 +50,10 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	tmp := filepath.Join(DefaultTmpPath, fmt.Sprintf("%s.log", name))
+	tmp := filepath.Join(DefaultTmpPath, name, fmt.Sprintf("%s.log", name))
 	std := &lumberjack.Logger{
 		Filename:   tmp,
-		MaxSize:    50, // megabytes
+		MaxSize:    20, // megabytes
 		MaxBackups: 3,
 		MaxAge:     20,   //days
 		Compress:   true, // disabled by default
@@ -167,6 +167,9 @@ func (j *Job) UpdateStatus(status JobStatus) {
 }
 
 func (j *Job) Close() {
+	// close logs
+	_ = j.std.Close()
+
 	switch j.Type {
 	case JobTypeCron:
 		j.engine.taskService.Remove(j.Name())

@@ -866,9 +866,9 @@ func (s *Service) PutJob(c *gin.Context) {
 		return
 	}
 	// 这个错误忽略是为了修改时候只要确认停止即可
-	_ = s.taskManager.UnRegister(id)
+	_ = s.taskManager.UnRegister(id, false)
 
-	err = s.taskManager.NewJobWithRegister(job, string(task.JobStatusReady))
+	err = s.taskManager.NewJobWithRegister(job, job.Status)
 	if err != nil {
 		data := generateResponsePayload(HttpStatusError, err.Error(), nil)
 		c.JSON(http.StatusOK, data)

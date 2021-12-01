@@ -13,6 +13,7 @@ import (
 	"oms/pkg/logger"
 	"oms/pkg/schedule"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -87,14 +88,29 @@ func (m *Manager) Register(id int, job *Job) error {
 	return nil
 }
 
+// ClearLogs 删除job的日志
+func (m *Manager) ClearLogs(job *Job) error {
+	err := os.RemoveAll(filepath.Dir(job.log))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // UnRegister 关闭task & 从poll删除
-func (m *Manager) UnRegister(id int) error {
+func (m *Manager) UnRegister(id int, clear bool) error {
 	job, ok := m.GetJob(id)
 	if ok {
 		job.Close()
+		if clear {
+			err := m.ClearLogs(job)
+			if err != nil {
+				m.logger.Errorf("error when clear job logs, err: %v", err)
+			}
+		}
 		defer m.taskPoll.Delete(id)
 	} else {
-		return errors.New("job is stopped already")
+		return errors.New("job is remove already")
 	}
 	m.logger.Infof("un register a job: %d, success", id)
 
@@ -118,7 +134,7 @@ func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error 
 // RemoveJob 从task poll删除，并删除model
 func (m *Manager) RemoveJob(id int) error {
 	m.logger.Infof("received signal to remove job: %d", id)
-	err := m.UnRegister(id)
+	err := m.UnRegister(id, true)
 	if err != nil {
 		return err
 	}
@@ -176,9 +192,9 @@ func (m *Manager) StartJob(modelJob *models.Job) error {
 // StopJob 从task poll删除job
 func (m *Manager) StopJob(id int) error {
 	m.logger.Infof("received signal to stop job: %d", id)
-	err := m.UnRegister(id)
-	if err != nil {
-		return err
+	job, ok := m.GetJob(id)
+	if ok {
+		job.Close()
 	}
 
 	return nil
