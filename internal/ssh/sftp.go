@@ -170,6 +170,13 @@ func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileH
 }
 
 func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr string, tmp *TempFile, ctx context.Context) {
+	// 引用计数 -1
+	defer func() {
+		atomic.AddInt32(&tmp.Num, -1)
+		if tmp.Num <= 0 {
+			os.Remove(tmp.Path)
+		}
+	}()
 
 	task := &TaskItem{
 		Total:    int64(tmp.Size),
@@ -190,18 +197,10 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		m.fileList.Store(key, task)
 	}
 
-	// 引用计数
-	atomic.AddInt32(&tmp.Num, 1)
-	defer func() {
-		atomic.AddInt32(&tmp.Num, -1)
-		if tmp.Num <= 0 {
-			os.Remove(tmp.Path)
-		}
-	}()
-
 	// 打开tmp文件
 	file, err := os.OpenFile(tmp.Path, os.O_RDONLY, os.ModePerm)
 	if err != nil {
+		m.UpdateTaskStatus(task, FileTaskFailed)
 		m.logger.Errorf("UploadFileStream error when open tmp file, err: %v", err)
 		return
 	}

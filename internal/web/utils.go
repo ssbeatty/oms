@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -193,6 +194,9 @@ func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.Fil
 }
 
 func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remotePath string, ctx context.Context) {
+	// 引用计数
+	atomic.AddInt32(&tmp.Num, int32(len(hosts)))
+
 	for _, host := range hosts {
 		go func(host *models.Host) {
 			client, err := s.sshManager.NewClientWithSftp(host)
