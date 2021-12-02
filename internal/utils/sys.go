@@ -3,7 +3,6 @@ package utils
 import (
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func PathExists(path string) (bool, error) {
@@ -32,19 +31,4 @@ func ParseUploadPath(remote string, filename string) (string, string) {
 		remoteDir = filepath.ToSlash(filepath.Dir(remoteFile))
 	}
 	return remoteFile, remoteDir
-}
-
-func GetFileExt(path string) string {
-	args := strings.Split(path, ".")
-	if len(args) < 2 {
-		return ""
-	} else if len(args) == 2 && args[0] == "" {
-		return ""
-	}
-
-	// 特殊的后缀
-	if strings.HasSuffix(path, ".tar.gz") {
-		return "tar.gz"
-	}
-	return args[len(args)-1]
 }

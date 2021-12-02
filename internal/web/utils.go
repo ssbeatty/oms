@@ -39,6 +39,7 @@ type FileInfo struct {
 	ChildrenCount int       `json:"childrenCount,omitempty"`
 	ParentId      string    `json:"parentId,omitempty"`
 	ChildrenIds   []string  `json:"children_ids,omitempty"`
+	Icon          string    `json:"icon,omitempty"`
 }
 
 type FilePath struct {
@@ -277,6 +278,7 @@ func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {
 			IsSymlink: isSymlink,
 			Ext:       utils.GetFileExt(infos[i].Name()),
 			ParentId:  p,
+			Icon:      utils.GetFileIcon(infos[i].Name(), isDir),
 		}
 		results = append(results, &info)
 	}
