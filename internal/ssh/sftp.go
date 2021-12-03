@@ -39,6 +39,7 @@ type TempFile struct {
 }
 
 type FTaskResp struct {
+	Id      string  `json:"id"`
 	File    string  `json:"file"`
 	Dest    string  `json:"dest"`
 	Speed   string  `json:"speed"`
@@ -62,8 +63,13 @@ func (m *Manager) doNotifyFileTaskList() {
 		}
 		var resp []FTaskResp
 		m.fileList.Range(func(key, value interface{}) bool {
+			var percent float32
 			task := value.(*TaskItem)
-			percent := float32(task.RSize) * 100.0 / float32(task.Total)
+			if task.Total == 0 {
+				percent = 100
+			} else {
+				percent = float32(task.RSize) * 100.0 / float32(task.Total)
+			}
 			resp = append(resp, FTaskResp{
 				File:    task.FileName,
 				Dest:    task.Host,
@@ -72,6 +78,7 @@ func (m *Manager) doNotifyFileTaskList() {
 				Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/2)),
 				Status:  task.Status,
 				Percent: percent,
+				Id:      fmt.Sprintf("%s/%s", task.Host, task.FileName),
 			})
 			task.CSize = task.RSize
 			if task.Status == FileTaskDone || task.Status == FileTaskFailed {

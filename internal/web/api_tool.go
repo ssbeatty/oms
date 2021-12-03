@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"oms/internal/ssh"
 	"os"
 	"path"
@@ -292,7 +292,7 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 				ctx, cancel := context.WithCancel(context.Background())
 
 				fName := part.FileName()
-				escape := url.QueryEscape(fName)
+				escape := base64.StdEncoding.EncodeToString([]byte(fName))
 
 				p := path.Join("tmp", fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
 				tempFile := ssh.TempFile{
