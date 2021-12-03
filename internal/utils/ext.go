@@ -4,21 +4,26 @@ import "strings"
 
 var (
 	folderIconMap = map[string]string{
-		"dist":     "folder_dist",
-		"doc":      "folder_docs",
-		"docs":     "folder_docs",
-		"git":      "folder_git",
-		"download": "folder_download",
-		"images":   "folder_images",
-		"image":    "folder_images",
-		"js":       "folder_javascript",
-		"css":      "folder_css",
-		"src":      "folder_src",
-		"temp":     "folder_temp",
-		"tmp":      "folder_temp",
-		"test":     "folder_test",
-		"vue":      "folder_vue",
-		".git":     "folder_git",
+		"dist":         "folder_dist",
+		"doc":          "folder_docs",
+		"docs":         "folder_docs",
+		"git":          "folder_git",
+		"download":     "folder_download",
+		"images":       "folder_images",
+		"image":        "folder_images",
+		"js":           "folder_javascript",
+		"css":          "folder_css",
+		"src":          "folder_src",
+		"temp":         "folder_temp",
+		"tmp":          "folder_temp",
+		"test":         "folder_test",
+		"vue":          "folder_vue",
+		".git":         "folder_git",
+		".github":      "folder_github",
+		"config":       "folder_config",
+		"conf":         "folder_config",
+		"configs":      "folder_config",
+		"node_modules": "folder_node",
 	}
 	extIconMap = map[string]string{
 		// os
@@ -27,7 +32,6 @@ var (
 		"db":  "database",
 		"zip": "zip",
 		"log": "log",
-		"mod": "go-mod",
 
 		// docs
 		"doc":  "word",
@@ -40,6 +44,8 @@ var (
 		"pdf":  "pdf",
 		"ppt":  "ppt",
 		"pptx": "ppt",
+		"txt":  "txt",
+		"ini":  "ini",
 
 		// language
 		"c":     "c",
@@ -65,6 +71,10 @@ var (
 		"swift": "swift",
 		"cs":    "csharp",
 		"erl":   "erlang",
+		"jsx":   "react",
+		"tsx":   "react",
+		"ts":    "typescript",
+		"vue":   "vue",
 
 		// image
 		"jpg": "image",
@@ -89,6 +99,7 @@ var (
 		"robots.txt":     "robots",
 		".vimrc":         "vim",
 		".viminfo":       "vim",
+		"tsconfig.json":  "tsconfig",
 	}
 )
 
