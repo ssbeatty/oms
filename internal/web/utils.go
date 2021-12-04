@@ -11,6 +11,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/utils"
+	"oms/pkg/transport"
 	"os"
 	"path"
 	"path/filepath"
@@ -153,7 +154,7 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 	}
 	defer session.Close()
 
-	if sudo {
+	if sudo && client.Info.Goos != transport.GOOSWindows {
 		msg, err = session.Sudo(cmd, host.PassWord)
 	} else {
 		msg, err = session.Output(cmd)
@@ -458,7 +459,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 		}
 	}()
 
-	if sudo {
+	if sudo && client.Info.Goos != transport.GOOSWindows {
 		msg, err = session.Sudo(cmd, host.PassWord)
 	} else {
 		msg, err = session.Output(cmd)

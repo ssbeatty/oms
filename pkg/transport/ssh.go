@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,17 @@ import (
 const (
 	DefaultTimeout = 10 * time.Second
 	KillSignal     = "0x09"
+
+	GOOSLinux   = "linux"
+	GOOSFreeBSD = "freebsd"
+	GOOSWindows = "windows"
+	GOOSDarwin  = "darwin"
+	GOOSUnknown = "unknown"
+
+	ArchAmd64   = "amd64"
+	ArchI386    = "386"
+	ArchArm     = "arm"
+	ArchUnknown = "unknown"
 )
 
 var gauge Gauge
@@ -29,9 +41,16 @@ type Gauge interface {
 	Dec()
 }
 
+type MachineInfo struct {
+	Goos string
+	Arch string
+	Cmd  string
+}
+
 type Client struct {
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
+	Info       *MachineInfo
 }
 
 type Session struct {
@@ -46,6 +65,54 @@ ssh基础服务
 // RegisterSessionGauge call register a gauge listen session num
 func RegisterSessionGauge(g Gauge) {
 	gauge = g
+}
+
+func (c *Client) CollectTargetMachineInfo() error {
+	session, err := c.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	uName, err := session.Output("uname -a")
+	if err != nil {
+		session2, err := c.NewSession()
+		if err != nil {
+			return err
+		}
+		defer session2.Close()
+		// todo windows arm & other os
+		wmic, err := session2.Output("wmic os get OSArchitecture")
+		if strings.Contains(string(wmic), "64") {
+			c.Info.Arch = ArchAmd64
+			c.Info.Goos = GOOSWindows
+		} else if strings.Contains(string(wmic), "32") {
+			c.Info.Arch = ArchI386
+			c.Info.Goos = GOOSWindows
+		}
+		return nil
+	}
+	args := strings.Split(string(uName), " ")
+	if len(args) < 2 {
+		return errors.New("uname return an error length msg")
+	}
+	// todo freebsd & arm
+	switch args[len(args)-1] {
+	case "GNU/Linux", "Linux":
+		c.Info.Goos = GOOSLinux
+	case "FreeBSD":
+		c.Info.Goos = GOOSFreeBSD
+	}
+	switch args[len(args)-2] {
+	case "x86_64", "amd64":
+		c.Info.Arch = ArchAmd64
+	case "i386":
+		c.Info.Arch = ArchI386
+	case "armv6l", "armv7l":
+		c.Info.Arch = ArchArm
+	}
+
+	return nil
 }
 
 func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
@@ -220,5 +287,11 @@ func New(host, user, password, passphrase string, KeyBytes []byte, port int) (cl
 		return client, errors.New("Failed to dial ssh: " + err.Error())
 	}
 
-	return &Client{sshClient: sshClient}, nil
+	return &Client{
+		sshClient: sshClient,
+		Info: &MachineInfo{
+			Goos: GOOSUnknown,
+			Arch: ArchUnknown,
+		},
+	}, nil
 }
