@@ -87,10 +87,6 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cli.CollectTargetMachineInfo()
-	if err != nil {
-		m.logger.Errorf("error when get machine info, err: %v", err)
-	}
 	m.sshPoll.Add(config.serialize(), cli)
 	return cli, nil
 }

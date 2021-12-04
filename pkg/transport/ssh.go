@@ -96,7 +96,7 @@ func (c *Client) CollectTargetMachineInfo() error {
 		}
 		return nil
 	}
-	args := strings.Split(string(uName), " ")
+	args := strings.Fields(string(uName))
 	if len(args) < 2 {
 		return errors.New("uname return an error length msg")
 	}
@@ -290,12 +290,17 @@ func New(host, user, password, passphrase string, KeyBytes []byte, port int) (cl
 	if err != nil {
 		return client, errors.New("Failed to dial ssh: " + err.Error())
 	}
-
-	return &Client{
+	client = &Client{
 		sshClient: sshClient,
 		Info: &MachineInfo{
 			Goos: GOOSUnknown,
 			Arch: ArchUnknown,
 		},
-	}, nil
+	}
+
+	err = client.CollectTargetMachineInfo()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
