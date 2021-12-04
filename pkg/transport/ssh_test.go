@@ -132,8 +132,9 @@ func TestNewClientWithSftp(t *testing.T) {
 
 func TestSSHStat(t *testing.T) {
 	status := transport.NewStatus()
-	for i := 0; i < 10; i++ {
-		transport.GetAllStats(client.GetSSHClient(), status, nil)
+	client.Info.Goos = transport.GOOSWindows
+	for i := 0; i < 1000; i++ {
+		transport.GetAllStats(client, status, nil)
 		t.Log(status.CPU)
 		time.Sleep(time.Second)
 	}

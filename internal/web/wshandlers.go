@@ -121,7 +121,7 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 	if err != nil {
 		w.WriteMsg(Response{Code: WSStatusError, Msg: fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)})
 	}
-	transport.GetAllStats(client.GetSSHClient(), status, nil)
+	transport.GetAllStats(client, status, nil)
 	w.StoreCache("status", status)
 	w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: status})
 }

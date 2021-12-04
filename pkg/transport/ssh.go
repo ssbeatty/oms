@@ -67,6 +67,10 @@ func RegisterSessionGauge(g Gauge) {
 	gauge = g
 }
 
+func (c *Client) GetTargetMachineOs() string {
+	return c.Info.Goos
+}
+
 func (c *Client) CollectTargetMachineInfo() error {
 	session, err := c.NewSession()
 	if err != nil {

@@ -8,11 +8,15 @@ package transport
 import (
 	"bufio"
 	"bytes"
-	"golang.org/x/crypto/ssh"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	CmiTimeLayout = "20060102150405.999999"
 )
 
 type FSInfo struct {
@@ -42,6 +46,7 @@ type cpuRaw struct {
 }
 
 type CPUInfo struct {
+	Usage   float32 `json:"usage"`
 	User    float32 `json:"user"`
 	Nice    float32 `json:"nice"`
 	System  float32 `json:"system"`
@@ -68,9 +73,9 @@ type Stats struct {
 	SwapTotal    uint64                 `json:"swap_total"`
 	SwapFree     uint64                 `json:"swap_free"`
 	FSInfos      []FSInfo               `json:"fs_infos"`
-	NetIntf      map[string]NetIntfInfo `json:"net_intf"`
+	NetIntf      map[string]NetIntfInfo `json:"-"`
 	CPU          CPUInfo                `json:"cpu"`
-	PreCPU       *cpuRaw
+	PreCPU       *cpuRaw                `json:"-"`
 }
 
 func NewStatus() *Stats {
@@ -79,21 +84,19 @@ func NewStatus() *Stats {
 	}
 }
 
-func GetAllStats(client *ssh.Client, stats *Stats, wg *sync.WaitGroup) {
+func GetAllStats(client *Client, stats *Stats, wg *sync.WaitGroup) {
 	getUptime(client, stats)
 	getHostname(client, stats)
 	getLoad(client, stats)
 	getMemInfo(client, stats)
 	getFSInfo(client, stats)
-	getInterfaces(client, stats)
-	getInterfaceInfo(client, stats)
 	getCPU(client, stats)
 	if wg != nil {
 		wg.Done()
 	}
 }
 
-func runCommand(client *ssh.Client, command string) (stdout string, err error) {
+func runCommand(client *Client, command string) (stdout string, err error) {
 	session, err := client.NewSession()
 	if err != nil {
 		//log.Print(err)
@@ -102,7 +105,7 @@ func runCommand(client *ssh.Client, command string) (stdout string, err error) {
 	defer session.Close()
 
 	var buf bytes.Buffer
-	session.Stdout = &buf
+	session.SetStdout(&buf)
 	err = session.Run(command)
 	if err != nil {
 		//log.Print(err)
@@ -113,129 +116,272 @@ func runCommand(client *ssh.Client, command string) (stdout string, err error) {
 	return
 }
 
-func getUptime(client *ssh.Client, stats *Stats) (err error) {
-	uptime, err := runCommand(client, "/bin/cat /proc/uptime")
+func winGetValRaw(client *Client, command string) (string, error) {
+	valRaw, err := runCommand(client, command)
 	if err != nil {
-		return
+		return "", err
 	}
-
-	parts := strings.Fields(uptime)
+	parts := strings.Fields(valRaw)
 	if len(parts) == 2 {
-		var upsecs float64
-		upsecs, err = strconv.ParseFloat(parts[0], 64)
+		return parts[1], nil
+	}
+
+	return "", errors.New("command got error returns")
+}
+
+func getUptime(client *Client, stats *Stats) error {
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		uptime, err := runCommand(client, "/bin/cat /proc/uptime")
 		if err != nil {
-			return
+			return err
 		}
-		stats.Uptime = time.Duration(upsecs * 1e9)
-	}
 
-	return
-}
-
-func getHostname(client *ssh.Client, stats *Stats) (err error) {
-	hostname, err := runCommand(client, "/bin/hostname -f")
-	if err != nil {
-		return
-	}
-
-	stats.Hostname = strings.TrimSpace(hostname)
-	return
-}
-
-func getLoad(client *ssh.Client, stats *Stats) (err error) {
-	line, err := runCommand(client, "/bin/cat /proc/loadavg")
-	if err != nil {
-		return
-	}
-
-	parts := strings.Fields(line)
-	if len(parts) == 5 {
-		stats.Load1 = parts[0]
-		stats.Load5 = parts[1]
-		stats.Load10 = parts[2]
-		if i := strings.Index(parts[3], "/"); i != -1 {
-			stats.RunningProcs = parts[3][0:i]
-			if i+1 < len(parts[3]) {
-				stats.TotalProcs = parts[3][i+1:]
+		parts := strings.Fields(uptime)
+		if len(parts) == 2 {
+			var upsecs float64
+			upsecs, err = strconv.ParseFloat(parts[0], 64)
+			if err != nil {
+				return err
+			}
+			stats.Uptime = time.Duration(upsecs * 1e9)
+		}
+	case GOOSWindows:
+		uptime, err := runCommand(client, "wmic os get lastbootuptime")
+		if err != nil {
+			return err
+		}
+		parts := strings.Fields(uptime)
+		if len(parts) == 2 {
+			var args []string
+			cmiTimeStamp := parts[1]
+			if strings.Contains(cmiTimeStamp, "+") {
+				args = strings.Split(cmiTimeStamp, "+")
+			} else if strings.Contains(cmiTimeStamp, "-") {
+				args = strings.Split(cmiTimeStamp, "-")
+			} else {
+				return errors.New("got an error time format")
+			}
+			if len(args) == 2 {
+				minutes, err := strconv.Atoi(args[1])
+				if err != nil {
+					return err
+				}
+				cstZone := time.FixedZone("GMT", minutes*60)
+				parse, err := time.ParseInLocation(CmiTimeLayout, args[0], cstZone)
+				if err != nil {
+					return err
+				}
+				stats.Uptime = time.Now().In(cstZone).Sub(parse)
 			}
 		}
 	}
 
-	return
+	return nil
 }
 
-func getMemInfo(client *ssh.Client, stats *Stats) (err error) {
-	lines, err := runCommand(client, "/bin/cat /proc/meminfo")
-	if err != nil {
-		return
+func getHostname(client *Client, stats *Stats) error {
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		hostname, err := runCommand(client, "/bin/hostname -f")
+		if err != nil {
+			return err
+		}
+		stats.Hostname = strings.TrimSpace(hostname)
+	case GOOSWindows:
+		hostname, err := runCommand(client, "wmic os get CSName")
+		if err != nil {
+			return err
+		}
+		parts := strings.Fields(hostname)
+		if len(parts) == 2 {
+			stats.Hostname = strings.TrimSpace(parts[1])
+		}
+	}
+	return nil
+}
+
+func getLoad(client *Client, stats *Stats) error {
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		line, err := runCommand(client, "/bin/cat /proc/loadavg")
+		if err != nil {
+			return err
+		}
+
+		parts := strings.Fields(line)
+		if len(parts) == 5 {
+			stats.Load1 = parts[0]
+			stats.Load5 = parts[1]
+			stats.Load10 = parts[2]
+			if i := strings.Index(parts[3], "/"); i != -1 {
+				stats.RunningProcs = parts[3][0:i]
+				if i+1 < len(parts[3]) {
+					stats.TotalProcs = parts[3][i+1:]
+				}
+			}
+		}
+	case GOOSWindows:
+		processNums, err := winGetValRaw(client, "wmic os get NumberOfProcesses")
+		if err != nil {
+			return err
+		} else {
+			stats.TotalProcs = processNums
+		}
 	}
 
-	scanner := bufio.NewScanner(strings.NewReader(lines))
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Fields(line)
-		if len(parts) == 3 {
-			val, err := strconv.ParseUint(parts[1], 10, 64)
+	return nil
+}
+
+func getMemInfo(client *Client, stats *Stats) error {
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		lines, err := runCommand(client, "/bin/cat /proc/meminfo")
+		if err != nil {
+			return err
+		}
+
+		scanner := bufio.NewScanner(strings.NewReader(lines))
+		for scanner.Scan() {
+			line := scanner.Text()
+			parts := strings.Fields(line)
+			if len(parts) == 3 {
+				val, err := strconv.ParseUint(parts[1], 10, 64)
+				if err != nil {
+					continue
+				}
+				val *= 1024
+				switch parts[0] {
+				case "MemTotal:":
+					stats.MemTotal = val
+				case "MemFree:":
+					stats.MemFree = val
+				case "Buffers:":
+					stats.MemBuffers = val
+				case "Cached:":
+					stats.MemCached = val
+				case "SwapTotal:":
+					stats.SwapTotal = val
+				case "SwapFree:":
+					stats.SwapFree = val
+				}
+			}
+		}
+
+	case GOOSWindows:
+		totalMemory, err := winGetValRaw(client, "wmic ComputerSystem get TotalPhysicalMemory")
+		if err != nil {
+			return err
+		} else {
+			val, err := strconv.Atoi(totalMemory)
+			if err != nil {
+				return err
+			}
+			stats.MemTotal = uint64(val)
+		}
+
+		freeMemory, err := winGetValRaw(client, "wmic OS get FreePhysicalMemory")
+		if err != nil {
+			return err
+		} else {
+			val, err := strconv.Atoi(freeMemory)
+			if err != nil {
+				return err
+			}
+			stats.MemFree = uint64(val)
+		}
+
+		swapTotal, err := winGetValRaw(client, "wmic pagefile get AllocatedBaseSize")
+		if err != nil {
+			return err
+		} else {
+			val, err := strconv.Atoi(swapTotal)
+			if err != nil {
+				return err
+			}
+			stats.SwapTotal = uint64(val)
+		}
+
+		swapCurrent, err := winGetValRaw(client, "wmic pagefile get CurrentUsage")
+		if err != nil {
+			return err
+		} else {
+			val, err := strconv.Atoi(swapCurrent)
+			if err != nil {
+				return err
+			}
+			stats.SwapFree = stats.SwapTotal - uint64(val)
+		}
+	}
+
+	return nil
+}
+
+func getFSInfo(client *Client, stats *Stats) error {
+	stats.FSInfos = stats.FSInfos[:0]
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		lines, err := runCommand(client, "/bin/df -B1")
+		if err != nil {
+			return err
+		}
+
+		scanner := bufio.NewScanner(strings.NewReader(lines))
+		flag := 0
+		for scanner.Scan() {
+			line := scanner.Text()
+			parts := strings.Fields(line)
+			n := len(parts)
+			dev := n > 0 && strings.Index(parts[0], "/dev/") == 0
+			if n == 1 && dev {
+				flag = 1
+			} else if (n == 5 && flag == 1) || (n == 6 && dev) {
+				i := flag
+				flag = 0
+				used, err := strconv.ParseUint(parts[2-i], 10, 64)
+				if err != nil {
+					continue
+				}
+				free, err := strconv.ParseUint(parts[3-i], 10, 64)
+				if err != nil {
+					continue
+				}
+				stats.FSInfos = append(stats.FSInfos, FSInfo{
+					parts[5-i], used, free,
+				})
+			}
+		}
+
+	case GOOSWindows:
+		lines, err := runCommand(client, "wmic logicaldisk get caption,freespace,size")
+		if err != nil {
+			return err
+		}
+		scanner := bufio.NewScanner(strings.NewReader(lines))
+		for scanner.Scan() {
+			line := scanner.Text()
+			parts := strings.Fields(line)
+			if len(parts) != 3 {
+				continue
+			}
+			used, err := strconv.Atoi(parts[1])
 			if err != nil {
 				continue
 			}
-			val *= 1024
-			switch parts[0] {
-			case "MemTotal:":
-				stats.MemTotal = val
-			case "MemFree:":
-				stats.MemFree = val
-			case "Buffers:":
-				stats.MemBuffers = val
-			case "Cached:":
-				stats.MemCached = val
-			case "SwapTotal:":
-				stats.SwapTotal = val
-			case "SwapFree:":
-				stats.SwapFree = val
-			}
-		}
-	}
-
-	return
-}
-
-func getFSInfo(client *ssh.Client, stats *Stats) (err error) {
-	lines, err := runCommand(client, "/bin/df -B1")
-	if err != nil {
-		return
-	}
-
-	scanner := bufio.NewScanner(strings.NewReader(lines))
-	flag := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Fields(line)
-		n := len(parts)
-		dev := n > 0 && strings.Index(parts[0], "/dev/") == 0
-		if n == 1 && dev {
-			flag = 1
-		} else if (n == 5 && flag == 1) || (n == 6 && dev) {
-			i := flag
-			flag = 0
-			used, err := strconv.ParseUint(parts[2-i], 10, 64)
-			if err != nil {
-				continue
-			}
-			free, err := strconv.ParseUint(parts[3-i], 10, 64)
+			free, err := strconv.Atoi(parts[1])
 			if err != nil {
 				continue
 			}
 			stats.FSInfos = append(stats.FSInfos, FSInfo{
-				parts[5-i], used, free,
+				parts[0], uint64(used), uint64(free),
 			})
 		}
 	}
 
-	return
+	return nil
 }
 
-func getInterfaces(client *ssh.Client, stats *Stats) (err error) {
+func getInterfaces(client *Client, stats *Stats) (err error) {
 	var lines string
 	lines, err = runCommand(client, "/bin/ip -o addr")
 	if err != nil {
@@ -279,7 +425,7 @@ func getInterfaces(client *ssh.Client, stats *Stats) (err error) {
 	return
 }
 
-func getInterfaceInfo(client *ssh.Client, stats *Stats) (err error) {
+func getInterfaceInfo(client *Client, stats *Stats) (err error) {
 	lines, err := runCommand(client, "/bin/cat /proc/net/dev")
 	if err != nil {
 		return
@@ -347,40 +493,68 @@ func parseCPUFields(fields []string, stat *cpuRaw) {
 	}
 }
 
-func getCPU(client *ssh.Client, stats *Stats) (err error) {
-	lines, err := runCommand(client, "/bin/cat /proc/stat")
-	if err != nil {
-		return
-	}
+func getCPU(client *Client, stats *Stats) error {
+	switch client.GetTargetMachineOs() {
+	case GOOSLinux:
+		lines, err := runCommand(client, "/bin/cat /proc/stat")
+		if err != nil {
+			return err
+		}
 
-	var (
-		nowCPU cpuRaw
-		total  float32
-	)
+		var (
+			nowCPU                               cpuRaw
+			total                                float32
+			PrevIdle, Idle, PrevNonIdle, NonIdle uint64
+			PrevTotal, Total, totald, idled      uint64
+		)
 
-	scanner := bufio.NewScanner(strings.NewReader(lines))
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		if len(fields) > 0 && fields[0] == "cpu" { // changing here if want to get every cpu-core's stats
-			parseCPUFields(fields, &nowCPU)
-			break
+		scanner := bufio.NewScanner(strings.NewReader(lines))
+		for scanner.Scan() {
+			line := scanner.Text()
+			fields := strings.Fields(line)
+			if len(fields) > 0 && fields[0] == "cpu" { // changing here if want to get every cpu-core's stats
+				parseCPUFields(fields, &nowCPU)
+				break
+			}
+		}
+		if stats.PreCPU.Total == 0 { // having no pre raw cpu data
+			goto END
+		}
+
+		total = float32(nowCPU.Total - stats.PreCPU.Total)
+		stats.CPU.User = float32(nowCPU.User-stats.PreCPU.User) / total * 100
+		stats.CPU.Nice = float32(nowCPU.Nice-stats.PreCPU.Nice) / total * 100
+		stats.CPU.System = float32(nowCPU.System-stats.PreCPU.System) / total * 100
+		stats.CPU.Idle = float32(nowCPU.Idle-stats.PreCPU.Idle) / total * 100
+		stats.CPU.Iowait = float32(nowCPU.Iowait-stats.PreCPU.Iowait) / total * 100
+		stats.CPU.Irq = float32(nowCPU.Irq-stats.PreCPU.Irq) / total * 100
+		stats.CPU.SoftIrq = float32(nowCPU.SoftIrq-stats.PreCPU.SoftIrq) / total * 100
+		stats.CPU.Guest = float32(nowCPU.Guest-stats.PreCPU.Guest) / total * 100
+		PrevIdle = stats.PreCPU.Idle + stats.PreCPU.Iowait
+		Idle = nowCPU.Idle + nowCPU.Iowait
+		PrevNonIdle = stats.PreCPU.User + stats.PreCPU.Nice + stats.PreCPU.System + stats.PreCPU.Irq + stats.PreCPU.SoftIrq + stats.PreCPU.Steal
+		NonIdle = nowCPU.User + nowCPU.Nice + nowCPU.System + nowCPU.Irq + nowCPU.SoftIrq + nowCPU.Steal
+
+		PrevTotal = PrevIdle + PrevNonIdle
+		Total = Idle + NonIdle
+		totald = Total - PrevTotal
+		idled = Idle - PrevIdle
+		stats.CPU.Usage = float32(totald-idled) / float32(totald)
+
+	END:
+		stats.PreCPU = &nowCPU
+	case GOOSWindows:
+		cpuUsage, err := winGetValRaw(client, "wmic cpu get loadpercentage")
+		if err != nil {
+			return err
+		} else {
+			val, err := strconv.ParseFloat(cpuUsage, 32)
+			if err != nil {
+				return err
+			}
+			stats.CPU.Usage = float32(val)
 		}
 	}
-	if stats.PreCPU.Total == 0 { // having no pre raw cpu data
-		goto END
-	}
 
-	total = float32(nowCPU.Total - stats.PreCPU.Total)
-	stats.CPU.User = float32(nowCPU.User-stats.PreCPU.User) / total * 100
-	stats.CPU.Nice = float32(nowCPU.Nice-stats.PreCPU.Nice) / total * 100
-	stats.CPU.System = float32(nowCPU.System-stats.PreCPU.System) / total * 100
-	stats.CPU.Idle = float32(nowCPU.Idle-stats.PreCPU.Idle) / total * 100
-	stats.CPU.Iowait = float32(nowCPU.Iowait-stats.PreCPU.Iowait) / total * 100
-	stats.CPU.Irq = float32(nowCPU.Irq-stats.PreCPU.Irq) / total * 100
-	stats.CPU.SoftIrq = float32(nowCPU.SoftIrq-stats.PreCPU.SoftIrq) / total * 100
-	stats.CPU.Guest = float32(nowCPU.Guest-stats.PreCPU.Guest) / total * 100
-END:
-	stats.PreCPU = &nowCPU
-	return
+	return nil
 }
