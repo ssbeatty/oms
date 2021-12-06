@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"math/big"
 	"net"
@@ -69,4 +70,13 @@ func IsAddr(address string) bool {
 	default:
 		return false
 	}
+}
+
+// HashSha1 sha1 加密
+func HashSha1(s string) string {
+	h := sha1.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+
+	return string(bs)
 }

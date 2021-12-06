@@ -78,7 +78,7 @@ func (m *Manager) doNotifyFileTaskList() {
 				Speed:   fmt.Sprintf("%s/s", utils.IntChangeToSize((task.RSize-task.CSize)/2)),
 				Status:  task.Status,
 				Percent: percent,
-				Id:      fmt.Sprintf("%s/%s", task.Host, task.FileName),
+				Id:      utils.HashSha1(fmt.Sprintf("%s/%s", task.Host, task.FileName)),
 			})
 			task.CSize = task.RSize
 			if task.Status == FileTaskDone || task.Status == FileTaskFailed {
