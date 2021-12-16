@@ -1,5 +1,9 @@
 package payload
 
+const (
+	ErrHostParseEmpty = "parse host array empty"
+)
+
 type Response struct {
 	Code string      `json:"code"`
 	Msg  string      `json:"msg"`

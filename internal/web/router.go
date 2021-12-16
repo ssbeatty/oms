@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -12,6 +13,13 @@ import (
 	"oms/internal/task"
 	"oms/internal/tunnel"
 	"oms/internal/web/controllers"
+	"os/exec"
+	"runtime"
+)
+
+const (
+	assetsFilepath       = "../../web/omsUI/dist/assets"
+	frontendDistFilePath = "../../web/omsUI/dist"
 )
 
 func CORS(ctx *gin.Context) {
@@ -62,7 +70,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 	r.Use(CORS).Use(exportHeaders)
 
 	// static files
-	box := packr.NewBox("../../web/omsUI/dist/assets")
+	box := packr.NewBox(assetsFilepath)
 	r.StaticFS("/assets", box)
 
 	err := mime.AddExtensionType(".js", "application/javascript")
@@ -82,6 +90,8 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 	// common api
 	r.GET("/", s.GetIndexPage)
+
+	// if not route (route from frontend) redirect to index
 	r.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
@@ -131,18 +141,17 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.GET("/job/tail", Handle(s.GetLogStream))
 		apiV1.POST("/job/start", Handle(s.StartJob))
 		apiV1.POST("/job/stop", Handle(s.StopJob))
-		apiV1.POST("/job/restart", Handle(s.RestartJob))
 
 		// tools
-		apiV1.GET("/tools/cmd", s.RunCmd)
-		apiV1.GET("/tools/browse", s.GetPathInfo)
-		apiV1.POST("/tools/mkdir", s.MakeDirRemote)
-		apiV1.GET("/tools/download", s.DownLoadFile)
-		apiV1.POST("/tools/delete", s.DeleteFile)
-		apiV1.POST("/tools/upload_file", s.FileUploadUnBlock)
+		apiV1.GET("/tools/cmd", Handle(s.RunCmd))
+		apiV1.GET("/tools/browse", Handle(s.GetPathInfo))
+		apiV1.POST("/tools/mkdir", Handle(s.MakeDirRemote))
+		apiV1.GET("/tools/download", Handle(s.DownLoadFile))
+		apiV1.POST("/tools/delete", Handle(s.DeleteFile))
+		apiV1.POST("/tools/upload_file", Handle(s.FileUploadUnBlock))
 
 		// steam version
-		apiV1.POST("/tools/upload", s.FileUploadV2)
+		apiV1.POST("/tools/upload", Handle(s.FileUploadV2))
 	}
 	s.Engine = r
 
@@ -161,19 +170,20 @@ func Serve(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, 
 	}()
 
 	// todo mac
-	//if runtime.GOOS == "windows" {
-	//	cmd := exec.Command("cmd", "/c", "start", fmt.Sprintf("http://127.0.0.1:%d", s.Port))
-	//	err := cmd.Start()
-	//	if err != nil {
-	//		s.Logger.Errorf("start server in browser error: %v", err)
-	//		return
-	//	}
-	//}
+	if runtime.GOOS == "windows" {
+		urlPath := fmt.Sprintf("http://127.0.0.1:%d", s.Port)
+		cmd := exec.Command("cmd", "/c", "start", urlPath)
+		err := cmd.Start()
+		if err != nil {
+			s.Logger.Errorf("start server in browser error: %v", err)
+			return
+		}
+	}
 }
 
 func loadTemplate() (*template.Template, error) {
 	const indexFile = "index.html"
-	box := packr.NewBox("../../web/omsUI/dist")
+	box := packr.NewBox(frontendDistFilePath)
 	t := template.New("")
 	data, err := box.Find(indexFile)
 	if err != nil {

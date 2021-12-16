@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/hpcloud/tail"
 	"io"
 	"io/fs"
@@ -25,38 +24,165 @@ import (
 	"time"
 )
 
-func (s *Service) RunCmd(c *gin.Context) {
-	id, err := strconv.Atoi(c.Query("id"))
+func (s *Service) RunCmd(c *Context) {
+	var params payload.CmdParams
+	err := c.ShouldBind(&params)
 	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	pType := c.Query("type")
-	cmd := c.Query("cmd")
-	if cmd == "" {
-		data := payload.GenerateResponsePayload(HttpStatusError, "cmd can not be empty", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	sudoRaw := c.Query("sudo")
-	// default false
-	sudo, _ := strconv.ParseBool(sudoRaw)
+		c.ResponseError(err.Error())
+	} else {
+		hosts := s.ParseHostList(params.Type, params.Id)
+		if len(hosts) == 0 {
+			data := payload.GenerateResponsePayload(HttpStatusError, payload.ErrHostParseEmpty, nil)
+			c.JSON(http.StatusOK, data)
+			c.ResponseError("")
+			return
+		}
+		// do cmd
+		results := s.RunCmdExec(hosts, params.Cmd, params.Sudo)
 
-	hosts := s.ParseHostList(pType, id)
-	if len(hosts) == 0 {
-		data := payload.GenerateResponsePayload(HttpStatusError, "parse host array empty", nil)
-		c.JSON(http.StatusOK, data)
-		return
+		c.ResponseOk(results)
 	}
-	// do cmd
-	results := s.RunCmdExec(hosts, cmd, sudo)
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
-	c.JSON(http.StatusOK, data)
-
 }
 
-func (s *Service) FileUploadUnBlock(c *gin.Context) {
+func (s *Service) GetPathInfo(c *Context) {
+	var params payload.OptionsFileParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		results, err := s.GetPathInfoExec(params.HostId, params.Id)
+		if err != nil {
+			data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
+			c.JSON(http.StatusOK, data)
+			return
+		}
+		c.ResponseOk(results)
+	}
+}
+
+func (s *Service) DownLoadFile(c *Context) {
+	var params payload.OptionsFileParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		file := s.DownloadFile(params.HostId, params.Id)
+		if file != nil {
+			defer file.Close()
+
+			fh, err := file.Stat()
+			if err != nil {
+				s.Logger.Errorf("error when Stat file, err: %v", err)
+				c.String(http.StatusOK, "file stat error")
+				return
+			}
+			c.Header("Content-Type", "application/octet-stream")
+			c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fh.Name()))
+
+			mode := fh.Mode() & fs.ModeType
+			// this is a read able file
+			if mode == 0 {
+				if fh.Size() != 0 {
+					http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
+					return
+				} else {
+					buf, err := ioutil.ReadAll(file)
+					if err != nil {
+						s.Logger.Errorf("read virtual file error: %v", err)
+					}
+					http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
+					return
+				}
+			} else {
+				c.String(http.StatusOK, fmt.Sprintf("read error, file type is [%s]", mode))
+				return
+			}
+		} else {
+			c.String(http.StatusOK, "file not existed")
+			return
+		}
+	}
+}
+
+func (s *Service) DeleteFile(c *Context) {
+	var params payload.OptionsFileParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		err = s.DeleteFileOrDir(params.HostId, params.Id)
+		if err != nil {
+			c.ResponseError(err.Error())
+		} else {
+			c.ResponseOk(nil)
+		}
+	}
+}
+
+func (s *Service) MakeDirRemote(c *Context) {
+	var params payload.MkdirParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		err = s.MakeDir(params.HostId, params.Id, params.Dir)
+		if err != nil {
+			c.ResponseError(err.Error())
+		} else {
+			c.ResponseOk(nil)
+		}
+	}
+}
+
+func (s *Service) StartJob(c *Context) {
+	var form payload.OptionsJobForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		job, err := models.GetJobById(form.Id)
+		if err != nil {
+			s.Logger.Errorf("error when get job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+		err = s.taskManager.StartJob(job)
+		if err != nil {
+			s.Logger.Errorf("error when start job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+
+		_ = models.RefreshJob(job)
+
+		c.ResponseOk(job)
+	}
+}
+
+func (s *Service) StopJob(c *Context) {
+	var form payload.OptionsJobForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		job, err := models.GetJobById(form.Id)
+		if err != nil {
+			s.Logger.Errorf("error when get job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+		err = s.taskManager.StopJob(job.Id)
+		if err != nil {
+			s.Logger.Errorf("error when stop job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+
+		_ = models.RefreshJob(job)
+
+		c.ResponseOk(job)
+	}
+}
+
+// 这些方法暂时不重构
+
+func (s *Service) FileUploadUnBlock(c *Context) {
 	var remoteFile string
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
@@ -85,109 +211,7 @@ func (s *Service) FileUploadUnBlock(c *gin.Context) {
 
 }
 
-func (s *Service) GetPathInfo(c *gin.Context) {
-	p := c.Query("id")
-	id, err := strconv.Atoi(c.Query("host_id"))
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "parse id error", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	results, err := s.GetPathInfoExec(id, p)
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, results)
-	c.JSON(http.StatusOK, data)
-}
-
-func (s *Service) DownLoadFile(c *gin.Context) {
-	p := c.Query("id")
-	id, err := strconv.Atoi(c.Query("host_id"))
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	file := s.DownloadFile(id, p)
-
-	if file != nil {
-		defer file.Close()
-
-		fh, err := file.Stat()
-		if err != nil {
-			s.Logger.Errorf("error when Stat file, err: %v", err)
-			c.String(http.StatusOK, "file stat error")
-			return
-		}
-		c.Header("Content-Type", "application/octet-stream")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fh.Name()))
-
-		mode := fh.Mode() & fs.ModeType
-		// this is a read able file
-		if mode == 0 {
-			if fh.Size() != 0 {
-				http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), file)
-				return
-			} else {
-				buf, err := ioutil.ReadAll(file)
-				if err != nil {
-					s.Logger.Errorf("read virtual file error: %v", err)
-				}
-				http.ServeContent(c.Writer, c.Request, fh.Name(), fh.ModTime(), bytes.NewReader(buf))
-				return
-			}
-		} else {
-			c.String(http.StatusOK, fmt.Sprintf("read error, file type is [%s]", mode))
-			return
-		}
-	} else {
-		c.String(http.StatusOK, "file not existed")
-		return
-	}
-}
-
-func (s *Service) DeleteFile(c *gin.Context) {
-	var data payload.Response
-	p := c.PostForm("id")
-	id, err := strconv.Atoi(c.PostForm("host_id"))
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	err = s.DeleteFileOrDir(id, p)
-	if err != nil {
-		data = payload.GenerateResponsePayload(HttpStatusError, "remove file error", nil)
-	} else {
-		data = payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
-	}
-	c.JSON(http.StatusOK, data)
-}
-
-func (s *Service) MakeDirRemote(c *gin.Context) {
-	var data payload.Response
-	p := c.PostForm("id")
-	id, err := strconv.Atoi(c.PostForm("host_id"))
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	dirName := c.PostForm("dir")
-
-	err = s.MakeDir(id, p, dirName)
-	if err != nil {
-		data = payload.GenerateResponsePayload(HttpStatusError, "mkdir error", nil)
-	} else {
-		data = payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
-	}
-	c.JSON(http.StatusOK, data)
-}
-
-func (s *Service) FileUploadV2(c *gin.Context) {
+func (s *Service) FileUploadV2(c *Context) {
 	var id int
 	var remoteFile, dType string
 	files := make(map[string]int)
@@ -196,13 +220,13 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 	fileHeaders := c.GetHeader("X-Files")
 	if fileHeaders == "" {
 		c.Request.URL.Path += "_file"
-		s.Engine.HandleContext(c)
+		s.Engine.HandleContext(c.Context)
 		return
 	}
 	err := json.Unmarshal([]byte(fileHeaders), &files)
 	if err != nil || len(files) == 0 {
 		c.Request.URL.Path += "_file"
-		s.Engine.HandleContext(c)
+		s.Engine.HandleContext(c.Context)
 		return
 	}
 
@@ -304,95 +328,6 @@ func (s *Service) FileUploadV2(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-func (s *Service) StartJob(c *Context) {
-	idRaw := c.PostForm("id")
-	id, err := strconv.Atoi(idRaw)
-	if err != nil {
-		s.Logger.Errorf("StartJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	job, err := models.GetJobById(id)
-	if err != nil {
-		s.Logger.Errorf("StartJob error when GetJobById, err: %v", err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not get job", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	err = s.taskManager.StartJob(job)
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-
-	_ = models.RefreshJob(job)
-
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
-	c.JSON(http.StatusOK, data)
-}
-
-func (s *Service) StopJob(c *Context) {
-	idRaw := c.PostForm("id")
-	id, err := strconv.Atoi(idRaw)
-	if err != nil {
-		s.Logger.Errorf("StopJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	job, err := models.GetJobById(id)
-	if err != nil {
-		s.Logger.Errorf("StartJob error when GetJobById, err: %v", err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not get job", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	err = s.taskManager.StopJob(job.Id)
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-
-	_ = models.RefreshJob(job)
-
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
-	c.JSON(http.StatusOK, data)
-}
-
-func (s *Service) RestartJob(c *Context) {
-	idRaw := c.PostForm("id")
-	id, err := strconv.Atoi(idRaw)
-	if err != nil {
-		s.Logger.Errorf("RestartJob error when Atoi idStr, idRaw: %s ,err: %v", idRaw, err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	job, err := models.GetJobById(id)
-	if err != nil {
-		s.Logger.Errorf("RestartJob error when GetJobById, err: %v", err)
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not get job", nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	_ = s.taskManager.StopJob(id)
-
-	err = s.taskManager.StartJob(job)
-	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
-		c.JSON(http.StatusOK, data)
-		return
-	}
-
-	_ = models.RefreshJob(job)
-
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, job)
-	c.JSON(http.StatusOK, data)
-}
-
 func (s *Service) GetLogStream(c *Context) {
 	var offset int64
 	idRaw := c.Query("id")
@@ -419,7 +354,7 @@ func (s *Service) GetLogStream(c *Context) {
 	// 取消浏览器的MIME嗅探算法
 	header.Set("X-Content-Type-Options", "nosniff")
 
-	_, _ = fmt.Fprintln(w, fmt.Sprintf("[job]: %s, [cmd]: %s log", job.Name(), job.Cmd()))
+	_, _ = fmt.Fprintf(w, "[job]: %s, [cmd]: %s log\n", job.Name(), job.Cmd())
 	w.(http.Flusher).Flush()
 
 	stat, err := os.Stat(job.Log())
