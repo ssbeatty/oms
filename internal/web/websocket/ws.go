@@ -1,4 +1,4 @@
-package web
+package websocket
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ type WsHandler func(conn *websocket.Conn, msg []byte)
 
 type WSConnect struct {
 	*websocket.Conn
-	engine   *Service
+	engine   WebService
 	handlers map[string]WsHandler
 	closer   chan bool
 	once     sync.Once
@@ -24,7 +24,7 @@ type WsMsg struct {
 	Data interface{} `json:"data"`
 }
 
-func NewWSConnect(conn *websocket.Conn, engine *Service) *WSConnect {
+func NewWSConnect(conn *websocket.Conn, engine WebService) *WSConnect {
 	c := &WSConnect{
 		Conn:   conn,
 		engine: engine,

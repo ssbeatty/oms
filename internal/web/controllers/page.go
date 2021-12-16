@@ -1,14 +1,15 @@
-package web
+package controllers
 
 import (
 	"github.com/gin-gonic/gin"
 	wsl "github.com/gorilla/websocket"
 	"net/http"
 	"oms/internal/models"
+	"oms/internal/web/websocket"
 	"strconv"
 )
 
-func GetIndexPage(c *gin.Context) {
+func (s *Service) GetIndexPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 }
 
@@ -23,9 +24,9 @@ var upGrader = wsl.Upgrader{
 func (s *Service) GetWebsocketIndex(c *gin.Context) {
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		s.logger.Errorf("upgrade websocket failed, err: %v", err)
+		s.Logger.Errorf("upgrade websocket failed, err: %v", err)
 	}
-	ws := NewWSConnect(wsConn, s).InitHandlers()
+	ws := websocket.NewWSConnect(wsConn, s).InitHandlers()
 	ws.Serve()
 }
 
@@ -37,27 +38,27 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 	id, _ := strconv.Atoi(idStr)
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		s.logger.Errorf("upgrade websocket failed, err: %v", err)
+		s.Logger.Errorf("upgrade websocket failed, err: %v", err)
 	}
 	defer wsConn.Close()
 
 	host, err := models.GetHostById(id)
 	if err != nil {
-		s.logger.Errorf("can not get host")
+		s.Logger.Errorf("can not get host")
 		return
 	}
 	client, err := s.sshManager.NewClient(host)
 	if err != nil {
-		s.logger.Errorf("transport new client failed, err: %v", err)
+		s.Logger.Errorf("transport new client failed, err: %v", err)
 		return
 	}
 
-	ssConn, err := NewSshConn(cols, rows, client)
+	ssConn, err := websocket.NewSshConn(cols, rows, client)
 	if err != nil {
-		s.logger.Errorf("new ssh connect failed, err: %v", err)
+		s.Logger.Errorf("new ssh connect failed, err: %v", err)
 		return
 	}
-	ws := NewWSConnect(wsConn, nil)
+	ws := websocket.NewWSConnect(wsConn, nil)
 	defer ssConn.Close()
 
 	quitChan := make(chan bool, 3)
@@ -66,5 +67,5 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 	go ssConn.SessionWait(quitChan)
 
 	<-quitChan
-	s.logger.Info("websocket ssh finished")
+	s.Logger.Info("websocket ssh finished")
 }

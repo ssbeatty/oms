@@ -3,7 +3,7 @@ package models
 type PrivateKey struct {
 	Id         int    `json:"id"`
 	Name       string `gorm:"size:128;not null" json:"name"`
-	KeyFile    string `gorm:"type:text" json:"key_file"`
+	KeyFile    string `gorm:"type:text" json:"-"`
 	Passphrase string `json:"-"`
 }
 

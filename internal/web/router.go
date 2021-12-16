@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -9,40 +8,11 @@ import (
 	"mime"
 	"net/http"
 	"oms/internal/config"
-	"oms/internal/metrics"
 	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/tunnel"
-	"oms/pkg/logger"
-	"os/exec"
-	"runtime"
+	"oms/internal/web/controllers"
 )
-
-type Service struct {
-	engine *gin.Engine
-	addr   string
-	port   int
-	logger *logger.Logger
-
-	taskManager   *task.Manager
-	tunnelManager *tunnel.Manager
-	sshManager    *ssh.Manager
-	metrics       *metrics.Manager
-}
-
-func NewService(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, tunnelManager *tunnel.Manager) *Service {
-	service := &Service{
-		addr:          fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
-		port:          conf.Port,
-		sshManager:    sshManager,
-		taskManager:   taskManager,
-		tunnelManager: tunnelManager,
-		metrics:       metrics.NewManager(sshManager, taskManager, tunnelManager).Init(),
-		logger:        logger.NewLogger("web"),
-	}
-
-	return service
-}
 
 func CORS(ctx *gin.Context) {
 	method := ctx.Request.Method
@@ -54,9 +24,8 @@ func CORS(ctx *gin.Context) {
 		"Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, X-Files")
 	ctx.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
 
-	// 默认过滤这两个请求,使用204(No Content)这个特殊的http status code
 	if method == "OPTIONS" || method == "HEAD" {
-		ctx.AbortWithStatus(204)
+		ctx.AbortWithStatus(http.StatusNoContent)
 		return
 	}
 
@@ -77,7 +46,18 @@ func prometheusHandler() gin.HandlerFunc {
 	}
 }
 
-func (s *Service) InitRouter() *Service {
+type HandlerFunc func(c *controllers.Context)
+
+func Handle(h HandlerFunc) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := &controllers.Context{
+			Context: c,
+		}
+		h(ctx)
+	}
+}
+
+func InitRouter(s *controllers.Service) *controllers.Service {
 	r := gin.Default()
 	r.Use(CORS).Use(exportHeaders)
 
@@ -87,7 +67,7 @@ func (s *Service) InitRouter() *Service {
 
 	err := mime.AddExtensionType(".js", "application/javascript")
 	if err != nil {
-		s.logger.Errorf("error when add extension type, err: %v", err)
+		s.Logger.Errorf("error when add extension type, err: %v", err)
 	}
 
 	// load template
@@ -101,7 +81,7 @@ func (s *Service) InitRouter() *Service {
 	r.GET("/metrics", prometheusHandler())
 
 	// common api
-	r.GET("/", GetIndexPage)
+	r.GET("/", s.GetIndexPage)
 	r.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
@@ -113,45 +93,45 @@ func (s *Service) InitRouter() *Service {
 	// restapi
 	apiV1 := r.Group("/api/v1")
 	{
-		apiV1.GET("/host", s.GetHosts)
-		apiV1.GET("/host/:id", s.GetOneHost)
-		apiV1.POST("/host", s.PostHost)
-		apiV1.PUT("/host", s.PutHost)
-		apiV1.DELETE("/host/:id", s.DeleteHost)
+		apiV1.GET("/host", Handle(s.GetHosts))
+		apiV1.GET("/host/:id", Handle(s.GetOneHost))
+		apiV1.POST("/host", Handle(s.PostHost))
+		apiV1.PUT("/host", Handle(s.PutHost))
+		apiV1.DELETE("/host/:id", Handle(s.DeleteHost))
 
-		apiV1.GET("/private_key", s.GetPrivateKeys)
-		apiV1.GET("/private_key/:id", s.GetOnePrivateKey)
-		apiV1.POST("/private_key", s.PostPrivateKey)
-		apiV1.PUT("/private_key", s.PutPrivateKey)
-		apiV1.DELETE("/private_key/:id", s.DeletePrivateKey)
+		apiV1.GET("/private_key", Handle(s.GetPrivateKeys))
+		apiV1.GET("/private_key/:id", Handle(s.GetOnePrivateKey))
+		apiV1.POST("/private_key", Handle(s.PostPrivateKey))
+		apiV1.PUT("/private_key", Handle(s.PutPrivateKey))
+		apiV1.DELETE("/private_key/:id", Handle(s.DeletePrivateKey))
 
-		apiV1.GET("/group", s.GetGroups)
-		apiV1.GET("/group/:id", s.GetOneGroup)
-		apiV1.POST("/group", s.PostGroup)
-		apiV1.PUT("/group", s.PutGroup)
-		apiV1.DELETE("/group/:id", s.DeleteGroup)
+		apiV1.GET("/group", Handle(s.GetGroups))
+		apiV1.GET("/group/:id", Handle(s.GetOneGroup))
+		apiV1.POST("/group", Handle(s.PostGroup))
+		apiV1.PUT("/group", Handle(s.PutGroup))
+		apiV1.DELETE("/group/:id", Handle(s.DeleteGroup))
 
-		apiV1.GET("/tag", s.GetTags)
-		apiV1.GET("/tag/:id", s.GetOneTag)
-		apiV1.POST("/tag", s.PostTag)
-		apiV1.PUT("/tag", s.PutTag)
-		apiV1.DELETE("/tag/:id", s.DeleteTag)
+		apiV1.GET("/tag", Handle(s.GetTags))
+		apiV1.GET("/tag/:id", Handle(s.GetOneTag))
+		apiV1.POST("/tag", Handle(s.PostTag))
+		apiV1.PUT("/tag", Handle(s.PutTag))
+		apiV1.DELETE("/tag/:id", Handle(s.DeleteTag))
 
-		apiV1.GET("/tunnel", s.GetTunnels)
-		apiV1.GET("/tunnel/:id", s.GetOneTunnel)
-		apiV1.POST("/tunnel", s.PostTunnel)
-		apiV1.PUT("/tunnel", s.PutTunnel)
-		apiV1.DELETE("/tunnel/:id", s.DeleteTunnel)
+		apiV1.GET("/tunnel", Handle(s.GetTunnels))
+		apiV1.GET("/tunnel/:id", Handle(s.GetOneTunnel))
+		apiV1.POST("/tunnel", Handle(s.PostTunnel))
+		apiV1.PUT("/tunnel", Handle(s.PutTunnel))
+		apiV1.DELETE("/tunnel/:id", Handle(s.DeleteTunnel))
 
-		apiV1.GET("/job", s.GetJobs)
-		apiV1.GET("/job/:id", s.GetOneJob)
-		apiV1.POST("/job", s.PostJob)
-		apiV1.PUT("/job", s.PutJob)
-		apiV1.DELETE("/job/:id", s.DeleteJob)
-		apiV1.GET("/job/tail", s.GetLogStream)
-		apiV1.POST("/job/start", s.StartJob)
-		apiV1.POST("/job/stop", s.StopJob)
-		apiV1.POST("/job/restart", s.RestartJob)
+		apiV1.GET("/job", Handle(s.GetJobs))
+		apiV1.GET("/job/:id", Handle(s.GetOneJob))
+		apiV1.POST("/job", Handle(s.PostJob))
+		apiV1.PUT("/job", Handle(s.PutJob))
+		apiV1.DELETE("/job/:id", Handle(s.DeleteJob))
+		apiV1.GET("/job/tail", Handle(s.GetLogStream))
+		apiV1.POST("/job/start", Handle(s.StartJob))
+		apiV1.POST("/job/stop", Handle(s.StopJob))
+		apiV1.POST("/job/restart", Handle(s.RestartJob))
 
 		// tools
 		apiV1.GET("/tools/cmd", s.RunCmd)
@@ -159,38 +139,36 @@ func (s *Service) InitRouter() *Service {
 		apiV1.POST("/tools/mkdir", s.MakeDirRemote)
 		apiV1.GET("/tools/download", s.DownLoadFile)
 		apiV1.POST("/tools/delete", s.DeleteFile)
-		apiV1.GET("/tools/export", s.ExportData)
-		apiV1.POST("/tools/import", s.ImportData)
 		apiV1.POST("/tools/upload_file", s.FileUploadUnBlock)
 
 		// steam version
 		apiV1.POST("/tools/upload", s.FileUploadV2)
 	}
-	s.engine = r
+	s.Engine = r
+
 	return s
 }
 
-func (s *Service) Run() {
-	s.logger.Infof("Listening and serving HTTP on %s", s.addr)
+func Serve(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, tunnelManager *tunnel.Manager) {
+	gin.SetMode(gin.ReleaseMode)
+	s := InitRouter(controllers.NewService(conf, sshManager, taskManager, tunnelManager))
+
+	s.Logger.Infof("Listening and serving HTTP on %s", s.Addr)
 	go func() {
-		if err := s.engine.Run(s.addr); err != nil {
+		if err := s.Engine.Run(s.Addr); err != nil {
 			panic(err)
 		}
 	}()
 
 	// todo mac
-	if runtime.GOOS == "windows" {
-		cmd := exec.Command("cmd", "/c", "start", fmt.Sprintf("http://127.0.0.1:%d", s.port))
-		err := cmd.Start()
-		if err != nil {
-			s.logger.Errorf("start server in browser error: %v", err)
-			return
-		}
-	}
-}
-
-func (s *Service) SetRelease() {
-	gin.SetMode(gin.ReleaseMode)
+	//if runtime.GOOS == "windows" {
+	//	cmd := exec.Command("cmd", "/c", "start", fmt.Sprintf("http://127.0.0.1:%d", s.Port))
+	//	err := cmd.Start()
+	//	if err != nil {
+	//		s.Logger.Errorf("start server in browser error: %v", err)
+	//		return
+	//	}
+	//}
 }
 
 func loadTemplate() (*template.Template, error) {

@@ -1,4 +1,4 @@
-package web
+package websocket
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"oms/internal/ssh"
+	"oms/internal/web/payload"
 	"oms/pkg/transport"
 	"time"
 )
@@ -34,16 +35,16 @@ func (w *WSConnect) InitHandlers() *WSConnect {
 func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	w.logger.Infof("handler ssh shell recv a message: %s", msg)
 	req := &Request{}
-	ch := make(chan *Result)
+	ch := make(chan interface{})
 
 	err := json.Unmarshal(msg, req)
 	if err != nil {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: "can not parse payload"})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
 	}
 	hosts := w.engine.ParseHostList(req.Type, req.Id)
 	if len(hosts) == 0 {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: "host empty"})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "host empty", nil))
 		return
 	}
 	for _, host := range hosts {
@@ -53,7 +54,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 
 	for i := 0; i < len(hosts); i++ {
 		res := <-ch
-		w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: res})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", res))
 	}
 
 	close(ch)
@@ -66,7 +67,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 	const fTaskFlag = "f_task_existed"
 	val, ok := w.LoadCache(fTaskFlag)
 	if ok && val.(bool) {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: "subscription already exists"})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "subscription already exists", nil))
 		return
 	} else {
 		w.StoreCache(fTaskFlag, true)
@@ -78,8 +79,8 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 		w.logger.Errorf("create uuid error: %v.", err)
 		return
 	}
-	w.engine.sshManager.RegisterFileListSub(key.String(), notifyCh)
-	defer w.engine.sshManager.RemoveFileListSub(key.String())
+	w.engine.GetSSHManager().RegisterFileListSub(key.String(), notifyCh)
+	defer w.engine.GetSSHManager().RemoveFileListSub(key.String())
 
 	for {
 		select {
@@ -88,7 +89,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 			return
 		case resp := <-notifyCh:
 			if len(resp) > 0 {
-				w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: resp})
+				w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", nil))
 			}
 		}
 	}
@@ -108,20 +109,20 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 
 	err := json.Unmarshal(msg, req)
 	if err != nil {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: "can not parse payload"})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
 	}
 	hosts := w.engine.ParseHostList(req.Type, req.Id)
 	if len(hosts) == 0 {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: "parse host array empty"})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "parse host array empty", nil))
 		return
 	}
 
-	client, err := w.engine.sshManager.NewClient(hosts[0])
+	client, err := w.engine.GetSSHManager().NewClient(hosts[0])
 	if err != nil {
-		w.WriteMsg(Response{Code: WSStatusError, Msg: fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)})
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id), nil))
 	}
 	transport.GetAllStats(client, status, nil)
 	w.StoreCache("status", status)
-	w.WriteMsg(Response{Code: WSStatusSuccess, Msg: "success", Data: status})
+	w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", nil))
 }

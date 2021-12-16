@@ -1,8 +1,7 @@
-package web
+package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/pkg/sftp"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +10,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/utils"
+	"oms/internal/web/websocket"
 	"oms/pkg/transport"
 	"os"
 	"path"
@@ -54,36 +54,40 @@ type ExportData struct {
 	Hosts  []*models.Host
 }
 
+func (s *Service) GetSSHManager() *ssh.Manager {
+	return s.sshManager
+}
+
 func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 	var hosts []*models.Host
 	if pType == "host" {
 		host, err := models.GetHostById(id)
 		if err != nil {
-			s.logger.Errorf("ParseHostList error when GetHostById, err: %v", err)
+			s.Logger.Errorf("ParseHostList error when GetHostById, err: %v", err)
 			return nil
 		}
 		hosts = append(hosts, host)
 	} else if pType == "tag" {
 		tag, err := models.GetTagById(id)
 		if err != nil {
-			s.logger.Errorf("ParseHostList error when GetTagById, err: %v", err)
+			s.Logger.Errorf("ParseHostList error when GetTagById, err: %v", err)
 			return nil
 		}
 		hosts, err = models.GetHostsByTag(tag)
 		if err != nil {
-			s.logger.Errorf("ParseHostList error when GetHostsByTag, err: %v", err)
+			s.Logger.Errorf("ParseHostList error when GetHostsByTag, err: %v", err)
 			return nil
 		}
 	} else {
 		group, err := models.GetGroupById(id)
 		if err != nil {
-			s.logger.Errorf("ParseHostList error when GetGroupById, err: %v", err)
+			s.Logger.Errorf("ParseHostList error when GetGroupById, err: %v", err)
 			return nil
 		}
 		if group.Mode == 0 {
 			hosts, err = models.GetHostsByGroup(group)
 			if err != nil {
-				s.logger.Errorf("ParseHostList error when GetHostsByGroup, err: %v", err)
+				s.Logger.Errorf("ParseHostList error when GetHostsByGroup, err: %v", err)
 				return nil
 			}
 		} else {
@@ -100,7 +104,7 @@ func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 			case "-G":
 				hosts, err := models.GetHostByGlob(args[1])
 				if err != nil {
-					s.logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
+					s.Logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
 					return nil
 				}
 				return hosts
@@ -110,7 +114,7 @@ func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 				for _, addr := range addrArgs {
 					host, err := models.GetHostByAddr(addr)
 					if err != nil {
-						s.logger.Errorf("ParseHostList error when GetHostByAddr, err: %v", err)
+						s.Logger.Errorf("ParseHostList error when GetHostByAddr, err: %v", err)
 						return nil
 					}
 					hosts = append(hosts, host...)
@@ -119,14 +123,14 @@ func (s *Service) ParseHostList(pType string, id int) []*models.Host {
 			case "-E":
 				hosts, err := models.GetHostByReg(args[1])
 				if err != nil {
-					s.logger.Errorf("ParseHostList error when GetHostByReg, err: %v", err)
+					s.Logger.Errorf("ParseHostList error when GetHostByReg, err: %v", err)
 					return nil
 				}
 				return hosts
 			default:
 				hosts, err := models.GetHostByGlob(args[0])
 				if err != nil {
-					s.logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
+					s.Logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
 					return nil
 				}
 				return hosts
@@ -148,7 +152,7 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 	}
 	session, err := client.NewPty()
 	if err != nil {
-		s.logger.Errorf("RunCmdOneAsync create new session failed, err: %v", err)
+		s.Logger.Errorf("RunCmdOneAsync create new session failed, err: %v", err)
 		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		return
 	}
@@ -241,13 +245,13 @@ func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {
 	case ".", "..":
 		p, err = client.RealPath(p)
 		if err != nil {
-			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			s.Logger.Errorf("can not parse real path: %s, err: %v", p, err)
 			return nil, err
 		}
 	case "", "~":
 		p, err = client.RealPath(".")
 		if err != nil {
-			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			s.Logger.Errorf("can not parse real path: %s, err: %v", p, err)
 			return nil, err
 		}
 	}
@@ -262,7 +266,7 @@ func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {
 		if (infos[i].Mode() & fs.ModeType) == fs.ModeSymlink {
 			newHead, err = client.Stat(fId)
 			if err != nil {
-				s.logger.Errorf("GetPathInfoExec error when stat file: %s, err: %v", filepath.Join(p, infos[i].Name()), err)
+				s.Logger.Errorf("GetPathInfoExec error when stat file: %s, err: %v", filepath.Join(p, infos[i].Name()), err)
 				continue
 			}
 			isSymlink = true
@@ -358,13 +362,13 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 	case ".", "..":
 		p, err = client.RealPath(p)
 		if err != nil {
-			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			s.Logger.Errorf("can not parse real path: %s, err: %v", p, err)
 			return nil
 		}
 	case "", "~":
 		p, err = client.RealPath(".")
 		if err != nil {
-			s.logger.Errorf("can not parse real path: %s, err: %v", p, err)
+			s.Logger.Errorf("can not parse real path: %s, err: %v", p, err)
 			return nil
 		}
 	}
@@ -372,61 +376,7 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 	return client.MkdirAll(realPath)
 }
 
-func (s *Service) ExportDbData() ([]byte, error) {
-	data := &ExportData{}
-	groups, _ := models.GetAllGroup()
-	tags, _ := models.GetAllTag()
-	hosts, _ := models.GetAllHost()
-	data.Tags = append(data.Tags, tags...)
-	data.Groups = append(data.Groups, groups...)
-	data.Hosts = append(data.Hosts, hosts...)
-	marshal, err := json.Marshal(data)
-	if err != nil {
-		s.logger.Error(err)
-		return []byte{}, err
-	}
-	return marshal, nil
-}
-
-func (s *Service) ImportDbData(marshal []byte) error {
-	data := &ExportData{}
-	err := json.Unmarshal(marshal, &data)
-	if err != nil {
-		return err
-	}
-	for index := 0; index < len(data.Tags); index++ {
-		tag := data.Tags[index]
-		ok := models.ExistedTag(tag.Name)
-		if !ok {
-			s.logger.Infof("ImportDbData error when Insert Tag %s", tag.Name)
-			_, _ = models.InsertTag(tag.Name)
-		}
-	}
-	for index := 0; index < len(data.Groups); index++ {
-		group := data.Groups[index]
-		ok := models.ExistedGroup(group.Name)
-		if !ok {
-			s.logger.Errorf("ImportDbData error when Insert Group %s", group.Name)
-			_, _ = models.InsertGroup(group.Name, group.Params, group.Mode)
-		}
-	}
-	for index := 0; index < len(data.Hosts); index++ {
-		host := data.Hosts[index]
-		ok := models.ExistedHost(host.Name, host.Addr)
-		if !ok {
-			s.logger.Errorf("ImportDbData error when Insert Host %s", host.Name)
-			tags := make([]int, 0)
-			for i := 0; i < len(host.Tags); i++ {
-				tags = append(tags, host.Tags[i].Id)
-			}
-			// todo
-			_, _ = models.InsertHost(host.Name, host.User, host.Addr, host.Port, host.PassWord, host.GroupId, tags, 0)
-		}
-	}
-	return nil
-}
-
-func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *Result, ctx context.Context) {
+func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan interface{}, ctx context.Context) {
 	var msg []byte
 	var errMsg string
 	var result *Result
@@ -442,7 +392,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	}
 	session, err := client.NewPty()
 	if err != nil {
-		s.logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
+		s.Logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
@@ -477,8 +427,8 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 }
 
 // RunCmdWithContext 使用在websocket接口上
-func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *Result) {
-	ctx, cancel := context.WithTimeout(context.Background(), SSHTimeDeadline)
+func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan interface{}) {
+	ctx, cancel := context.WithTimeout(context.Background(), websocket.SSHTimeDeadline)
 	defer cancel()
 	s.runCmdWithContext(host, cmd, sudo, ch, ctx)
 }

@@ -1,4 +1,4 @@
-package web
+package websocket
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	MinSizeOfResizeMsg = 12
+	minSizeOfResizeMsg = 12
 )
 
 type wsResize struct {
@@ -92,7 +92,7 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 			}
 
 			// 每次传输一个或多个char
-			if len(wsData) > MinSizeOfResizeMsg {
+			if len(wsData) > minSizeOfResizeMsg {
 				// resize 或者 粘贴
 				resize := wsResize{}
 				err := json.Unmarshal(wsData, &resize)

@@ -66,7 +66,7 @@ func InsertTunnel(mode, src, dest string, host *Host) (*Tunnel, error) {
 
 func UpdateTunnel(id int, mode, src, dest string) (*Tunnel, error) {
 	tunnel := Tunnel{Id: id}
-	err := db.Where("id = ?", id).First(&tunnel).Error
+	err := db.Preload("Host").Where("id = ?", id).First(&tunnel).Error
 	if err != nil {
 		return nil, err
 	}
