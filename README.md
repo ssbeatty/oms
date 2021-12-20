@@ -18,8 +18,7 @@ git clone --recurse-submodules https://github.com/ssbeatty/oms.git
 
 # build frontend
 cd web/omsUI
-npm install
-npm run build
+yarn && yarn build
 
 # 打包 oms/
 packr build -o oms cmd/omsd/main.go

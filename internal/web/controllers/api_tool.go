@@ -24,6 +24,10 @@ import (
 	"time"
 )
 
+const (
+	MaxPreviewSize = 8 * 1024 * 1024
+)
+
 func (s *Service) RunCmd(c *Context) {
 	var params payload.CmdParams
 	err := c.ShouldBind(&params)
@@ -177,6 +181,45 @@ func (s *Service) StopJob(c *Context) {
 		_ = models.RefreshJob(job)
 
 		c.ResponseOk(job)
+	}
+}
+
+func (s *Service) FilePreview(c *Context) {
+	var params payload.OptionsFileParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		file := s.DownloadFile(params.HostId, params.Id)
+		if file != nil {
+			defer file.Close()
+
+			fh, err := file.Stat()
+			if err != nil {
+				s.Logger.Errorf("error when Stat file, err: %v", err)
+				c.ResponseError("file stat error")
+			}
+			if fh.Size() > MaxPreviewSize {
+				c.ResponseError("file size too large")
+				return
+			}
+
+			mode := fh.Mode() & fs.ModeType
+			// this is a read able file
+			if mode == 0 {
+				buf, err := ioutil.ReadAll(file)
+				if err != nil {
+					s.Logger.Errorf("read virtual file error: %v", err)
+				}
+				baseRaw := base64.StdEncoding.EncodeToString(buf)
+
+				c.ResponseOk(baseRaw)
+			} else {
+				c.ResponseError(fmt.Sprintf("read error, file type is [%s]", mode))
+			}
+		} else {
+			c.ResponseError("file not found")
+		}
 	}
 }
 

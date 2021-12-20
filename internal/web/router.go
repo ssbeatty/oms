@@ -144,6 +144,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 		// tools
 		apiV1.GET("/tools/cmd", Handle(s.RunCmd))
+		apiV1.GET("/tools/preview", Handle(s.FilePreview))
 		apiV1.GET("/tools/browse", Handle(s.GetPathInfo))
 		apiV1.POST("/tools/mkdir", Handle(s.MakeDirRemote))
 		apiV1.GET("/tools/download", Handle(s.DownLoadFile))
