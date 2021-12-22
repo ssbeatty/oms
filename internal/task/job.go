@@ -115,13 +115,15 @@ func (j *Job) Run() {
 		}
 		defer session.Close()
 
-		session.SetStdout(j.std)
-
-		err = session.Run(j.cmd)
+		output, err := session.Sudo(j.cmd, j.host.PassWord)
 		if err != nil {
-			j.error("error when run cmd, err: %v", err)
+			j.error("error when run cmd: %v, msg: %s", err, output)
 			j.UpdateStatus(JobStatusBackoff)
 			return
+		}
+		_, err = j.std.Write(output)
+		if err != nil {
+			j.engine.logger.Debugf("error write outputs, err: %v", err)
 		}
 	} else if j.Type == JobTypeTask {
 		exp := backoff.NewExponentialBackOff()
