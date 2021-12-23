@@ -89,7 +89,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 			return
 		case resp := <-notifyCh:
 			if len(resp) > 0 {
-				w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", nil))
+				w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", resp))
 			}
 		}
 	}
@@ -124,5 +124,5 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 	}
 	transport.GetAllStats(client, status, nil)
 	w.StoreCache("status", status)
-	w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", nil))
+	w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
 }
