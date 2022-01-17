@@ -561,12 +561,6 @@ func (s *Service) DeleteJob(c *Context) {
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
-		err := models.DeleteJobById(param.Id)
-		if err != nil {
-			s.Logger.Errorf("delete job error: %v", err)
-			c.ResponseError(err.Error())
-			return
-		}
 		err = s.taskManager.RemoveJob(param.Id)
 		if err != nil {
 			s.Logger.Errorf("error when remove job, err: %v", err)
