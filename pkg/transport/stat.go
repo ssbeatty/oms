@@ -277,7 +277,8 @@ func getMemInfo(client *Client, stats *Stats) error {
 			if err != nil {
 				return err
 			}
-			stats.MemTotal = uint64(val)
+			// windows memtotal bit
+			stats.MemTotal = uint64(val) / 1e3
 		}
 
 		freeMemory, err := winGetValRaw(client, "wmic OS get FreePhysicalMemory")
@@ -539,7 +540,7 @@ func getCPU(client *Client, stats *Stats) error {
 		Total = Idle + NonIdle
 		totald = Total - PrevTotal
 		idled = Idle - PrevIdle
-		stats.CPU.Usage = float32(totald-idled) / float32(totald)
+		stats.CPU.Usage = float32(totald-idled) / float32(totald) * 100
 
 	END:
 		stats.PreCPU = &nowCPU
