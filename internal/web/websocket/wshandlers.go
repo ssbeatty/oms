@@ -141,15 +141,19 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 		interval = time.Duration(req.Interval) * time.Second
 	}
 
+	var sendHostMsg = func() {
+		transport.GetAllStats(client, status, nil)
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
+	}
+
+	go sendHostMsg()
+
 	ticker := time.NewTicker(interval)
 
 	for {
 		select {
 		case <-ticker.C:
-			go func() {
-				transport.GetAllStats(client, status, nil)
-				w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
-			}()
+			go sendHostMsg()
 		case <-w.closer:
 			w.logger.Info("host status loop return.")
 			return

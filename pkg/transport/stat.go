@@ -60,6 +60,7 @@ type CPUInfo struct {
 
 type Stats struct {
 	Uptime       time.Duration          `json:"uptime"`
+	StartUpTime  string                 `json:"start_up_time"`
 	Hostname     string                 `json:"hostname"`
 	Load1        string                 `json:"load_1"`
 	Load5        string                 `json:"load_5"`
@@ -68,10 +69,12 @@ type Stats struct {
 	TotalProcs   string                 `json:"total_procs"`
 	MemTotal     uint64                 `json:"mem_total"`
 	MemFree      uint64                 `json:"mem_free"`
+	MemUsage     float32                `json:"mem_usage"`
 	MemBuffers   uint64                 `json:"mem_buffers"`
 	MemCached    uint64                 `json:"mem_cached"`
 	SwapTotal    uint64                 `json:"swap_total"`
 	SwapFree     uint64                 `json:"swap_free"`
+	SwapUsage    float32                `json:"swap_usage"`
 	FSInfos      []FSInfo               `json:"fs_infos"`
 	NetIntf      map[string]NetIntfInfo `json:"-"`
 	CPU          CPUInfo                `json:"cpu"`
@@ -111,7 +114,7 @@ func runCommand(client *Client, command string) (stdout string, err error) {
 		//log.Print(err)
 		return
 	}
-	stdout = string(buf.Bytes())
+	stdout = buf.String()
 
 	return
 }
@@ -176,6 +179,8 @@ func getUptime(client *Client, stats *Stats) error {
 			}
 		}
 	}
+
+	stats.StartUpTime = stats.Uptime.String()
 
 	return nil
 }
@@ -314,6 +319,9 @@ func getMemInfo(client *Client, stats *Stats) error {
 			stats.SwapFree = stats.SwapTotal - uint64(val)
 		}
 	}
+
+	stats.MemUsage = float32(stats.MemTotal-stats.MemFree) / float32(stats.MemTotal) * 100
+	stats.SwapUsage = float32(stats.SwapTotal-stats.SwapFree) / float32(stats.SwapTotal) * 100
 
 	return nil
 }
