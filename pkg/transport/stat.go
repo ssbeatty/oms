@@ -377,7 +377,7 @@ func getFSInfo(client *Client, stats *Stats) error {
 			if err != nil {
 				continue
 			}
-			free, err := strconv.Atoi(parts[1])
+			free, err := strconv.Atoi(parts[2])
 			if err != nil {
 				continue
 			}
