@@ -30,6 +30,7 @@ jobs:
         with:
           node-version: '14'
           cache: 'yarn'
+          cache-dependency-path: web/omsUI/yarn.lock
 
       - name: Node build
         run: |
