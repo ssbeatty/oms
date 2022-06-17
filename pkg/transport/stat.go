@@ -283,7 +283,7 @@ func getMemInfo(client *Client, stats *Stats) error {
 				return err
 			}
 			// windows memtotal bit
-			stats.MemTotal = uint64(val) / 1e3
+			stats.MemTotal = uint64(val)
 		}
 
 		freeMemory, err := winGetValRaw(client, "wmic OS get FreePhysicalMemory")
@@ -294,7 +294,7 @@ func getMemInfo(client *Client, stats *Stats) error {
 			if err != nil {
 				return err
 			}
-			stats.MemFree = uint64(val)
+			stats.MemFree = uint64(val) * 1e3
 		}
 
 		swapTotal, err := winGetValRaw(client, "wmic pagefile get AllocatedBaseSize")
@@ -305,7 +305,7 @@ func getMemInfo(client *Client, stats *Stats) error {
 			if err != nil {
 				return err
 			}
-			stats.SwapTotal = uint64(val)
+			stats.SwapTotal = uint64(val * 1e6)
 		}
 
 		swapCurrent, err := winGetValRaw(client, "wmic pagefile get CurrentUsage")
@@ -316,7 +316,7 @@ func getMemInfo(client *Client, stats *Stats) error {
 			if err != nil {
 				return err
 			}
-			stats.SwapFree = stats.SwapTotal - uint64(val)
+			stats.SwapFree = stats.SwapTotal - uint64(val*1e6)
 		}
 	}
 
