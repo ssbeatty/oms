@@ -38,12 +38,12 @@ func (w *WSConnect) InitHandlers() *WSConnect {
 	return w
 }
 
-func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
-	w.logger.Infof("handler ssh shell recv a message: %s", msg)
+func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
+	w.logger.Infof("handler ssh shell recv a message: %s", msg.Body)
 	req := &Request{}
 	ch := make(chan interface{})
 
-	err := json.Unmarshal(msg, req)
+	err := json.Unmarshal(msg.Body, req)
 	if err != nil {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
@@ -66,19 +66,8 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg []byte) {
 	close(ch)
 }
 
-func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
-	w.logger.Infof("handler task status recv a message: %s", msg)
-
-	// 一个连接只能有一个订阅
-	// todo cancel sub
-	const fTaskFlag = "f_task_existed"
-	val, ok := w.LoadCache(fTaskFlag)
-	if ok && val.(bool) {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "subscription already exists", nil))
-		return
-	} else {
-		w.StoreCache(fTaskFlag, true)
-	}
+func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
+	w.logger.Infof("handler task status recv a message: %s", msg.Body)
 
 	notifyCh := make(chan []ssh.FTaskResp)
 	key, err := uuid.NewUUID()
@@ -89,8 +78,16 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 	w.engine.GetSSHManager().RegisterFileListSub(key.String(), notifyCh)
 	defer w.engine.GetSSHManager().RemoveFileListSub(key.String())
 
+	var quit chan struct{}
+	if msg.Event == EventConnect {
+		quit = w.addSubscribe(msg.Type)
+	}
+
 	for {
 		select {
+		case <-quit:
+			w.logger.Debug("file task status exit because cancel sub.")
+			return
 		case <-w.closer:
 			w.logger.Debug("file task status exit.")
 			return
@@ -102,23 +99,13 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg []byte) {
 	}
 }
 
-func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
-	w.logger.Infof("handler host status recv a message: %s", msg)
-
-	// 一个连接只能有一个订阅
-	const hStatusFlag = "h_status_existed"
-	val, ok := w.LoadCache(hStatusFlag)
-	if ok && val.(bool) {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "subscription already exists", nil))
-		return
-	} else {
-		w.StoreCache(hStatusFlag, true)
-	}
+func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
+	w.logger.Infof("handler host status recv a message: %s", msg.Body)
 
 	req := &HostStatusRequest{}
 	var status = transport.NewStatus()
 
-	err := json.Unmarshal(msg, req)
+	err := json.Unmarshal(msg.Body, req)
 	if err != nil {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
@@ -150,8 +137,16 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg []byte) {
 
 	ticker := time.NewTicker(interval)
 
+	var quit chan struct{}
+	if msg.Event == EventConnect {
+		quit = w.addSubscribe(msg.Type)
+	}
+
 	for {
 		select {
+		case <-quit:
+			w.logger.Debug("host status exit because cancel sub.")
+			return
 		case <-ticker.C:
 			go sendHostMsg()
 		case <-w.closer:
