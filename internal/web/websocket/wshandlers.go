@@ -119,6 +119,7 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 	client, err := w.engine.GetSSHManager().NewClient(hosts[0])
 	if err != nil {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id), nil))
+		return
 	}
 
 	var interval time.Duration
@@ -129,7 +130,11 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 	}
 
 	var sendHostMsg = func() {
-		transport.GetAllStats(client, status, nil)
+		err := transport.GetAllStats(client, status, nil)
+		if err != nil {
+			w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when get ssh status"), nil))
+			return
+		}
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
 	}
 

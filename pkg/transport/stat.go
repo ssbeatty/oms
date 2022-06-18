@@ -87,7 +87,10 @@ func NewStatus() *Stats {
 	}
 }
 
-func GetAllStats(client *Client, stats *Stats, wg *sync.WaitGroup) {
+func GetAllStats(client *Client, stats *Stats, wg *sync.WaitGroup) error {
+	if client == nil {
+		return errors.New("get ssh client ")
+	}
 	getUptime(client, stats)
 	getHostname(client, stats)
 	getLoad(client, stats)
@@ -97,6 +100,8 @@ func GetAllStats(client *Client, stats *Stats, wg *sync.WaitGroup) {
 	if wg != nil {
 		wg.Done()
 	}
+
+	return nil
 }
 
 func runCommand(client *Client, command string) (stdout string, err error) {
