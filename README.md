@@ -10,8 +10,8 @@
 #### 使用说明
 1. 安装编译
 ```shell script
-# 安装packr工具
-go install github.com/gobuffalo/packr/packr
+# 安装packr工具 需要go 1.16以上
+go install github.com/gobuffalo/packr/packr@latest
 
 # clone
 git clone --recurse-submodules https://github.com/ssbeatty/oms.git
@@ -20,8 +20,11 @@ git clone --recurse-submodules https://github.com/ssbeatty/oms.git
 cd web/omsUI
 yarn && yarn build
 
-# 打包 oms/
+# 打包 oms
+# linux
 packr build -o oms cmd/omsd/main.go
+# win
+packr build -o oms.exe cmd/omsd/main.go
 ```
 
 2. 启动 创建config.yaml在可执行文件同级 运行即可
@@ -45,7 +48,7 @@ db:
 3. 关于配置, 默认使用内嵌在二进制文件中的`configs/config.yaml.example`, 如果当前目录存在`config.yaml`则以此文件优先。
 
 #### 目前已经实现的功能
-1. web界面     [omsUI](https://github.com/lixin59/omsUI/blob/master/README.md)
+1. web界面[omsUI](https://github.com/lixin59/omsUI/blob/master/README.md)
 2. 隧道, 类似`ssh`的`-L`和`-R`
 3. cron任务和长进程的管理
 4. ssh命令批量执行
