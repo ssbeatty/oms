@@ -6,3 +6,5 @@ config.yaml
 *.db
 hosts
 /tmp
+/build
+/bin
