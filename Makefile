@@ -20,3 +20,4 @@ app:
 		echo "Build $${os}-$${arch} done";\
 	)
 	@mv ./release/oms_windows_amd64 ./release/oms_windows_amd64.exe
+	@mv ./release/oms_windows_arm64 ./release/oms_windows_arm64.exe
