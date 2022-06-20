@@ -10,6 +10,7 @@ package main
 import (
 	"archive/zip"
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -156,7 +157,7 @@ var (
 		"-DSQLITE_ENABLE_COLUMN_METADATA",
 		"-DSQLITE_ENABLE_FTS5",
 		"-DSQLITE_ENABLE_GEOPOLY",
-		"-DSQLITE_ENABLE_JSON1",
+		"-DSQLITE_ENABLE_MATH_FUNCTIONS",
 		"-DSQLITE_ENABLE_MEMORY_MANAGEMENT",
 		"-DSQLITE_ENABLE_OFFSET_SQL_FUNC",
 		"-DSQLITE_ENABLE_PREUPDATE_HOOK",
@@ -168,6 +169,7 @@ var (
 		"-DSQLITE_ENABLE_UNLOCK_NOTIFY", // Adds sqlite3_unlock_notify().
 		"-DSQLITE_LIKE_DOESNT_MATCH_BLOBS",
 		"-DSQLITE_MUTEX_APPDEF=1",
+		"-DSQLITE_MUTEX_NOOP",
 		"-DSQLITE_SOUNDEX",
 		"-DSQLITE_THREADSAFE=1",
 		//DONT "-DNDEBUG", // To enable GO_GENERATE=-DSQLITE_DEBUG
@@ -207,7 +209,7 @@ var (
 		"-DSQLITE_ENABLE_EXPLAIN_COMMENTS",
 		"-DSQLITE_ENABLE_FTS5",
 		"-DSQLITE_ENABLE_GEOPOLY",
-		"-DSQLITE_ENABLE_JSON1",
+		"-DSQLITE_ENABLE_MATH_FUNCTIONS",
 		"-DSQLITE_ENABLE_MEMORY_MANAGEMENT",
 		"-DSQLITE_ENABLE_OFFSET_SQL_FUNC",
 		"-DSQLITE_ENABLE_PREUPDATE_HOOK",
@@ -218,9 +220,9 @@ var (
 		"-DSQLITE_ENABLE_STAT4",
 		"-DSQLITE_ENABLE_STMTVTAB",      // testfixture
 		"-DSQLITE_ENABLE_UNLOCK_NOTIFY", // Adds sqlite3_unlock_notify().
-		"-DSQLITE_HAVE_ZLIB=1",          // testfixture
 		"-DSQLITE_LIKE_DOESNT_MATCH_BLOBS",
 		"-DSQLITE_MUTEX_APPDEF=1",
+		"-DSQLITE_MUTEX_NOOP",
 		"-DSQLITE_SOUNDEX",
 		"-DSQLITE_TEMP_STORE=1", // testfixture
 		"-DSQLITE_TEST",
@@ -252,12 +254,12 @@ var (
 		sz       int
 		dev      bool
 	}{
-		{sqliteDir, "https://www.sqlite.org/2021/sqlite-amalgamation-3360000.zip", 2457, false},
-		{sqliteSrcDir, "https://www.sqlite.org/2021/sqlite-src-3360000.zip", 12814, false},
+		{sqliteDir, "https://www.sqlite.org/2022/sqlite-amalgamation-3380500.zip", 2457, false},
+		{sqliteSrcDir, "https://www.sqlite.org/2022/sqlite-src-3380500.zip", 12814, false},
 	}
 
-	sqliteDir    = filepath.FromSlash("testdata/sqlite-amalgamation-3360000")
-	sqliteSrcDir = filepath.FromSlash("testdata/sqlite-src-3360000")
+	sqliteDir    = filepath.FromSlash("testdata/sqlite-amalgamation-3380500")
+	sqliteSrcDir = filepath.FromSlash("testdata/sqlite-src-3380500")
 )
 
 func download() {
@@ -371,7 +373,13 @@ func fail(s string, args ...interface{}) {
 	os.Exit(1)
 }
 
+var (
+	oFullPathComments = flag.Bool("full-path-comments", false, "")
+)
+
 func main() {
+	flag.Parse()
+	fmt.Printf("Running on %s/%s.\n", runtime.GOOS, runtime.GOARCH)
 	env := os.Getenv("GO_GENERATE")
 	goarch := runtime.GOARCH
 	goos := runtime.GOOS
@@ -393,14 +401,27 @@ func main() {
 	}
 	more = append(more, ndebug...)
 	download()
-	// experimental pthreads support currently only on linux/amd64
-	if goos != "linux" || goarch != "amd64" {
-		configProduction = append(configProduction, "-DSQLITE_MUTEX_NOOP")
-		configTest = append(configTest, "-DSQLITE_MUTEX_NOOP")
-	}
 	switch goos {
-	case "linux", "freebsd", "netbsd":
+	case "linux", "freebsd", "openbsd":
 		configProduction = append(configProduction, "-DSQLITE_OS_UNIX=1")
+	case "netbsd":
+		configProduction = append(configProduction, []string{
+			"-DSQLITE_OS_UNIX=1",
+			"-D__libc_cond_broadcast=pthread_cond_broadcast",
+			"-D__libc_cond_destroy=pthread_cond_destroy",
+			"-D__libc_cond_init=pthread_cond_init",
+			"-D__libc_cond_signal=pthread_cond_signal",
+			"-D__libc_cond_wait=pthread_cond_wait",
+			"-D__libc_mutex_destroy=pthread_mutex_destroy",
+			"-D__libc_mutex_init=pthread_mutex_init",
+			"-D__libc_mutex_lock=pthread_mutex_lock",
+			"-D__libc_mutex_trylock=pthread_mutex_trylock",
+			"-D__libc_mutex_unlock=pthread_mutex_unlock",
+			"-D__libc_mutexattr_destroy=pthread_mutexattr_destroy",
+			"-D__libc_mutexattr_init=pthread_mutexattr_init",
+			"-D__libc_mutexattr_settype=pthread_mutexattr_settype",
+			"-D__libc_thr_yield=sched_yield",
+		}...)
 	case "darwin":
 		configProduction = append(configProduction,
 			"-DSQLITE_OS_UNIX=1",
@@ -447,7 +468,7 @@ func configure(goos, goarch string) {
 	cmd.Run()
 	var args []string
 	switch goos {
-	case "linux", "freebsd", "netbsd":
+	case "linux", "freebsd", "netbsd", "openbsd":
 		// nop
 	case "darwin":
 		args = append(args, "--with-tcl=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Tcl.framework")
@@ -512,6 +533,7 @@ func makeTestfixture(goos, goarch string, more []string) {
 		"ext/misc/normalize.c",
 		"ext/misc/percentile.c",
 		"ext/misc/prefixes.c",
+		"ext/misc/qpvtab.c",
 		"ext/misc/regexp.c",
 		"ext/misc/remember.c",
 		"ext/misc/series.c",
@@ -519,8 +541,8 @@ func makeTestfixture(goos, goarch string, more []string) {
 		"ext/misc/totype.c",
 		"ext/misc/unionvtab.c",
 		"ext/misc/wholenumber.c",
-		"ext/misc/zipfile.c",
 		"ext/rbu/test_rbu.c",
+		"ext/rtree/test_rtreedoc.c",
 		"ext/session/test_session.c",
 		"ext/userauth/userauth.c",
 		"src/tclsqlite.c",
@@ -576,6 +598,34 @@ func makeTestfixture(goos, goarch string, more []string) {
 	}
 	configure(goos, goarch)
 
+	var defines, includes []string
+	switch goos {
+	case "freebsd", "openbsd":
+		includes = []string{"-I/usr/local/include/tcl8.6"}
+	case "linux":
+		includes = []string{"-I/usr/include/tcl8.6"}
+	case "windows":
+		includes = []string{"-I/usr/include/tcl8.6"}
+	case "netbsd":
+		includes = []string{"-I/usr/pkg/include"}
+		defines = []string{
+			"-D__libc_cond_broadcast=pthread_cond_broadcast",
+			"-D__libc_cond_destroy=pthread_cond_destroy",
+			"-D__libc_cond_init=pthread_cond_init",
+			"-D__libc_cond_signal=pthread_cond_signal",
+			"-D__libc_cond_wait=pthread_cond_wait",
+			"-D__libc_mutex_destroy=pthread_mutex_destroy",
+			"-D__libc_mutex_init=pthread_mutex_init",
+			"-D__libc_mutex_lock=pthread_mutex_lock",
+			"-D__libc_mutex_trylock=pthread_mutex_trylock",
+			"-D__libc_mutex_unlock=pthread_mutex_unlock",
+			"-D__libc_mutexattr_destroy=pthread_mutexattr_destroy",
+			"-D__libc_mutexattr_init=pthread_mutexattr_init",
+			"-D__libc_mutexattr_settype=pthread_mutexattr_settype",
+			"-D__libc_thr_yield=sched_yield",
+		}
+	}
+
 	args := join(
 		[]string{
 			"ccgo",
@@ -584,9 +634,13 @@ func makeTestfixture(goos, goarch string, more []string) {
 			"-DSQLITE_SERVER=1",
 			"-DTCLSH_INIT_PROC=sqlite3TestInit",
 			"-D_HAVE_SQLITE_CONFIG_H",
-			"-I/usr/include/tcl8.6", //TODO linux: should not be hardcoded
+		},
+		defines,
+		includes,
+		[]string{
 			"-export-defines", "",
 			"-export-fields", "F",
+			"-ignore-unsupported-alignment",
 			"-trace-translation-units",
 			volatiles,
 			"-lmodernc.org/sqlite/libtest",
@@ -603,18 +657,22 @@ func makeTestfixture(goos, goarch string, more []string) {
 			fmt.Sprintf("-I%s", sqliteDir),
 			fmt.Sprintf("-I%s", sqliteSrcDir),
 		},
+		otherOpts(),
 		files,
 		more,
 		configTest,
 	)
-	// experimental pthreads support currently only on linux/amd64
-	if goos != "linux" || goarch != "amd64" {
-		args = append(args, "-lmodernc.org/sqlite/internal/libc2")
-	}
 	task := ccgo.NewTask(args, nil, nil)
 	if err := task.Main(); err != nil {
 		fail("%s\n", err)
 	}
+}
+
+func otherOpts() (r []string) {
+	if *oFullPathComments {
+		r = append(r, "-full-path-comments")
+	}
+	return r
 }
 
 func makeSpeedTest(goos, goarch string, more []string) {
@@ -623,12 +681,14 @@ func makeSpeedTest(goos, goarch string, more []string) {
 			[]string{
 				"ccgo",
 				"-export-defines", "",
+				"-ignore-unsupported-alignment",
 				"-o", filepath.FromSlash(fmt.Sprintf("speedtest1/main_%s_%s.go", goos, goarch)),
 				"-trace-translation-units",
 				filepath.Join(sqliteSrcDir, "test", "speedtest1.c"),
 				fmt.Sprintf("-I%s", sqliteDir),
 				"-l", "modernc.org/sqlite/lib",
 			},
+			otherOpts(),
 			more,
 			configProduction,
 		),
@@ -646,12 +706,14 @@ func makeMpTest(goos, goarch string, more []string) {
 			[]string{
 				"ccgo",
 				"-export-defines", "",
+				"-ignore-unsupported-alignment",
 				"-o", filepath.FromSlash(fmt.Sprintf("internal/mptest/main_%s_%s.go", goos, goarch)),
 				"-trace-translation-units",
 				filepath.Join(sqliteSrcDir, "mptest", "mptest.c"),
 				fmt.Sprintf("-I%s", sqliteDir),
 				"-l", "modernc.org/sqlite/lib",
 			},
+			otherOpts(),
 			more,
 			configProduction,
 		),
@@ -674,11 +736,13 @@ func makeSqliteProduction(goos, goarch string, more []string) {
 				"-export-externs", "X",
 				"-export-fields", "F",
 				"-export-typedefs", "",
+				"-ignore-unsupported-alignment",
 				"-pkgname", "sqlite3",
 				"-o", filepath.FromSlash(fmt.Sprintf("lib/sqlite_%s_%s.go", goos, goarch)),
 				"-trace-translation-units",
 				filepath.Join(sqliteDir, "sqlite3.c"),
 			},
+			otherOpts(),
 			more,
 			configProduction,
 		),
@@ -701,12 +765,14 @@ func makeSqliteTest(goos, goarch string, more []string) {
 				"-export-externs", "X",
 				"-export-fields", "F",
 				"-export-typedefs", "",
+				"-ignore-unsupported-alignment",
 				"-pkgname", "sqlite3",
 				"-o", filepath.FromSlash(fmt.Sprintf("libtest/sqlite_%s_%s.go", goos, goarch)),
 				"-trace-translation-units",
 				volatiles,
 				filepath.Join(sqliteDir, "sqlite3.c"),
 			},
+			otherOpts(),
 			more,
 			configTest,
 		),

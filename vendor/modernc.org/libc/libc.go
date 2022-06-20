@@ -33,6 +33,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"modernc.org/libc/errno"
+	"modernc.org/libc/stdio"
 	"modernc.org/libc/sys/types"
 	"modernc.org/libc/time"
 	"modernc.org/libc/unistd"
@@ -160,6 +161,10 @@ func X_exit(_ *TLS, status int32) {
 }
 
 func SetEnviron(t *TLS, env []string) {
+	if environInitialized {
+		return
+	}
+
 	environInitialized = true
 	p := Xcalloc(t, 1, types.Size_t((len(env)+1)*(int(uintptrSize))))
 	if p == 0 {
@@ -218,6 +223,7 @@ func write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+func X__builtin_bzero(t *TLS, s uintptr, n types.Size_t)              { Xbzero(t, s, n) }
 func X__builtin_abort(t *TLS)                                         { Xabort(t) }
 func X__builtin_abs(t *TLS, j int32) int32                            { return Xabs(t, j) }
 func X__builtin_clz(t *TLS, n uint32) int32                           { return int32(mbits.LeadingZeros32(n)) }
@@ -230,6 +236,8 @@ func X__builtin_copysignl(t *TLS, x, y float64) float64               { return X
 func X__builtin_exit(t *TLS, status int32)                            { Xexit(t, status) }
 func X__builtin_expect(t *TLS, exp, c long) long                      { return exp }
 func X__builtin_fabs(t *TLS, x float64) float64                       { return Xfabs(t, x) }
+func X__builtin_fabsf(t *TLS, x float32) float32                      { return Xfabsf(t, x) }
+func X__builtin_fabsl(t *TLS, x float64) float64                      { return Xfabsl(t, x) }
 func X__builtin_free(t *TLS, ptr uintptr)                             { Xfree(t, ptr) }
 func X__builtin_getentropy(t *TLS, buf uintptr, n types.Size_t) int32 { return Xgetentropy(t, buf, n) }
 func X__builtin_huge_val(t *TLS) float64                              { return math.Inf(1) }
@@ -451,7 +459,7 @@ func Xvprintf(t *TLS, s, ap uintptr) int32 { return Xprintf(t, s, ap) }
 
 // int vsprintf(char *str, const char *format, va_list ap);
 func Xvsprintf(t *TLS, str, format, va uintptr) int32 {
-	panic(todo(""))
+	return Xsprintf(t, str, format, va)
 }
 
 // int vsnprintf(char *str, size_t size, const char *format, va_list ap);
@@ -948,7 +956,7 @@ func Xatol(t *TLS, nptr uintptr) long {
 }
 
 // time_t mktime(struct tm *tm);
-func Xmktime(t *TLS, ptm uintptr) types.Time_t {
+func Xmktime(t *TLS, ptm uintptr) time.Time_t {
 	loc := gotime.Local
 	if r := getenv(Environ(), "TZ"); r != 0 {
 		zone, off := parseZone(GoString(r))
@@ -966,7 +974,7 @@ func Xmktime(t *TLS, ptm uintptr) types.Time_t {
 	)
 	(*time.Tm)(unsafe.Pointer(ptm)).Ftm_wday = int32(tt.Weekday())
 	(*time.Tm)(unsafe.Pointer(ptm)).Ftm_yday = int32(tt.YearDay() - 1)
-	return types.Time_t(tt.Unix())
+	return time.Time_t(tt.Unix())
 }
 
 // char *strpbrk(const char *s, const char *accept);
@@ -1062,7 +1070,10 @@ func X_IO_putc(t *TLS, c int32, fp uintptr) int32 {
 
 // int atexit(void (*function)(void));
 func Xatexit(t *TLS, function uintptr) int32 {
-	panic(todo(""))
+	AtExit(func() {
+		(*struct{ f func(*TLS) })(unsafe.Pointer(&struct{ uintptr }{function})).f(t)
+	})
+	return 0
 }
 
 // int vasprintf(char **strp, const char *fmt, va_list ap);
@@ -1336,4 +1347,71 @@ func X__sync_sub_and_fetch_uint32(t *TLS, p uintptr, v uint32) uint32 {
 // int sched_yield(void);
 func Xsched_yield(t *TLS) {
 	runtime.Gosched()
+}
+
+// int getc(FILE *stream);
+func Xgetc(t *TLS, stream uintptr) int32 {
+	return Xfgetc(t, stream)
+}
+
+// char *fgets(char *s, int size, FILE *stream);
+func Xfgets(t *TLS, s uintptr, size int32, stream uintptr) uintptr {
+	var b []byte
+out:
+	for ; size > 0; size-- {
+		switch c := Xfgetc(t, stream); c {
+		case '\n':
+			b = append(b, byte(c))
+			break out
+		case stdio.EOF:
+			break out
+		default:
+			b = append(b, byte(c))
+		}
+	}
+	if len(b) == 0 {
+		return 0
+	}
+
+	b = append(b, 0)
+	copy((*RawMem)(unsafe.Pointer(s))[:len(b):len(b)], b)
+	return s
+}
+
+// void bzero(void *s, size_t n);
+func Xbzero(t *TLS, s uintptr, n types.Size_t) {
+	b := (*RawMem)(unsafe.Pointer(s))[:n]
+	for i := range b {
+		b[i] = 0
+	}
+}
+
+// char *rindex(const char *s, int c);
+func Xrindex(t *TLS, s uintptr, c int32) uintptr {
+	if s == 0 {
+		return 0
+	}
+
+	var r uintptr
+	for {
+		c2 := int32(*(*byte)(unsafe.Pointer(s)))
+		if c2 == c {
+			r = s
+		}
+
+		if c2 == 0 {
+			return r
+		}
+
+		s++
+	}
+}
+
+// int isascii(int c);
+func Xisascii(t *TLS, c int32) int32 {
+	return Bool32(c >= 0 && c <= 0x7f)
+}
+
+func X__builtin_isunordered(t *TLS, a, b float64) int32 {
+	return Bool32(math.IsNaN(a) || math.IsNaN(b))
 }

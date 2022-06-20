@@ -3,7 +3,7 @@ export GO111MODULE=on
 LDFLAGS := -s -w
 
 # https://pkg.go.dev/modernc.org/sqlite
-os-archs=darwin:amd64 darwin:arm64 freebsd:amd64 linux:386 linux:amd64 linux:arm linux:arm64 windows:amd64
+os-archs=darwin:amd64 darwin:arm64 freebsd:amd64 linux:386 linux:amd64 linux:arm linux:arm64 linux:riscv64 windows:amd64 windows:arm64
 
 all: build
 

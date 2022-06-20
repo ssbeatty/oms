@@ -648,6 +648,7 @@ package cc // import "modernc.org/cc/v3"
 			/*yy:field	called		bool		*/
 			/*yy:field	fnDef		bool		*/
 			/*yy:field	hasInitializer	bool		*/
+			/*yy:field	implicit	bool		*/
 			/*yy:example int *p __attribute__ ((foo)); */
 			Declarator:
 				Pointer DirectDeclarator AttributeSpecifierList %prec BELOW_ATTRIBUTE
@@ -687,6 +688,8 @@ package cc // import "modernc.org/cc/v3"
 				'*' TypeQualifiers
 			/*yy:example int **p; */
 /*yy:case Ptr        */ |	'*' TypeQualifiers Pointer
+			/*yy:example int atexit_b(void (^ _Nonnull)(void)); */
+/*yy:case Block      */ |	'^' TypeQualifiers
 
 			/*yy:field	noStorageClass */
 			/*yy:example int * const i; */

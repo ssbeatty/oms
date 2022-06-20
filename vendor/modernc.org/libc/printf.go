@@ -167,7 +167,9 @@ more:
 		format++
 		var arg uint64
 		switch mod {
-		case modNone, modL, modLL, mod64:
+		case modNone:
+			arg = uint64(VaUint32(args))
+		case modL, modLL, mod64:
 			arg = VaUint64(args)
 		case modH:
 			arg = uint64(uint16(VaInt32(args)))
@@ -198,7 +200,9 @@ more:
 		format++
 		var arg uint64
 		switch mod {
-		case modNone, modL, modLL, mod64:
+		case modNone:
+			arg = uint64(VaUint32(args))
+		case modL, modLL, mod64:
 			arg = VaUint64(args)
 		case modH:
 			arg = uint64(uint16(VaInt32(args)))
@@ -280,7 +284,9 @@ more:
 		format++
 		var arg uint64
 		switch mod {
-		case modNone, modL, modLL, mod64:
+		case modNone:
+			arg = uint64(VaUint32(args))
+		case modL, modLL, mod64:
 			arg = VaUint64(args)
 		case modH:
 			arg = uint64(uint16(VaInt32(args)))

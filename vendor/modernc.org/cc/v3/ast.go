@@ -1340,6 +1340,7 @@ type Declarator struct {
 	called                 bool
 	fnDef                  bool
 	hasInitializer         bool
+	implicit               bool
 	AttributeSpecifierList *AttributeSpecifierList
 	DirectDeclarator       *DirectDeclarator
 	Pointer                *Pointer
@@ -3526,6 +3527,7 @@ type PointerCase int
 const (
 	PointerTypeQual PointerCase = iota
 	PointerPtr
+	PointerBlock
 )
 
 // String implements fmt.Stringer
@@ -3535,6 +3537,8 @@ func (n PointerCase) String() string {
 		return "PointerTypeQual"
 	case PointerPtr:
 		return "PointerPtr"
+	case PointerBlock:
+		return "PointerBlock"
 	default:
 		return fmt.Sprintf("PointerCase(%v)", int(n))
 	}
@@ -3545,6 +3549,7 @@ func (n PointerCase) String() string {
 //	Pointer:
 //	        '*' TypeQualifiers          // Case PointerTypeQual
 //	|       '*' TypeQualifiers Pointer  // Case PointerPtr
+//	|       '^' TypeQualifiers          // Case PointerBlock
 type Pointer struct {
 	typeQualifiers *typeBase
 	Case           PointerCase `PrettyPrint:"stringer,zero"`
@@ -3563,7 +3568,7 @@ func (n *Pointer) Position() (r token.Position) {
 	}
 
 	switch n.Case {
-	case 0:
+	case 0, 2:
 		if p := n.Token.Position(); p.IsValid() {
 			return p
 		}

@@ -298,8 +298,8 @@ const (
 	SCM_WIFI_STATUS                  = 41
 	SIOCATMARK                       = 0x8905
 	SIOCGPGRP                        = 0x8904
-	SIOCGSTAMPNS_OLD                 = 0x8907
-	SIOCGSTAMP_OLD                   = 0x8906
+	SIOCGSTAMP                       = 0x8906
+	SIOCGSTAMPNS                     = 0x8907
 	SIOCSPGRP                        = 0x8902
 	SOL_AAL                          = 265
 	SOL_ALG                          = 279
@@ -1040,7 +1040,13 @@ type X__float128 = float64        /* <builtin>:47:21 */
 //      array_name[restrict]
 //    GCC 3.1 supports this.
 
+// Describes a char array whose address can safely be passed as the first
+//    argument to strncpy and strncat, as the char array is not necessarily
+//    a NUL-terminated string.
+
 // Undefine (also defined in libc-symbols.h).
+// Copies attributes from the declaration or type referenced by
+//    the argument.
 
 // Determine the wordsize from the preprocessor defines.
 
@@ -1418,11 +1424,6 @@ type Uint64_t = X__uint64_t /* stdint-uintn.h:27:20 */
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
 
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
-
 // A null pointer constant.
 
 // Structure for scatter/gather I/O.
@@ -1431,7 +1432,7 @@ type Iovec = struct {
 	Fiov_len  Size_t
 } /* struct_iovec.h:26:1 */
 
-// Copyright (C) 1989-2017 Free Software Foundation, Inc.
+// Copyright (C) 1989-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -1462,15 +1463,6 @@ type Iovec = struct {
 
 // This avoids lossage on SunOS but only if stdtypes.h comes first.
 //    There's no way to win with the other order!  Sun lossage.
-
-// On 4.3bsd-net2, make sure ansi.h is included, so we have
-//    one less case to deal with in the following.
-// On FreeBSD 5, machine/ansi.h does not exist anymore...
-
-// In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
-//    defined if the corresponding type is *not* defined.
-//    FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
-//    NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_
 
 // Sequent's header files use _PTRDIFF_T_ in some conflicting way.
 //    Just ignore it.
@@ -1505,11 +1497,6 @@ type Iovec = struct {
 
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
-
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
 
 // A null pointer constant.
 
@@ -1534,7 +1521,7 @@ type Iovec = struct {
 //    License along with the GNU C Library; if not, see
 //    <https://www.gnu.org/licenses/>.
 
-// Copyright (C) 1989-2017 Free Software Foundation, Inc.
+// Copyright (C) 1989-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -1565,15 +1552,6 @@ type Iovec = struct {
 
 // This avoids lossage on SunOS but only if stdtypes.h comes first.
 //    There's no way to win with the other order!  Sun lossage.
-
-// On 4.3bsd-net2, make sure ansi.h is included, so we have
-//    one less case to deal with in the following.
-// On FreeBSD 5, machine/ansi.h does not exist anymore...
-
-// In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
-//    defined if the corresponding type is *not* defined.
-//    FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
-//    NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_
 
 // Sequent's header files use _PTRDIFF_T_ in some conflicting way.
 //    Just ignore it.
@@ -1608,11 +1586,6 @@ type Iovec = struct {
 
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
-
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
 
 // A null pointer constant.
 
@@ -1798,7 +1771,7 @@ type Time_t = X__time_t /* time_t.h:7:18 */
 // Timer ID returned by `timer_create'.
 type Timer_t = X__timer_t /* timer_t.h:7:19 */
 
-// Copyright (C) 1989-2017 Free Software Foundation, Inc.
+// Copyright (C) 1989-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -1829,15 +1802,6 @@ type Timer_t = X__timer_t /* timer_t.h:7:19 */
 
 // This avoids lossage on SunOS but only if stdtypes.h comes first.
 //    There's no way to win with the other order!  Sun lossage.
-
-// On 4.3bsd-net2, make sure ansi.h is included, so we have
-//    one less case to deal with in the following.
-// On FreeBSD 5, machine/ansi.h does not exist anymore...
-
-// In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
-//    defined if the corresponding type is *not* defined.
-//    FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
-//    NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_
 
 // Sequent's header files use _PTRDIFF_T_ in some conflicting way.
 //    Just ignore it.
@@ -1872,11 +1836,6 @@ type Timer_t = X__timer_t /* timer_t.h:7:19 */
 
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
-
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
 
 // A null pointer constant.
 
@@ -2412,15 +2371,15 @@ type Pthread_t = uint64 /* pthreadtypes.h:27:27 */
 // Data structures for mutex handling.  The structure of the attribute
 //    type is not exposed on purpose.
 type Pthread_mutexattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:36:3 */
 
 // Data structure for condition variable handling.  The structure of
 //    the attribute type is not exposed on purpose.
 type Pthread_condattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:45:3 */
 
 // Keys for thread-specific data
@@ -2430,8 +2389,8 @@ type Pthread_key_t = uint32 /* pthreadtypes.h:49:22 */
 type Pthread_once_t = int32 /* pthreadtypes.h:53:30 */
 
 type Pthread_attr_t1 = struct {
-	_       [0]uint64
-	F__size [56]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [56]uint8
 } /* pthreadtypes.h:56:1 */
 
 type Pthread_attr_t = Pthread_attr_t1 /* pthreadtypes.h:62:30 */
@@ -2445,8 +2404,8 @@ type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3
 type Pthread_rwlock_t = struct{ F__data X__pthread_rwlock_arch_t } /* pthreadtypes.h:91:3 */
 
 type Pthread_rwlockattr_t = struct {
-	_       [0]uint64
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [8]uint8
 } /* pthreadtypes.h:97:3 */
 
 // POSIX spinlock data type.
@@ -2455,13 +2414,13 @@ type Pthread_spinlock_t = int32 /* pthreadtypes.h:103:22 */
 // POSIX barriers data type.  The structure of the type is
 //    deliberately not exposed.
 type Pthread_barrier_t = struct {
-	_       [0]uint64
-	F__size [32]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [32]uint8
 } /* pthreadtypes.h:112:3 */
 
 type Pthread_barrierattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:118:3 */
 
 // Type for length arguments in socket calls.
@@ -2632,16 +2591,17 @@ type X__kernel_old_gid_t = X__kernel_gid_t /* posix_types.h:55:24 */
 type X__kernel_fsid_t = struct{ Fval [2]int32 } /* posix_types.h:81:3 */
 
 // anything below here should be completely generic
-type X__kernel_off_t = X__kernel_long_t   /* posix_types.h:87:25 */
-type X__kernel_loff_t = int64             /* posix_types.h:88:19 */
-type X__kernel_time_t = X__kernel_long_t  /* posix_types.h:89:25 */
-type X__kernel_time64_t = int64           /* posix_types.h:90:19 */
-type X__kernel_clock_t = X__kernel_long_t /* posix_types.h:91:25 */
-type X__kernel_timer_t = int32            /* posix_types.h:92:14 */
-type X__kernel_clockid_t = int32          /* posix_types.h:93:14 */
-type X__kernel_caddr_t = uintptr          /* posix_types.h:94:14 */
-type X__kernel_uid16_t = uint16           /* posix_types.h:95:24 */
-type X__kernel_gid16_t = uint16           /* posix_types.h:96:24 */
+type X__kernel_off_t = X__kernel_long_t      /* posix_types.h:87:25 */
+type X__kernel_loff_t = int64                /* posix_types.h:88:19 */
+type X__kernel_old_time_t = X__kernel_long_t /* posix_types.h:89:25 */
+type X__kernel_time_t = X__kernel_long_t     /* posix_types.h:90:25 */
+type X__kernel_time64_t = int64              /* posix_types.h:91:19 */
+type X__kernel_clock_t = X__kernel_long_t    /* posix_types.h:92:25 */
+type X__kernel_timer_t = int32               /* posix_types.h:93:14 */
+type X__kernel_clockid_t = int32             /* posix_types.h:94:14 */
+type X__kernel_caddr_t = uintptr             /* posix_types.h:95:14 */
+type X__kernel_uid16_t = uint16              /* posix_types.h:96:24 */
+type X__kernel_gid16_t = uint16              /* posix_types.h:97:24 */
 
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 
@@ -2782,8 +2742,8 @@ type In_port_t = Uint16_t /* in.h:119:18 */
 // IPv6 address
 type In6_addr = struct {
 	F__in6_u struct {
-		_           [0]uint32
-		F__u6_addr8 [16]Uint8_t
+		F__ccgo_pad1 [0]uint32
+		F__u6_addr8  [16]Uint8_t
 	}
 } /* in.h:212:1 */
 
@@ -2804,8 +2764,8 @@ type Sockaddr_in6 = struct {
 	Fsin6_flowinfo Uint32_t
 	Fsin6_addr     struct {
 		F__in6_u struct {
-			_           [0]uint32
-			F__u6_addr8 [16]Uint8_t
+			F__ccgo_pad1 [0]uint32
+			F__u6_addr8  [16]Uint8_t
 		}
 	}
 	Fsin6_scope_id Uint32_t
@@ -2827,8 +2787,8 @@ type Ip_mreq_source = struct {
 type Ipv6_mreq = struct {
 	Fipv6mr_multiaddr struct {
 		F__in6_u struct {
-			_           [0]uint32
-			F__u6_addr8 [16]Uint8_t
+			F__ccgo_pad1 [0]uint32
+			F__u6_addr8  [16]Uint8_t
 		}
 	}
 	Fipv6mr_interface uint32
@@ -2956,7 +2916,7 @@ type Group_filter = struct {
 //    License along with the GNU C Library; if not, see
 //    <https://www.gnu.org/licenses/>.
 
-// Copyright (C) 1989-2017 Free Software Foundation, Inc.
+// Copyright (C) 1989-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -2987,15 +2947,6 @@ type Group_filter = struct {
 
 // This avoids lossage on SunOS but only if stdtypes.h comes first.
 //    There's no way to win with the other order!  Sun lossage.
-
-// On 4.3bsd-net2, make sure ansi.h is included, so we have
-//    one less case to deal with in the following.
-// On FreeBSD 5, machine/ansi.h does not exist anymore...
-
-// In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
-//    defined if the corresponding type is *not* defined.
-//    FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
-//    NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_
 
 // Sequent's header files use _PTRDIFF_T_ in some conflicting way.
 //    Just ignore it.
@@ -3030,11 +2981,6 @@ type Group_filter = struct {
 
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
-
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
 
 // A null pointer constant.
 

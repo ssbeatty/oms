@@ -20,17 +20,18 @@ require (
 	github.com/reactivex/rxgo/v2 v2.5.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.6.0
-	github.com/ssbeatty/sqlite v1.0.2
-	github.com/stretchr/testify v1.7.0
+	github.com/ssbeatty/sqlite v1.0.4
+	github.com/stretchr/testify v1.7.2
 	github.com/ugorji/go v1.2.6 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/mysql v1.0.3
-	gorm.io/driver/postgres v1.2.1
-	gorm.io/gorm v1.22.2
+	gorm.io/driver/mysql v1.3.4
+	gorm.io/driver/postgres v1.3.7
+	gorm.io/gorm v1.23.6
 )

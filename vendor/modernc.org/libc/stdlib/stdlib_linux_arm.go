@@ -1470,15 +1470,15 @@ type Pthread_t = uint32 /* pthreadtypes.h:27:27 */
 // Data structures for mutex handling.  The structure of the attribute
 //    type is not exposed on purpose.
 type Pthread_mutexattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:36:3 */
 
 // Data structure for condition variable handling.  The structure of
 //    the attribute type is not exposed on purpose.
 type Pthread_condattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:45:3 */
 
 // Keys for thread-specific data
@@ -1488,8 +1488,8 @@ type Pthread_key_t = uint32 /* pthreadtypes.h:49:22 */
 type Pthread_once_t = int32 /* pthreadtypes.h:53:30 */
 
 type Pthread_attr_t1 = struct {
-	_       [0]uint32
-	F__size [36]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [36]uint8
 } /* pthreadtypes.h:56:1 */
 
 type Pthread_attr_t = Pthread_attr_t1 /* pthreadtypes.h:62:30 */
@@ -1503,8 +1503,8 @@ type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3
 type Pthread_rwlock_t = struct{ F__data X__pthread_rwlock_arch_t } /* pthreadtypes.h:91:3 */
 
 type Pthread_rwlockattr_t = struct {
-	_       [0]uint32
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [8]uint8
 } /* pthreadtypes.h:97:3 */
 
 // POSIX spinlock data type.
@@ -1513,13 +1513,13 @@ type Pthread_spinlock_t = int32 /* pthreadtypes.h:103:22 */
 // POSIX barriers data type.  The structure of the type is
 //    deliberately not exposed.
 type Pthread_barrier_t = struct {
-	_       [0]uint32
-	F__size [20]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [20]uint8
 } /* pthreadtypes.h:112:3 */
 
 type Pthread_barrierattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:118:3 */
 
 // Reentrant versions of the `random' family of functions.

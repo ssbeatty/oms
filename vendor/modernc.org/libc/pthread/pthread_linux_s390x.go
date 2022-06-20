@@ -546,7 +546,13 @@ type X__float128 = float64        /* <builtin>:47:21 */
 //      array_name[restrict]
 //    GCC 3.1 supports this.
 
+// Describes a char array whose address can safely be passed as the first
+//    argument to strncpy and strncat, as the char array is not necessarily
+//    a NUL-terminated string.
+
 // Undefine (also defined in libc-symbols.h).
+// Copies attributes from the declaration or type referenced by
+//    the argument.
 
 // Determine the wordsize from the preprocessor defines.
 
@@ -899,11 +905,6 @@ type X__sig_atomic_t = int32 /* types.h:214:13 */
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
 
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
-
 // A null pointer constant.
 
 // bits/types.h -- definitions of __*_t types underlying *_t types.
@@ -1101,7 +1102,7 @@ type Cpu_set_t = struct{ F__bits [16]X__cpu_mask } /* cpu-set.h:42:3 */
 //    License along with the GNU C Library; if not, see
 //    <https://www.gnu.org/licenses/>.
 
-// Copyright (C) 1989-2017 Free Software Foundation, Inc.
+// Copyright (C) 1989-2020 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -1132,15 +1133,6 @@ type Cpu_set_t = struct{ F__bits [16]X__cpu_mask } /* cpu-set.h:42:3 */
 
 // This avoids lossage on SunOS but only if stdtypes.h comes first.
 //    There's no way to win with the other order!  Sun lossage.
-
-// On 4.3bsd-net2, make sure ansi.h is included, so we have
-//    one less case to deal with in the following.
-// On FreeBSD 5, machine/ansi.h does not exist anymore...
-
-// In 4.3bsd-net2, machine/ansi.h defines these symbols, which are
-//    defined if the corresponding type is *not* defined.
-//    FreeBSD-2.1 defines _MACHINE_ANSI_H_ instead of _ANSI_H_.
-//    NetBSD defines _I386_ANSI_H_ and _X86_64_ANSI_H_ instead of _ANSI_H_
 
 // Sequent's header files use _PTRDIFF_T_ in some conflicting way.
 //    Just ignore it.
@@ -1175,11 +1167,6 @@ type Cpu_set_t = struct{ F__bits [16]X__cpu_mask } /* cpu-set.h:42:3 */
 
 // Define this type if we are doing the whole job,
 //    or if we want this type in particular.
-
-//  In 4.3bsd-net2, leave these undefined to indicate that size_t, etc.
-//     are already defined.
-//  BSD/OS 3.1 and FreeBSD [23].x require the MACHINE_ANSI_H check here.
-//  NetBSD 5 requires the I386_ANSI_H and X86_64_ANSI_H checks here.
 
 // A null pointer constant.
 
@@ -1762,15 +1749,15 @@ type Pthread_t = uint64 /* pthreadtypes.h:27:27 */
 // Data structures for mutex handling.  The structure of the attribute
 //    type is not exposed on purpose.
 type Pthread_mutexattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:36:3 */
 
 // Data structure for condition variable handling.  The structure of
 //    the attribute type is not exposed on purpose.
 type Pthread_condattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:45:3 */
 
 // Keys for thread-specific data
@@ -1780,8 +1767,8 @@ type Pthread_key_t = uint32 /* pthreadtypes.h:49:22 */
 type Pthread_once_t = int32 /* pthreadtypes.h:53:30 */
 
 type Pthread_attr_t1 = struct {
-	_       [0]uint64
-	F__size [56]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [56]uint8
 } /* pthreadtypes.h:56:1 */
 
 type Pthread_attr_t = Pthread_attr_t1 /* pthreadtypes.h:62:30 */
@@ -1795,8 +1782,8 @@ type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3
 type Pthread_rwlock_t = struct{ F__data X__pthread_rwlock_arch_t } /* pthreadtypes.h:91:3 */
 
 type Pthread_rwlockattr_t = struct {
-	_       [0]uint64
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [8]uint8
 } /* pthreadtypes.h:97:3 */
 
 // POSIX spinlock data type.
@@ -1805,13 +1792,13 @@ type Pthread_spinlock_t = int32 /* pthreadtypes.h:103:22 */
 // POSIX barriers data type.  The structure of the type is
 //    deliberately not exposed.
 type Pthread_barrier_t = struct {
-	_       [0]uint64
-	F__size [32]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [32]uint8
 } /* pthreadtypes.h:112:3 */
 
 type Pthread_barrierattr_t = struct {
-	_       [0]uint32
-	F__size [4]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]uint8
 } /* pthreadtypes.h:118:3 */
 
 // Copyright (C) 2000-2020 Free Software Foundation, Inc.

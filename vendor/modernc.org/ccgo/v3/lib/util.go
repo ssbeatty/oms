@@ -375,7 +375,7 @@ func Shell(cmd string, args ...string) ([]byte, error) {
 func MustShell(stackTrace bool, cmd string, args ...string) []byte {
 	b, err := Shell(cmd, args...)
 	if err != nil {
-		Fatalf(stackTrace, "%s\n%s", b, err)
+		Fatalf(stackTrace, "%v %s\noutput: %s\nerr: %s", cmd, args, b, err)
 	}
 
 	return b
@@ -400,9 +400,10 @@ func Run(args ...string) ([]byte, error) {
 // MustRun is like Run but if executes Fatal(stackTrace, err) if it fails.
 func MustRun(stackTrace bool, args ...string) []byte {
 	var b bytes.Buffer
-	t := NewTask(append([]string{"ccgo"}, args...), &b, &b)
+	args = append([]string{"ccgo"}, args...)
+	t := NewTask(args, &b, &b)
 	if err := t.Main(); err != nil {
-		Fatalf(stackTrace, "%s\n%s", b.Bytes(), err)
+		Fatalf(stackTrace, "%v\noutput: %s\nerr: %s", args, b.Bytes(), err)
 	}
 
 	return b.Bytes()

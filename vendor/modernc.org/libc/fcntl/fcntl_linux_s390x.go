@@ -533,7 +533,13 @@ type X__float128 = float64        /* <builtin>:47:21 */
 //      array_name[restrict]
 //    GCC 3.1 supports this.
 
+// Describes a char array whose address can safely be passed as the first
+//    argument to strncpy and strncat, as the char array is not necessarily
+//    a NUL-terminated string.
+
 // Undefine (also defined in libc-symbols.h).
+// Copies attributes from the declaration or type referenced by
+//    the argument.
 
 // Determine the wordsize from the preprocessor defines.
 
@@ -949,6 +955,8 @@ type Flock = struct {
 //    BSD systems which did not managed to hide these kernel macros.
 
 // Advise to `posix_fadvise'.
+
+// Values for `*at' functions.
 
 // Detect if open needs mode as a third argument (or for openat as a fourth
 //    argument).

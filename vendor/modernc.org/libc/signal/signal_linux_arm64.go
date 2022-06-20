@@ -1347,9 +1347,9 @@ type Timespec = struct {
 
 // Type for data associated with a signal.
 type Sigval = struct {
-	_          [0]uint64
-	Fsival_int int32
-	_          [4]byte
+	F__ccgo_pad1 [0]uint64
+	Fsival_int   int32
+	F__ccgo_pad2 [4]byte
 } /* __sigval_t.h:24:1 */
 
 type X__sigval_t = Sigval /* __sigval_t.h:30:22 */
@@ -1365,8 +1365,8 @@ type Siginfo_t = struct {
 	Fsi_code   int32
 	F__pad0    int32
 	F_sifields struct {
-		_     [0]uint64
-		F_pad [28]int32
+		F__ccgo_pad1 [0]uint64
+		F_pad        [28]int32
 	}
 } /* siginfo_t.h:124:5 */
 
@@ -1459,8 +1459,8 @@ type Sigval_t = X__sigval_t /* sigval_t.h:16:20 */
 
 // Forward declaration.
 type Pthread_attr_t1 = struct {
-	_       [0]uint64
-	F__size [64]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [64]uint8
 } /* sigevent_t.h:17:9 */
 
 // Determine the wordsize from the preprocessor defines.
@@ -1529,8 +1529,8 @@ type Sigevent = struct {
 	Fsigev_signo  int32
 	Fsigev_notify int32
 	F_sigev_un    struct {
-		_     [0]uint64
-		F_pad [12]int32
+		F__ccgo_pad1 [0]uint64
+		F_pad        [12]int32
 	}
 } /* sigevent_t.h:22:9 */
 
@@ -2950,15 +2950,15 @@ type Pthread_t = uint64 /* pthreadtypes.h:27:27 */
 // Data structures for mutex handling.  The structure of the attribute
 //    type is not exposed on purpose.
 type Pthread_mutexattr_t = struct {
-	_       [0]uint32
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [8]uint8
 } /* pthreadtypes.h:36:3 */
 
 // Data structure for condition variable handling.  The structure of
 //    the attribute type is not exposed on purpose.
 type Pthread_condattr_t = struct {
-	_       [0]uint32
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [8]uint8
 } /* pthreadtypes.h:45:3 */
 
 // Keys for thread-specific data
@@ -2968,8 +2968,8 @@ type Pthread_key_t = uint32 /* pthreadtypes.h:49:22 */
 type Pthread_once_t = int32 /* pthreadtypes.h:53:30 */
 
 type Pthread_mutex_t = struct {
-	F__data X__pthread_mutex_s
-	_       [8]byte
+	F__data      X__pthread_mutex_s
+	F__ccgo_pad1 [8]byte
 } /* pthreadtypes.h:72:3 */
 
 type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3 */
@@ -2979,8 +2979,8 @@ type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3
 type Pthread_rwlock_t = struct{ F__data X__pthread_rwlock_arch_t } /* pthreadtypes.h:91:3 */
 
 type Pthread_rwlockattr_t = struct {
-	_       [0]uint64
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [8]uint8
 } /* pthreadtypes.h:97:3 */
 
 // POSIX spinlock data type.
@@ -2989,13 +2989,13 @@ type Pthread_spinlock_t = int32 /* pthreadtypes.h:103:22 */
 // POSIX barriers data type.  The structure of the type is
 //    deliberately not exposed.
 type Pthread_barrier_t = struct {
-	_       [0]uint64
-	F__size [32]uint8
+	F__ccgo_pad1 [0]uint64
+	F__size      [32]uint8
 } /* pthreadtypes.h:112:3 */
 
 type Pthread_barrierattr_t = struct {
-	_       [0]uint32
-	F__size [8]uint8
+	F__ccgo_pad1 [0]uint32
+	F__size      [8]uint8
 } /* pthreadtypes.h:118:3 */
 
 // Copyright (C) 2009-2020 Free Software Foundation, Inc.

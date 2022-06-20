@@ -1292,8 +1292,8 @@ type Sigval_t = X__sigval_t /* sigval_t.h:16:20 */
 
 // Forward declaration.
 type Pthread_attr_t1 = struct {
-	_       [0]uint32
-	F__size [36]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [36]int8
 } /* sigevent_t.h:17:9 */
 
 // Determine the wordsize from the preprocessor defines.
@@ -2032,7 +2032,7 @@ type X__pthread_mutex_s = struct {
 	F__kind   int32
 	F__nusers uint32
 	F__20     struct {
-		_               [0]uint32
+		F__ccgo_pad1    [0]uint32
 		F__elision_data struct {
 			F__espins   int16
 			F__eelision int16
@@ -2103,15 +2103,15 @@ type Pthread_t = uint32 /* pthreadtypes.h:27:27 */
 // Data structures for mutex handling.  The structure of the attribute
 //    type is not exposed on purpose.
 type Pthread_mutexattr_t = struct {
-	_       [0]uint32
-	F__size [4]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]int8
 } /* pthreadtypes.h:36:3 */
 
 // Data structure for condition variable handling.  The structure of
 //    the attribute type is not exposed on purpose.
 type Pthread_condattr_t = struct {
-	_       [0]uint32
-	F__size [4]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]int8
 } /* pthreadtypes.h:45:3 */
 
 // Keys for thread-specific data
@@ -2129,8 +2129,8 @@ type Pthread_cond_t = struct{ F__data X__pthread_cond_s } /* pthreadtypes.h:80:3
 type Pthread_rwlock_t = struct{ F__data X__pthread_rwlock_arch_t } /* pthreadtypes.h:91:3 */
 
 type Pthread_rwlockattr_t = struct {
-	_       [0]uint32
-	F__size [8]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [8]int8
 } /* pthreadtypes.h:97:3 */
 
 // POSIX spinlock data type.
@@ -2139,13 +2139,13 @@ type Pthread_spinlock_t = int32 /* pthreadtypes.h:103:22 */
 // POSIX barriers data type.  The structure of the type is
 //    deliberately not exposed.
 type Pthread_barrier_t = struct {
-	_       [0]uint32
-	F__size [20]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [20]int8
 } /* pthreadtypes.h:112:3 */
 
 type Pthread_barrierattr_t = struct {
-	_       [0]uint32
-	F__size [4]int8
+	F__ccgo_pad1 [0]uint32
+	F__size      [4]int8
 } /* pthreadtypes.h:118:3 */
 
 // System-specific extensions.

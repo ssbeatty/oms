@@ -603,7 +603,11 @@ func (n *BlockItem) Closure() map[StringID]struct{} { return n.closure }
 // FunctionDefinition returns the nested function (case BlockItemFuncDef).
 func (n *BlockItem) FunctionDefinition() *FunctionDefinition { return n.fn }
 
-func (n *Declarator) IsStatic() bool          { return n.td != nil && n.td.static() }
+func (n *Declarator) IsStatic() bool { return n.td != nil && n.td.static() }
+
+// IsImplicit reports whether n was not declared nor defined, only inferred.
+func (n *Declarator) IsImplicit() bool { return n.implicit }
+
 func (n *Declarator) isVisible(at int32) bool { return at == 0 || n.DirectDeclarator.ends() < at }
 
 func (n *Declarator) setLHS(lhs *Declarator) {

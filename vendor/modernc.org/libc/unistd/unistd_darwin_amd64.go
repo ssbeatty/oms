@@ -399,6 +399,8 @@ type X__uint128_t = struct {
 type X__builtin_va_list = uintptr /* <builtin>:46:14 */
 type X__float128 = float64        /* <builtin>:47:21 */
 
+var X__darwin_check_fd_set_overflow uintptr /* <builtin>:146:5: */
+
 // Copyright (c) 2000, 2002-2006, 2008-2010, 2012 Apple Inc. All rights reserved.
 //
 // @APPLE_LICENSE_HEADER_START@
@@ -582,6 +584,13 @@ type X__float128 = float64        /* <builtin>:47:21 */
 // The __CONCAT macro is a bit tricky -- make sure you don't put spaces
 // in between its arguments.  __CONCAT can also concatenate double-quoted
 // strings produced by the __STRING macro, but this only works with ANSI C.
+
+// In non-ANSI C environments, new programs will want ANSI-only C keywords
+// deleted from the program and old programs will want them left alone.
+// When using a compiler other than gcc, programs using the ANSI C keywords
+// const, inline etc. as normal identifiers should define -DNO_ANSI_KEYWORDS.
+// When using "gcc -traditional", we assume that this is the intent; if
+// __GNUC__ is defined but __STDC__ is not, we leave the new keywords alone.
 
 // __unused denotes variables and functions that may not be used, preventing
 // the compiler from warning about it if not used.
@@ -950,8 +959,8 @@ type X__darwin_ct_rune_t = int32 /* _types.h:70:33 */ // ct_rune_t
 // mbstate_t is an opaque object to keep conversion state, during multibyte
 // stream conversions.  The content must not be referenced by user programs.
 type X__mbstate_t = struct {
-	_           [0]uint64
-	F__mbstate8 [128]int8
+	F__ccgo_pad1 [0]uint64
+	F__mbstate8  [128]int8
 } /* _types.h:79:3 */
 
 type X__darwin_mbstate_t = X__mbstate_t /* _types.h:81:33 */ // mbstate_t

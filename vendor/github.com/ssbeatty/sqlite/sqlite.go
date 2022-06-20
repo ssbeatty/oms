@@ -1,12 +1,14 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
+
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/migrator"
@@ -36,18 +38,32 @@ func (dialector Dialector) Initialize(db *gorm.DB) (err error) {
 		dialector.DriverName = DriverName
 	}
 
-	// register callbacks
-	callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{
-		LastInsertIDReversed: true,
-	})
-
 	if dialector.Conn != nil {
 		db.ConnPool = dialector.Conn
 	} else {
-		db.ConnPool, err = sql.Open(dialector.DriverName, dialector.DSN)
+		conn, err := sql.Open(dialector.DriverName, dialector.DSN)
 		if err != nil {
 			return err
 		}
+		db.ConnPool = conn
+	}
+
+	var version string
+	if err := db.ConnPool.QueryRowContext(context.Background(), "select sqlite_version()").Scan(&version); err != nil {
+		return err
+	}
+	// https://www.sqlite.org/releaselog/3_35_0.html
+	if compareVersion(version, "3.35.0") >= 0 {
+		callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{
+			CreateClauses:        []string{"INSERT", "VALUES", "ON CONFLICT", "RETURNING"},
+			UpdateClauses:        []string{"UPDATE", "SET", "WHERE", "RETURNING"},
+			DeleteClauses:        []string{"DELETE", "FROM", "WHERE", "RETURNING"},
+			LastInsertIDReversed: true,
+		})
+	} else {
+		callbacks.RegisterDefaultCallbacks(db, &callbacks.Config{
+			LastInsertIDReversed: true,
+		})
 	}
 
 	for k, v := range dialector.ClauseBuilders() {
@@ -81,15 +97,15 @@ func (dialector Dialector) ClauseBuilders() map[string]clause.ClauseBuilder {
 		},
 		"LIMIT": func(c clause.Clause, builder clause.Builder) {
 			if limit, ok := c.Expression.(clause.Limit); ok {
-				if limit.Limit > 0 {
+				if limit.Limit > 0 || limit.Offset > 0 {
+					if limit.Limit <= 0 {
+						limit.Limit = -1
+					}
 					builder.WriteString("LIMIT ")
 					builder.WriteString(strconv.Itoa(limit.Limit))
 				}
 				if limit.Offset > 0 {
-					if limit.Limit > 0 {
-						builder.WriteString(" ")
-					}
-					builder.WriteString("OFFSET ")
+					builder.WriteString(" OFFSET ")
 					builder.WriteString(strconv.Itoa(limit.Offset))
 				}
 			}
@@ -177,4 +193,28 @@ func (dialectopr Dialector) SavePoint(tx *gorm.DB, name string) error {
 func (dialectopr Dialector) RollbackTo(tx *gorm.DB, name string) error {
 	tx.Exec("ROLLBACK TO SAVEPOINT " + name)
 	return nil
+}
+
+func compareVersion(version1, version2 string) int {
+	n, m := len(version1), len(version2)
+	i, j := 0, 0
+	for i < n || j < m {
+		x := 0
+		for ; i < n && version1[i] != '.'; i++ {
+			x = x*10 + int(version1[i]-'0')
+		}
+		i++
+		y := 0
+		for ; j < m && version2[j] != '.'; j++ {
+			y = y*10 + int(version2[j]-'0')
+		}
+		j++
+		if x > y {
+			return 1
+		}
+		if x < y {
+			return -1
+		}
+	}
+	return 0
 }
