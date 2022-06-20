@@ -36,6 +36,7 @@ app:
   addr: 127.0.0.1
   port: 8080
   mode: dev
+  run_start: false # 是否在运行时打开浏览器 windows
 
 db:
   driver: postgres
@@ -54,3 +55,4 @@ db:
 4. ssh命令批量执行
 5. 文件批量的上传 流式传输支持大文件
 6. 基于`sftp`文件浏览器
+7. 基于novnc的vnc viewer

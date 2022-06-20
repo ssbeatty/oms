@@ -13,6 +13,7 @@ type Host struct {
 	User         string     `gorm:"size:128;not null" json:"user"`
 	Addr         string     `gorm:"size:128;not null" json:"addr"`
 	Port         int        `gorm:"default:22" json:"port"`
+	VNCPort      int        `gorm:"default:5900" json:"vnc_port"`
 	PassWord     string     `gorm:"size:128;not null" json:"-"`
 	Status       bool       `gorm:"default:false" json:"status"`
 	PrivateKey   PrivateKey `gorm:"constraint:OnDelete:SET NULL;" json:"-"`
@@ -71,7 +72,7 @@ func DeleteHostById(id int) (*Host, error) {
 	return &host, nil
 }
 
-func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID int) (*Host, error) {
+func InsertHost(hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID, vncPort int) (*Host, error) {
 	var tagObjs []Tag
 	for _, tagId := range tags {
 		tag := Tag{}
@@ -90,6 +91,7 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 		PassWord:     password,
 		PrivateKeyID: privateKeyID,
 		Tags:         tagObjs,
+		VNCPort:      vncPort,
 	}
 	err := db.Omit("GroupId", "PrivateKeyID").Create(&host).Error
 	if err != nil {
@@ -118,7 +120,7 @@ func InsertHost(hostname string, user string, addr string, port int, password st
 	return &host, nil
 }
 
-func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID int) (*Host, error) {
+func UpdateHost(id int, hostname string, user string, addr string, port int, password string, groupId int, tags []int, privateKeyID, vncPort int) (*Host, error) {
 	host := Host{Id: id}
 	err := db.Where("id = ?", id).First(&host).Error
 	if err != nil {
@@ -162,6 +164,9 @@ func UpdateHost(id int, hostname string, user string, addr string, port int, pas
 	}
 	if password != "" {
 		host.PassWord = password
+	}
+	if vncPort != 0 {
+		host.VNCPort = vncPort
 	}
 	if groupId != 0 {
 		group := Group{}

@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	wsl "github.com/gorilla/websocket"
+	"net"
 	"net/http"
 	"oms/internal/models"
 	"oms/internal/web/websocket"
@@ -21,6 +23,7 @@ var upGrader = wsl.Upgrader{
 	},
 }
 
+// GetWebsocketIndex default websocket router
 func (s *Service) GetWebsocketIndex(c *gin.Context) {
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -30,7 +33,8 @@ func (s *Service) GetWebsocketIndex(c *gin.Context) {
 	ws.Serve()
 }
 
-func (s *Service) GetWebsocketSsh(c *gin.Context) {
+// GetWebsocketSSH func websocket ssh
+func (s *Service) GetWebsocketSSH(c *gin.Context) {
 	idStr := c.Param("id")
 	// get pty windows size
 	cols, _ := strconv.Atoi(c.Query("cols"))
@@ -68,4 +72,38 @@ func (s *Service) GetWebsocketSsh(c *gin.Context) {
 
 	<-quitChan
 	s.Logger.Info("websocket ssh finished")
+}
+
+// GetWebsocketVNC func websocket vnc proxy
+// https://github.com/novnc/websockify-other
+func (s *Service) GetWebsocketVNC(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return
+	}
+	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		s.Logger.Errorf("upgrade websocket failed, err: %v", err)
+	}
+	defer wsConn.Close()
+
+	host, err := models.GetHostById(id)
+	if err != nil {
+		s.Logger.Errorf("can not get host")
+		return
+	}
+
+	vnc, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host.Addr, host.VNCPort))
+	if err != nil {
+		s.Logger.Errorf("failed to bind to the VNC Server: %s", err)
+		return
+	}
+
+	quitChan := make(chan bool, 2)
+	forward := websocket.NewVNCForward(wsConn, vnc, s.Logger, quitChan)
+	defer forward.Close()
+
+	forward.Serve()
+	s.Logger.Info("websocket vnc finished")
 }

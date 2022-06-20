@@ -98,7 +98,8 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 	// websocket
 	r.GET("/ws/index", s.GetWebsocketIndex)
-	r.GET("/ws/ssh/:id", s.GetWebsocketSsh)
+	r.GET("/ws/ssh/:id", s.GetWebsocketSSH)
+	r.GET("/ws/vnc/:id", s.GetWebsocketVNC)
 
 	// restapi
 	apiV1 := r.Group("/api/v1")

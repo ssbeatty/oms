@@ -15,6 +15,7 @@ type PostHostForm struct {
 	Group        int    `form:"group"`
 	PrivateKeyId int    `form:"private_key_id" binding:"required_without=PassWord"`
 	Tags         string `form:"tags"`
+	VNCPort      int    `form:"vnc_port"`
 }
 
 type PutHostForm struct {
@@ -27,6 +28,7 @@ type PutHostForm struct {
 	Group        int    `form:"group"`
 	PrivateKeyId int    `form:"private_key_id"`
 	Tags         string `form:"tags"`
+	VNCPort      int    `form:"vnc_port"`
 }
 
 type DeleteHostParam struct {

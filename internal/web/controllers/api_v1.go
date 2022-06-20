@@ -52,7 +52,7 @@ func (s *Service) PostHost(c *Context) {
 	} else {
 		var tags []int
 		_ = json.Unmarshal([]byte(form.Tags), &tags)
-		host, err := models.InsertHost(form.HostName, form.User, form.Addr, form.Port, form.PassWord, form.Group, tags, form.PrivateKeyId)
+		host, err := models.InsertHost(form.HostName, form.User, form.Addr, form.Port, form.PassWord, form.Group, tags, form.PrivateKeyId, form.VNCPort)
 		if err != nil {
 			s.Logger.Errorf("insert host error: %v", err)
 			c.ResponseError(err.Error())
@@ -70,7 +70,7 @@ func (s *Service) PutHost(c *Context) {
 	} else {
 		var tags []int
 		_ = json.Unmarshal([]byte(form.Tags), &tags)
-		host, err := models.UpdateHost(form.Id, form.HostName, form.User, form.Addr, form.Port, form.PassWord, form.Group, tags, form.PrivateKeyId)
+		host, err := models.UpdateHost(form.Id, form.HostName, form.User, form.Addr, form.Port, form.PassWord, form.Group, tags, form.PrivateKeyId, form.VNCPort)
 		if err != nil {
 			s.Logger.Errorf("update host error: %v", err)
 			c.ResponseError(err.Error())
