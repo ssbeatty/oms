@@ -120,6 +120,11 @@ func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error
 	realTunnel := tunnel.NewSSHTunnel(client.GetSSHClient(), modelTunnel.Destination, modelTunnel.Source, modelTunnel.Mode)
 	go realTunnel.Start()
 
+	_, err = models.UpdateTunnelStatus(modelTunnel.Id, realTunnel.Status(), realTunnel.GetErrorMsg())
+	if err != nil {
+		m.logger.Errorf("error when update model tunnel status, err: %v", err)
+	}
+
 	m.tunnels.Store(modelTunnel.Id, realTunnel)
 
 	return nil
