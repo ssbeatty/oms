@@ -53,9 +53,15 @@ func (s *Schedule) AddByJob(id string, spec string, cmd cron.Job) error {
 	return nil
 }
 
-func (s *Schedule) AddByFunc(id string, spec string, f func()) error {
+// AddByFunc 将方法注册到定时调度器
+// init 是否在注册时调用
+func (s *Schedule) AddByFunc(id string, spec string, f func(), init bool) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+
+	if init {
+		f()
+	}
 
 	if _, ok := s.ids[id]; ok {
 		return errors.Errorf("crontab id exists")

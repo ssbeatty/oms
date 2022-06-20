@@ -129,16 +129,21 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 		interval = time.Duration(req.Interval) * time.Second
 	}
 
-	var sendHostMsg = func() {
+	var isRunning = true
+	defer func() { isRunning = false }()
+
+	var sendHostMsg = func(isRunning *bool) {
 		err := transport.GetAllStats(client, status, nil)
-		if err != nil {
+		if err != nil && *isRunning {
 			w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when get ssh status"), nil))
 			return
 		}
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
+		if *isRunning {
+			w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
+		}
 	}
 
-	go sendHostMsg()
+	go sendHostMsg(&isRunning)
 
 	ticker := time.NewTicker(interval)
 
@@ -153,7 +158,7 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 			w.logger.Debug("host status exit because cancel sub.")
 			return
 		case <-ticker.C:
-			go sendHostMsg()
+			go sendHostMsg(&isRunning)
 		case <-w.closer:
 			w.logger.Info("host status loop return.")
 			return

@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -185,7 +186,8 @@ func getUptime(client *Client, stats *Stats) error {
 		}
 	}
 
-	stats.StartUpTime = stats.Uptime.String()
+	stats.StartUpTime = fmt.Sprintf(
+		"%d时%d分%d秒", int(stats.Uptime.Hours()), int(stats.Uptime.Minutes())%60, int(stats.Uptime.Seconds())%60)
 
 	return nil
 }
@@ -378,16 +380,16 @@ func getFSInfo(client *Client, stats *Stats) error {
 			if len(parts) != 3 {
 				continue
 			}
-			used, err := strconv.Atoi(parts[1])
+			free, err := strconv.Atoi(parts[1])
 			if err != nil {
 				continue
 			}
-			free, err := strconv.Atoi(parts[2])
+			total, err := strconv.Atoi(parts[2])
 			if err != nil {
 				continue
 			}
 			stats.FSInfos = append(stats.FSInfos, FSInfo{
-				parts[0], uint64(used), uint64(free),
+				parts[0], uint64(total - free), uint64(free),
 			})
 		}
 	}
