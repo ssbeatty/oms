@@ -170,6 +170,10 @@ func Serve(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, 
 		}
 	}()
 
+	// 配置管理是否在运行时启动浏览器
+	if !conf.RunStart {
+		return
+	}
 	// todo mac
 	if runtime.GOOS == "windows" {
 		urlPath := fmt.Sprintf("http://127.0.0.1:%d", s.Port)

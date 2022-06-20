@@ -3,6 +3,7 @@ app:
   addr: 127.0.0.1
   port: 8080
   mode: dev
+  run_start: true
 
 db:
   driver: sqlite
