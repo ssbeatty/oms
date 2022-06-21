@@ -116,6 +116,10 @@ func (w *WSConnect) mange() {
 }
 
 func (w *WSConnect) WriteMsg(msg interface{}) {
+	// 不能并发的往websocket写入消息
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	marshal, _ := json.Marshal(msg)
 	err := w.WriteMessage(websocket.TextMessage, marshal)
 	if err != nil {

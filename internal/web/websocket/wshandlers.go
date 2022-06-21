@@ -133,14 +133,15 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 	defer func() { isRunning = false }()
 
 	var sendHostMsg = func(isRunning *bool) {
+		if !*isRunning {
+			return
+		}
 		err := transport.GetAllStats(client, status, nil)
-		if err != nil && *isRunning {
+		if err != nil {
 			w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when get ssh status"), nil))
 			return
 		}
-		if *isRunning {
-			w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
-		}
+		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
 	}
 
 	go sendHostMsg(&isRunning)
