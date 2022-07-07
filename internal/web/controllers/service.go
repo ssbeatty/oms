@@ -16,10 +16,11 @@ import (
 )
 
 type Service struct {
-	Engine *gin.Engine
-	Addr   string
-	Port   int
-	Logger *logger.Logger
+	Engine   *gin.Engine
+	Addr     string
+	Port     int
+	Logger   *logger.Logger
+	dataPath string
 
 	taskManager   *task.Manager
 	tunnelManager *tunnel.Manager
@@ -31,6 +32,7 @@ func NewService(conf config.App, sshManager *ssh.Manager, taskManager *task.Mana
 	service := &Service{
 		Addr:          fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
 		Port:          conf.Port,
+		dataPath:      conf.DataPath,
 		sshManager:    sshManager,
 		taskManager:   taskManager,
 		tunnelManager: tunnelManager,

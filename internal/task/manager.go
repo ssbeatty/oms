@@ -7,14 +7,17 @@ package task
 import (
 	"errors"
 	"io/fs"
+	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/utils"
 	"oms/pkg/logger"
 	"oms/pkg/schedule"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 )
 
 type Manager struct {
@@ -24,19 +27,28 @@ type Manager struct {
 	taskPoll *utils.SafeMap
 	onceJob  sync.Once
 	logger   *logger.Logger
+	cfg      atomic.Value
 
 	// base
 	sshManager *ssh.Manager
 }
 
-func NewManager(sshManager *ssh.Manager) *Manager {
-	return &Manager{
+func NewManager(sshManager *ssh.Manager, cfg *config.Conf) *Manager {
+	manager := &Manager{
 		taskService: schedule.NewSchedule(),
 		taskPoll:    utils.NewSafeMap(),
 		onceJob:     sync.Once{},
 		sshManager:  sshManager,
 		logger:      logger.NewLogger("taskManager"),
 	}
+
+	manager.cfg.Store(cfg)
+
+	return manager
+}
+
+func (m *Manager) config() *config.Conf {
+	return m.cfg.Load().(*config.Conf)
 }
 
 // Init 启动crontab daemon, 注册全局任务, 创建日志文件夹并初始化job
@@ -50,7 +62,7 @@ func (m *Manager) Init() *Manager {
 	}
 
 	// path for job log
-	err := os.MkdirAll(DefaultTmpPath, fs.ModePerm)
+	err := os.MkdirAll(path.Join(m.config().App.DataPath, DefaultTmpPath), fs.ModePerm)
 	if err != nil {
 		m.logger.Errorf("error when make all tmp path, err: %v", err)
 	}

@@ -26,7 +26,7 @@ func main() {
 
 	// init db
 	db := conf.Db
-	if err := models.InitModels(db.Dsn, db.DbName, db.UserName, db.PassWord, db.Driver); err != nil {
+	if err := models.InitModels(db.Dsn, db.DbName, db.UserName, db.PassWord, db.Driver, conf.App.DataPath); err != nil {
 		panic(fmt.Sprintf("init db error: %v", err))
 	}
 

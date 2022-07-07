@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	MaxPreviewSize = 8 * 1024 * 1024
+	MaxPreviewSize  = 8 * 1024 * 1024
+	defaultTempPath = "tmp"
 )
 
 func (s *Service) RunCmd(c *Context) {
@@ -326,7 +327,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				fName := part.FileName()
 				escape := base64.StdEncoding.EncodeToString([]byte(fName))
 
-				p := path.Join("tmp", fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
+				p := path.Join(path.Join(s.dataPath, defaultTempPath), fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
 				tempFile := ssh.TempFile{
 					Name: fName,
 					Size: files[escape],

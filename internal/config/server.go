@@ -8,6 +8,10 @@ import (
 	"oms/internal/utils"
 )
 
+const (
+	defaultDataPath = "data"
+)
+
 type Conf struct {
 	Db  DB  `yaml:"db"`
 	App App `yaml:"app"`
@@ -27,6 +31,7 @@ type App struct {
 	Port     int    `yaml:"port"`
 	Mode     string `yaml:"mode"`
 	RunStart bool   `yaml:"run_start"`
+	DataPath string `yaml:"data_path"` // db file and tmp path
 }
 
 // NewServerConfig 加载优先级路径 > 当前目录的config.yaml > 打包在可执行文件里的config.yaml.example
@@ -52,12 +57,16 @@ func NewServerConfig(path string) (*Conf, error) {
 		}
 
 		// config 写入当前目录
-		_ = ioutil.WriteFile(path, data, fs.ModePerm)
+		_ = ioutil.WriteFile(path, data, fs.FileMode(0644))
 	}
 
 	err = yaml.Unmarshal(data, ret)
 	if err != nil {
 		return nil, err
+	}
+
+	if ret.App.DataPath == "" {
+		ret.App.DataPath = defaultDataPath
 	}
 
 	return ret, nil

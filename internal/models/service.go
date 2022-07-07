@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"oms/pkg/logger"
+	"path"
 	"strings"
 	"sync"
 )
@@ -32,7 +33,7 @@ func (d *DataBase) Unlock() {
 	}
 }
 
-func InitModels(dsn, dbName, user, pass, driver string) error {
+func InitModels(dsn, dbName, user, pass, driver, dataPath string) error {
 	var d *gorm.DB
 	var err error
 	var dataSource string
@@ -54,7 +55,7 @@ func InitModels(dsn, dbName, user, pass, driver string) error {
 		d, err = gorm.Open(postgres.Open(dataSource), &gorm.Config{})
 		db = &DataBase{d, nil}
 	} else {
-		dataSource = "oms.db"
+		dataSource = path.Join(dataPath, "oms.db")
 		d, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
 		// 防止database locked
 		db = &DataBase{d, &sync.Mutex{}}

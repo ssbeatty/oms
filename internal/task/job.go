@@ -6,6 +6,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"oms/internal/models"
 	"oms/internal/ssh"
+	"path"
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
@@ -50,7 +51,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host *models
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	tmp := filepath.Join(DefaultTmpPath, name, fmt.Sprintf("%s.log", name))
+	tmp := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath), name, fmt.Sprintf("%s.log", name))
 	std := &lumberjack.Logger{
 		Filename:   tmp,
 		MaxSize:    20, // megabytes

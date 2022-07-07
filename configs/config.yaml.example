@@ -4,6 +4,7 @@ app:
   port: 8080
   mode: dev
   run_start: true
+  data_path: data
 
 db:
   driver: sqlite

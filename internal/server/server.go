@@ -19,7 +19,7 @@ type Server struct {
 func NewServer(cfg *config.Conf) *Server {
 	// do init all manager
 	sshManager := ssh.NewManager().Init()
-	taskManager := task.NewManager(sshManager).Init()
+	taskManager := task.NewManager(sshManager, cfg).Init()
 	tunnelManager := tunnel.NewManager(sshManager).Init()
 
 	service := &Server{
