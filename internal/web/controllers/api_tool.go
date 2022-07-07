@@ -102,7 +102,7 @@ func (s *Service) DownLoadFile(c *Context) {
 				return
 			}
 		} else {
-			c.String(http.StatusOK, "file not existed")
+			c.Status(http.StatusNotFound)
 			return
 		}
 	}
