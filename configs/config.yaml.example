@@ -1,6 +1,6 @@
 app:
   name: oms
-  addr: 127.0.0.1
+  addr: 0.0.0.0
   port: 8080
   mode: dev
   run_start: true
