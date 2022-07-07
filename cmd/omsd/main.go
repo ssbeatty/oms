@@ -41,8 +41,9 @@ func main() {
 	srv.Run()
 
 	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	<-done
+	<-sigs
+
+	log.Info("程序退出")
 }
