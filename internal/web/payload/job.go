@@ -11,7 +11,7 @@ type GetJobParam struct {
 type PostJobForm struct {
 	Name   string `form:"name" binding:"required"`
 	Type   string `form:"type" binding:"required"`
-	Spec   string `form:"spec" binding:"required"`
+	Spec   string `form:"spec"`
 	Cmd    string `form:"cmd" binding:"required"`
 	HostId int    `form:"host_id" binding:"required"`
 }
