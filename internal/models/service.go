@@ -7,7 +7,9 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"oms/internal/utils"
 	"oms/pkg/logger"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -55,6 +57,10 @@ func InitModels(dsn, dbName, user, pass, driver, dataPath string) error {
 		d, err = gorm.Open(postgres.Open(dataSource), &gorm.Config{})
 		db = &DataBase{d, nil}
 	} else {
+		if exist, _ := utils.PathExists(dataPath); !exist {
+			_ = os.MkdirAll(dataPath, os.ModePerm)
+		}
+
 		dataSource = path.Join(dataPath, "oms.db")
 		d, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
 		// 防止database locked
