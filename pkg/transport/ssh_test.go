@@ -2,6 +2,7 @@ package transport_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"io/ioutil"
@@ -47,18 +48,29 @@ func init() {
 
 func TestSampleCmd(t *testing.T) {
 
-	session, err := client.NewSessionWithPty(20, 20)
+	session, err := client.NewPty()
 	assert.Nil(t, err)
 
-	result, err := session.Output("ls -al")
+	result, err := session.Output("ls")
 	assert.Nil(t, err)
 
-	t.Log(string(result))
+	fmt.Println(string(result))
+}
+
+func TestSampleInterCmd(t *testing.T) {
+
+	session, err := client.NewPty()
+	assert.Nil(t, err)
+
+	result, err := session.OutputInteractively("ls")
+	assert.Nil(t, err)
+
+	fmt.Println(string(result))
 }
 
 func TestSudoCmd(t *testing.T) {
 
-	session, err := client.NewSessionWithPty(20, 20)
+	session, err := client.NewPty()
 	assert.Nil(t, err)
 
 	result, err := session.Sudo("ls -l /root", host.PassWord)

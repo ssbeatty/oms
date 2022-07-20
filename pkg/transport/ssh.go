@@ -2,6 +2,7 @@ package transport
 
 import (
 	"errors"
+	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -222,6 +223,12 @@ func (s *Session) Write(b []byte) (int, error) {
 // Output run done and return output
 func (s *Session) Output(cmd string) ([]byte, error) {
 	return s.sshSession.Output(cmd)
+}
+
+// OutputInteractively run done and return output interactively
+func (s *Session) OutputInteractively(cmd string) ([]byte, error) {
+	command := "bash -ic \"%s\""
+	return s.sshSession.Output(fmt.Sprintf(command, cmd))
 }
 
 // AuthWithAgent use already authed user

@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"sync"
 )
@@ -51,4 +52,9 @@ func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
 	err := s.Run(cmd)
 
 	return w.b.Bytes(), err
+}
+
+func (s *Session) SudoInteractively(cmd, passwd string) ([]byte, error) {
+	command := "bash -ic \"%s\""
+	return s.Sudo(fmt.Sprintf(command, cmd), passwd)
 }
