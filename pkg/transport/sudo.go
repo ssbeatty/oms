@@ -55,6 +55,7 @@ func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
 }
 
 func (s *Session) SudoInteractively(cmd, passwd string) ([]byte, error) {
+	// todo how do when bash not bash ?
 	command := "bash -ic \"%s\""
 	return s.Sudo(fmt.Sprintf(command, cmd), passwd)
 }
