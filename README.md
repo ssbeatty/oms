@@ -58,17 +58,18 @@ db:
 7. 基于novnc的vnc viewer
 
 
-4. docker-compose.yaml
+#### deploy
+> docker-compose.yaml
 ```yaml
 version: '2.3'
 
 services:
   oms:
-    image: ghcr.io/ssbeatty/oms/oms:v0.5.2
+    image: ghcr.io/ssbeatty/oms/oms:v0.5.4
     restart: always
     ports:
       - "8085:8080"
     volumes:
       - ./data:/opt/oms/data
-      - ./config.yaml:/etc/oms/config.yaml
+      - ./config:/etc/oms
 ```
