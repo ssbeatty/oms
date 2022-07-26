@@ -22,7 +22,79 @@ type Host struct {
 	Group        Group      `gorm:"constraint:OnDelete:SET NULL;" json:"group"`
 	Tags         []Tag      `gorm:"many2many:host_tag" json:"tags"`
 	Tunnels      []Tunnel   `gorm:"constraint:OnDelete:CASCADE;" json:"tunnels"`
-	Jobs         []Job      `gorm:"constraint:OnDelete:CASCADE;" json:"jobs"`
+}
+
+func ParseHostList(pType string, id int) ([]*Host, error) {
+	var hosts []*Host
+	if pType == "host" {
+		host, err := GetHostById(id)
+		if err != nil {
+			return nil, err
+		}
+		hosts = append(hosts, host)
+	} else if pType == "tag" {
+		tag, err := GetTagById(id)
+		if err != nil {
+			return nil, err
+		}
+		hosts, err = GetHostsByTag(tag)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		group, err := GetGroupById(id)
+		if err != nil {
+			return nil, err
+		}
+		if group.Mode == 0 {
+			hosts, err = GetHostsByGroup(group)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			args := strings.Split(group.Params, " ")
+			if len(args) < 2 {
+				return nil, err
+			} else {
+				if strings.Contains(args[1], "\"") {
+					args[1] = strings.ReplaceAll(args[1], "\"", "")
+				}
+			}
+			switch args[0] {
+			case "-G":
+				hosts, err := GetHostByGlob(args[1])
+				if err != nil {
+					return nil, err
+				}
+				return hosts, nil
+			case "-L":
+				var hosts []*Host
+				addrArgs := strings.Split(args[1], ",")
+				for _, addr := range addrArgs {
+					host, err := GetHostByAddr(addr)
+					if err != nil {
+						return nil, err
+					}
+					hosts = append(hosts, host...)
+				}
+				return hosts, nil
+			case "-E":
+				hosts, err := GetHostByReg(args[1])
+				if err != nil {
+					return nil, err
+				}
+				return hosts, nil
+			default:
+				hosts, err := GetHostByGlob(args[0])
+				if err != nil {
+					return nil, err
+				}
+				return hosts, nil
+			}
+		}
+
+	}
+	return hosts, nil
 }
 
 func GetHostByIdWithPreload(id int) (*Host, error) {

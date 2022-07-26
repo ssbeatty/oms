@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/sftp"
-	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"mime/multipart"
 	"oms/internal/models"
@@ -15,7 +14,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -56,89 +54,6 @@ type ExportData struct {
 
 func (s *Service) GetSSHManager() *ssh.Manager {
 	return s.sshManager
-}
-
-func (s *Service) ParseHostList(pType string, id int) []*models.Host {
-	var hosts []*models.Host
-	if pType == "host" {
-		host, err := models.GetHostById(id)
-		if err != nil {
-			s.Logger.Errorf("ParseHostList error when GetHostById, err: %v", err)
-			return nil
-		}
-		hosts = append(hosts, host)
-	} else if pType == "tag" {
-		tag, err := models.GetTagById(id)
-		if err != nil {
-			s.Logger.Errorf("ParseHostList error when GetTagById, err: %v", err)
-			return nil
-		}
-		hosts, err = models.GetHostsByTag(tag)
-		if err != nil {
-			s.Logger.Errorf("ParseHostList error when GetHostsByTag, err: %v", err)
-			return nil
-		}
-	} else {
-		group, err := models.GetGroupById(id)
-		if err != nil {
-			s.Logger.Errorf("ParseHostList error when GetGroupById, err: %v", err)
-			return nil
-		}
-		if group.Mode == 0 {
-			hosts, err = models.GetHostsByGroup(group)
-			if err != nil {
-				s.Logger.Errorf("ParseHostList error when GetHostsByGroup, err: %v", err)
-				return nil
-			}
-		} else {
-			args := strings.Split(group.Params, " ")
-			if len(args) < 2 {
-				log.Errorf("group params error, params: %s", group.Params)
-				return nil
-			} else {
-				if strings.Contains(args[1], "\"") {
-					args[1] = strings.ReplaceAll(args[1], "\"", "")
-				}
-			}
-			switch args[0] {
-			case "-G":
-				hosts, err := models.GetHostByGlob(args[1])
-				if err != nil {
-					s.Logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
-					return nil
-				}
-				return hosts
-			case "-L":
-				var hosts []*models.Host
-				addrArgs := strings.Split(args[1], ",")
-				for _, addr := range addrArgs {
-					host, err := models.GetHostByAddr(addr)
-					if err != nil {
-						s.Logger.Errorf("ParseHostList error when GetHostByAddr, err: %v", err)
-						return nil
-					}
-					hosts = append(hosts, host...)
-				}
-				return hosts
-			case "-E":
-				hosts, err := models.GetHostByReg(args[1])
-				if err != nil {
-					s.Logger.Errorf("ParseHostList error when GetHostByReg, err: %v", err)
-					return nil
-				}
-				return hosts
-			default:
-				hosts, err := models.GetHostByGlob(args[0])
-				if err != nil {
-					s.Logger.Errorf("ParseHostList error when GetHostByGlob, err: %v", err)
-					return nil
-				}
-				return hosts
-			}
-		}
-
-	}
-	return hosts
 }
 
 // RunCmdOneAsync 搭配RunCmd使用

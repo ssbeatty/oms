@@ -35,8 +35,8 @@ func (s *Service) RunCmd(c *Context) {
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
-		hosts := s.ParseHostList(params.Type, params.Id)
-		if len(hosts) == 0 {
+		hosts, err := models.ParseHostList(params.Type, params.Id)
+		if err != nil || len(hosts) == 0 {
 			data := payload.GenerateResponsePayload(HttpStatusError, payload.ErrHostParseEmpty, nil)
 			c.JSON(http.StatusOK, data)
 			c.ResponseError("")
@@ -247,7 +247,7 @@ func (s *Service) FileUploadUnBlock(c *Context) {
 		}
 	}
 	pType := c.PostForm("type")
-	hosts := s.ParseHostList(pType, id)
+	hosts, _ := models.ParseHostList(pType, id)
 
 	s.UploadFileUnBlock(hosts, files, remoteFile)
 	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
@@ -320,7 +320,12 @@ func (s *Service) FileUploadV2(c *Context) {
 				}
 			} else {
 				// TODO skip repeat file
-				hosts := s.ParseHostList(dType, id)
+				hosts, err := models.ParseHostList(dType, id)
+				if err != nil || len(hosts) == 0 {
+					data := payload.GenerateResponsePayload(HttpStatusError, "hosts parse error", nil)
+					c.JSON(http.StatusOK, data)
+					return
+				}
 				// 每一个文件对应一个context如果 文件传输一半终止了 其下面所有的传输终止
 				ctx, cancel := context.WithCancel(context.Background())
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/web/payload"
 	"oms/pkg/transport"
@@ -48,8 +49,8 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
 	}
-	hosts := w.engine.ParseHostList(req.Type, req.Id)
-	if len(hosts) == 0 {
+	hosts, err := models.ParseHostList(req.Type, req.Id)
+	if err != nil || len(hosts) == 0 {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "host empty", nil))
 		return
 	}
@@ -110,8 +111,8 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
 		return
 	}
-	hosts := w.engine.ParseHostList(req.Type, req.Id)
-	if len(hosts) == 0 {
+	hosts, err := models.ParseHostList(req.Type, req.Id)
+	if err != nil || len(hosts) == 0 {
 		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "parse host array empty", nil))
 		return
 	}

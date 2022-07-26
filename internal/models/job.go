@@ -1,28 +1,19 @@
 package models
 
 type Job struct {
-	Id     int    `json:"id"`
-	Name   string `gorm:"size:128" json:"name"`
-	Type   string `gorm:"size:32;not null" json:"type"`
-	Spec   string `gorm:"size:128" json:"spec"`
-	Cmd    string `gorm:"size:512" json:"cmd"`
-	Status string `gorm:"size:64;default: ready" json:"status"`
-	HostId int    `json:"host_id"`
-	Host   Host   `json:"-"`
-}
-
-func GetJobsByHostId(id int) ([]*Job, error) {
-	var jobs []*Job
-	err := db.Where("host_id = ?", id).Preload("Host").Find(&jobs).Error
-	if err != nil {
-		return nil, err
-	}
-	return jobs, nil
+	Id          int    `json:"id"`
+	Name        string `gorm:"size:128" json:"name"`
+	Type        string `gorm:"size:32;not null" json:"type"`
+	Spec        string `gorm:"size:128" json:"spec"`
+	Cmd         string `gorm:"size:512" json:"cmd"`
+	Status      string `gorm:"size:64;default: ready" json:"status"`
+	ExecuteID   int    `json:"execute_id"`
+	ExecuteType string `gorm:"size:64" json:"execute_type"`
 }
 
 func GetAllJob() ([]*Job, error) {
 	var jobs []*Job
-	err := db.Preload("Host").Find(&jobs).Error
+	err := db.Find(&jobs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -31,44 +22,32 @@ func GetAllJob() ([]*Job, error) {
 
 func GetJobById(id int) (*Job, error) {
 	job := Job{}
-	err := db.Where("id = ?", id).Preload("Host").First(&job).Error
+	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {
 		return nil, err
 	}
 	return &job, nil
 }
 
-func ExistedJob(id int) bool {
-	var job *Job
-	err := db.Where("id = ?", id).First(&job).Error
-	if err != nil {
-		return false
-	}
-	if job == nil {
-		return false
-	}
-	return true
-}
-
-func InsertJob(name, t, spec, cmd string, host *Host) (*Job, error) {
+func InsertJob(name, t, spec, cmd string, executeID int, executeType string) (*Job, error) {
 	job := Job{
-		Name:   name,
-		Type:   t,
-		Spec:   spec,
-		Cmd:    cmd,
-		HostId: host.Id,
+		Name:        name,
+		Type:        t,
+		Spec:        spec,
+		Cmd:         cmd,
+		ExecuteID:   executeID,
+		ExecuteType: executeType,
 	}
 	err := db.Create(&job).Error
 	if err != nil {
 		return nil, err
 	}
-	job.Host = *host
 	return &job, nil
 }
 
 func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
 	job := Job{Id: id}
-	err := db.Preload("Host").Where("id = ?", id).First(&job).Error
+	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {
 		return nil, err
 	}

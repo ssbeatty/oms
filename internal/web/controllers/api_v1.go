@@ -462,11 +462,7 @@ func (s *Service) GetJobs(c *Context) {
 		c.ResponseError(err.Error())
 	} else {
 		var jobs []*models.Job
-		if param.HostId > 0 {
-			jobs, err = models.GetJobsByHostId(param.HostId)
-		} else {
-			jobs, err = models.GetAllJob()
-		}
+		jobs, err = models.GetAllJob()
 		if err != nil {
 			s.Logger.Errorf("get one job error: %v", err)
 			c.ResponseError(err.Error())
@@ -503,13 +499,7 @@ func (s *Service) PostJob(c *Context) {
 			c.ResponseError(err.Error())
 			return
 		}
-		host, err := models.GetHostById(form.HostId)
-		if err != nil {
-			s.Logger.Errorf("create job error when get host: %v", err)
-			c.ResponseError(err.Error())
-			return
-		}
-		job, err := models.InsertJob(form.Name, form.Type, form.Spec, form.Cmd, host)
+		job, err := models.InsertJob(form.Name, form.Type, form.Spec, form.Cmd, form.ExecuteID, form.ExecuteType)
 		if err != nil {
 			s.Logger.Errorf("insert job error: %v", err)
 			c.ResponseError(err.Error())

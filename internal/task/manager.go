@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 )
@@ -131,7 +132,12 @@ func (m *Manager) UnRegister(id int, clear bool) error {
 
 // NewJobWithRegister 新建一个job并注册到task poll
 func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error {
-	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), &modelJob.Host)
+	hosts, err := models.ParseHostList(modelJob.ExecuteType, modelJob.ExecuteID)
+	if err != nil {
+		return err
+	}
+
+	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), hosts)
 	realJob.UpdateStatus(JobStatus(status))
 
 	if err := m.Register(modelJob.Id, realJob); err != nil {
@@ -161,11 +167,12 @@ func (m *Manager) RemoveJob(id int) error {
 func (m *Manager) startJob(job *Job) error {
 	switch job.Type {
 	case JobTypeCron:
-		existed := m.taskService.IsExists(job.Name())
+		jId := strconv.Itoa(job.ID)
+		existed := m.taskService.IsExists(jId)
 		if existed {
 			return nil
 		}
-		err := m.taskService.AddByJob(job.Name(), job.spec, job)
+		err := m.taskService.AddByJob(jId, job.spec, job)
 		if err != nil {
 			m.logger.Errorf("error when register job, err: %v", err)
 			return err

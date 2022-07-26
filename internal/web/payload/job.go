@@ -1,7 +1,7 @@
 package payload
 
 type GetJobsParam struct {
-	HostId int `form:"host_id"`
+	ExecuteId int `form:"execute_id"`
 }
 
 type GetJobParam struct {
@@ -9,11 +9,12 @@ type GetJobParam struct {
 }
 
 type PostJobForm struct {
-	Name   string `form:"name" binding:"required"`
-	Type   string `form:"type" binding:"required"`
-	Spec   string `form:"spec"`
-	Cmd    string `form:"cmd" binding:"required"`
-	HostId int    `form:"host_id" binding:"required"`
+	Name        string `form:"name" binding:"required"`
+	Type        string `form:"type" binding:"required"`
+	Spec        string `form:"spec"`
+	Cmd         string `form:"cmd" binding:"required"`
+	ExecuteID   int    `form:"execute_id" binding:"required"`
+	ExecuteType string `form:"execute_type" binding:"required"`
 }
 
 type PutJobForm struct {
