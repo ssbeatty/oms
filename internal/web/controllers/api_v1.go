@@ -464,7 +464,7 @@ func (s *Service) GetJobs(c *Context) {
 		var jobs []*models.Job
 		jobs, err = models.GetAllJob()
 		if err != nil {
-			s.Logger.Errorf("get one job error: %v", err)
+			s.Logger.Errorf("get jobs error: %v", err)
 			c.ResponseError(err.Error())
 			return
 		}
@@ -558,5 +558,28 @@ func (s *Service) DeleteJob(c *Context) {
 			return
 		}
 		c.ResponseOk(nil)
+	}
+}
+
+// api for table task instance
+
+func (s *Service) GetInstances(c *Context) {
+	var param payload.GetTaskInstanceParam
+	err := c.ShouldBind(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		var instances []*models.TaskInstance
+		if param.JobId != 0 {
+			instances, err = models.GetTaskInstanceByJob(param.JobId)
+		} else {
+			instances, err = models.GetAllTaskInstance()
+		}
+		if err != nil {
+			s.Logger.Errorf("get instances error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(instances)
 	}
 }

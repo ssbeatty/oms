@@ -3,10 +3,13 @@ package task
 import (
 	"bytes"
 	"fmt"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
+	"io/fs"
+	"io/ioutil"
 	"oms/internal/models"
+	"oms/internal/utils"
 	"oms/pkg/transport"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -28,17 +31,13 @@ const (
 	JobStatusRunning JobStatus = "running"
 	JobStatusStop    JobStatus = "stop"
 	JobStatusDone    JobStatus = "done"
+
+	InstanceStatusRunning = "running"
+	InstanceStatusDone    = "done"
+
+	MarkText  = "###mark###"
+	ErrorText = "[error]"
 )
-
-type BufferCloser struct {
-	bytes.Buffer
-}
-
-func (bc *BufferCloser) Close() error {
-	bc.Reset()
-
-	return nil
-}
 
 // Job is cron task or long task
 type Job struct {
@@ -50,23 +49,16 @@ type Job struct {
 	status    atomic.Value
 	log       string // log path
 	startTime time.Time
-	std       io.WriteCloser
 	spec      string
 	engine    *Manager
+	tmp       string
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*models.Host) *Job {
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	tmp := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath), name, fmt.Sprintf("%s.log", name))
-	std := &lumberjack.Logger{
-		Filename:   tmp,
-		MaxSize:    20, // megabytes
-		MaxBackups: 3,
-		MaxAge:     20,   //days
-		Compress:   true, // disabled by default
-	}
+	tmp := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath))
 
 	job := &Job{
 		ID:     id,
@@ -74,46 +66,34 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*mode
 		Type:   t,
 		hosts:  host,
 		cmd:    cmd,
-		log:    tmp,
-		std:    std,
 		spec:   spec,
 		engine: m,
+		tmp:    tmp,
 	}
 	job.UpdateStatus(JobStatusReady)
 
 	return job
 }
 
-func (j *Job) _log(level, format string, elems ...interface{}) {
-	_, _ = fmt.Fprintln(
-		j.std, fmt.Sprintf(fmt.Sprintf("%s [%s] %s", time.Now().Format(time.RFC3339), level, format), elems...))
-}
-
-func (j *Job) info(format string, elems ...interface{}) {
-	j._log("info", format, elems...)
-}
-
-func (j *Job) error(format string, elems ...interface{}) {
-	j._log("error", format, elems...)
-}
-
-func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup) {
+func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std io.Writer) {
 	defer wg.Done()
 
 	session, err := client.NewPty()
 	if err != nil {
-		j.error("create new session failed, host name: %s, err: %v", err)
+		j.engine.logger.Errorf("create new session failed, host name: %s, err: %v", err)
 	}
 
 	output, err := session.Sudo(j.cmd, host.PassWord)
 	if err != nil {
-		j.error("error when run cmd: %v, host name: %s, msg: %s", err, output)
+		j.engine.logger.Errorf("error when run cmd: %v, host name: %s, msg: %s", err, host.Name, output)
+		_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
+		_, err = std.Write(output)
 		return
 	}
 	defer session.Close()
 
-	_, _ = fmt.Fprintf(j.std, "[host name: %s, addr: %s]: \n", host.Name, host.Addr)
-	_, err = j.std.Write(output)
+	_, _ = fmt.Fprintf(std, "%s[host_id:%d]\n", MarkText, host.Id)
+	_, err = std.Write(output)
 	if err != nil {
 		j.engine.logger.Debugf("error write outputs, err: %v", err)
 	}
@@ -125,32 +105,64 @@ func (j *Job) Run() {
 		return
 	}
 	j.engine.logger.Infof("job, name: %s, cmd: %s, running.", j.name, j.cmd)
-	j.info("job, name: %s, cmd: %s, running.", j.name, j.cmd)
 	defer func() {
 		if j.Status() == JobStatusRunning {
 			j.UpdateStatus(JobStatusDone)
 		}
 		j.engine.logger.Debugf("job, name: %s, cmd: %s, done.", j.name, j.cmd)
-		j.info("job, name: %s, cmd: %s, done.", j.name, j.cmd)
 	}()
 
 	j.startTime = time.Now().Local()
 	j.UpdateStatus(JobStatusRunning)
 
 	var wg sync.WaitGroup
-
 	wg.Add(len(j.hosts))
+
+	instance, err := j.createInstance()
+	if err != nil {
+		j.engine.logger.Errorf("error when create instance, err: %v", err)
+		return
+	}
+	std := &bytes.Buffer{}
+
+	_ = instance.UpdateStatus(InstanceStatusRunning)
 	for _, host := range j.hosts {
 		client, err := j.engine.sshManager.NewClient(host)
+
 		if err != nil {
-			j.error("error when new ssh client, host name: %s, err: %v", err, host.Name)
+			j.engine.logger.Errorf("error when new ssh client, host name: %s, err: %v", err, host.Name)
+
+			_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
+			_, _ = fmt.Fprintf(std, "[FATIL ERROR]: %s: \n", err.Error())
 			continue
 		}
 
-		go j.run(client, host, &wg)
+		go j.run(client, host, &wg, std)
 	}
 
 	wg.Wait()
+
+	_ = instance.UpdateStatus(InstanceStatusDone)
+	_ = ioutil.WriteFile(instance.LogPath, std.Bytes(), fs.ModePerm)
+}
+
+func (j *Job) createInstance() (*models.TaskInstance, error) {
+	now := time.Now().Local()
+	instance, err := models.InsertTaskInstance(j.ID, j.startTime, now, "")
+	if err != nil {
+		return nil, err
+	}
+	logPath := instance.GenerateLogPath(j.tmp)
+	if exist, _ := utils.PathExists(path.Dir(logPath)); !exist {
+		_ = os.MkdirAll(path.Dir(logPath), fs.ModePerm)
+	}
+
+	err = models.UpdateTaskInstanceLogTrace(instance, logPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return instance, nil
 }
 
 func (j *Job) Status() JobStatus {
@@ -167,25 +179,15 @@ func (j *Job) UpdateStatus(status JobStatus) {
 }
 
 func (j *Job) Close() {
-	// close logs
-	_ = j.std.Close()
-
 	switch j.Type {
 	case JobTypeCron:
-		j.engine.taskService.Remove(j.Name())
+		j.engine.taskService.Remove(strconv.Itoa(j.ID))
 	}
-	j.UpdateStatus(JobStatusStop)
+	j.UpdateStatus(JobStatusDone)
 }
 
 func (j *Job) Name() string {
-	if j.name != "" {
-		return j.name
-	}
-	return strconv.Itoa(j.ID)
-}
-
-func (j *Job) Log() string {
-	return j.log
+	return j.name
 }
 
 func (j *Job) Cmd() string {

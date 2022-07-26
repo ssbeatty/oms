@@ -235,8 +235,8 @@ func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 		// running 一般是没有正常退出 每次启动除了stop和fatal都要ready
 		if JobStatus(modelJob.Status) == JobStatusRunning {
 			status = string(JobStatusReady)
-		} else if JobStatus(modelJob.Status) == JobStatusDone {
-			// 任务执行结束了 不能每次启动都执行
+		} else if JobStatus(modelJob.Status) == JobStatusDone && JobType(modelJob.Type) == JobTypeTask {
+			// 任务执行结束了 不能每次启动都执行 仅当为task时 cron正常来说还是应该执行
 			status = string(JobStatusStop)
 		}
 		err := m.NewJobWithRegister(modelJob, status)

@@ -32,3 +32,11 @@ type DeleteJobParam struct {
 type OptionsJobForm struct {
 	Id int `form:"id" binding:"required"`
 }
+
+type GetTaskInstanceParam struct {
+	JobId int `form:"job_id"`
+}
+
+type GetTaskInstanceLogParam struct {
+	Id int `form:"id" binding:"required"`
+}
