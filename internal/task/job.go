@@ -51,14 +51,13 @@ type Job struct {
 	startTime time.Time
 	spec      string
 	engine    *Manager
-	tmp       string
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*models.Host) *Job {
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	tmp := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath))
+	log := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath), fmt.Sprintf("%d-%s", id, name))
 
 	job := &Job{
 		ID:     id,
@@ -68,7 +67,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*mode
 		cmd:    cmd,
 		spec:   spec,
 		engine: m,
-		tmp:    tmp,
+		log:    log,
 	}
 	job.UpdateStatus(JobStatusReady)
 
@@ -152,7 +151,7 @@ func (j *Job) createInstance() (*models.TaskInstance, error) {
 	if err != nil {
 		return nil, err
 	}
-	logPath := instance.GenerateLogPath(j.tmp)
+	logPath := instance.GenerateLogPath(j.log)
 	if exist, _ := utils.PathExists(path.Dir(logPath)); !exist {
 		_ = os.MkdirAll(path.Dir(logPath), fs.ModePerm)
 	}

@@ -132,7 +132,7 @@ func RefreshJob(job *Job) error {
 }
 
 func (ti *TaskInstance) GenerateLogPath(tmpPath string) string {
-	return path.Join(tmpPath, fmt.Sprintf("%d-%s", ti.JobId, ti.Job.Name), fmt.Sprintf("%d.log", ti.Id))
+	return path.Join(tmpPath, fmt.Sprintf("%d.log", ti.Id))
 }
 
 func (ti *TaskInstance) UpdateStatus(status string) error {

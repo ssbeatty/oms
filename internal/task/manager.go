@@ -15,7 +15,6 @@ import (
 	"oms/pkg/schedule"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -103,7 +102,7 @@ func (m *Manager) Register(id int, job *Job) error {
 
 // ClearLogs 删除job的日志
 func (m *Manager) ClearLogs(job *Job) error {
-	err := os.RemoveAll(filepath.Dir(job.log))
+	err := os.RemoveAll(job.log)
 	if err != nil {
 		return err
 	}
