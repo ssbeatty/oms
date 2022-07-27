@@ -16,6 +16,10 @@ import (
 	"sync"
 )
 
+const (
+	defaultSort = "id ASC"
+)
+
 var (
 	db       *DataBase
 	dataPath string
@@ -85,15 +89,24 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 }
 
 func GetPaginateQuery[T *TaskInstance | *[]*TaskInstance | *Host | *[]*Host](
-	instance T, pageSize, page int, params map[string]interface{}, preload bool) error {
+	instance T, pageSize, page int, params map[string]interface{}, preload bool) (int64, error) {
+	var total int64
+
 	switch {
 	case pageSize <= 0:
 		pageSize = 20
 	}
 
 	offset := (page - 1) * pageSize
+
+	d := db.Where(params)
+	d.Model(instance).Count(&total)
+
 	if preload {
-		return db.Offset(offset).Preload(clause.Associations).Limit(pageSize).Where(params).Find(instance).Error
+		d = d.Preload(clause.Associations)
 	}
-	return db.Offset(offset).Limit(pageSize).Where(params).Find(instance).Error
+
+	d = d.Order(defaultSort).Offset(offset).Limit(pageSize).Find(instance)
+
+	return total, d.Error
 }

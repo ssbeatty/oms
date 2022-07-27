@@ -27,7 +27,7 @@ func (s *Service) GetHosts(c *Context) {
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
-		err = models.GetPaginateQuery[*[]*models.Host](
+		_, err := models.GetPaginateQuery[*[]*models.Host](
 			&hosts, param.PageSize, param.PageNum, nil, true)
 		if err != nil {
 			s.Logger.Errorf("get all host error: %v", err)
@@ -574,19 +574,22 @@ func (s *Service) DeleteJob(c *Context) {
 // api for table task instance
 
 func (s *Service) GetInstances(c *Context) {
-	var param payload.GetTaskInstanceParam
+	var (
+		total int64
+		param payload.GetTaskInstanceParam
+	)
 	err := c.ShouldBind(&param)
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
 		var instances []*models.TaskInstance
 		if param.JobId != 0 {
-			err = models.GetPaginateQuery[*[]*models.TaskInstance](
+			total, err = models.GetPaginateQuery[*[]*models.TaskInstance](
 				&instances, param.PageSize, param.PageNum, map[string]interface{}{
 					"job_id": param.JobId,
 				}, false)
 		} else {
-			err = models.GetPaginateQuery[*[]*models.TaskInstance](
+			total, err = models.GetPaginateQuery[*[]*models.TaskInstance](
 				&instances, param.PageSize, param.PageNum, nil, false)
 		}
 		if err != nil {
@@ -594,6 +597,10 @@ func (s *Service) GetInstances(c *Context) {
 			c.ResponseError(err.Error())
 			return
 		}
-		c.ResponseOk(instances)
+		c.ResponseOk(payload.PageData{
+			Data:    instances,
+			Total:   total,
+			PageNum: param.PageNum,
+		})
 	}
 }

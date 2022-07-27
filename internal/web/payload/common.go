@@ -18,3 +18,9 @@ type Page struct {
 	PageNum  int `form:"page_num"`
 	PageSize int `form:"page_size"`
 }
+
+type PageData struct {
+	Total   int64       `json:"total"`
+	PageNum int         `json:"page_num"`
+	Data    interface{} `json:"data"`
+}
