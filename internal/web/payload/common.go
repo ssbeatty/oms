@@ -13,3 +13,8 @@ type Response struct {
 func GenerateResponsePayload(code string, msg string, data interface{}) Response {
 	return Response{code, msg, data}
 }
+
+type Page struct {
+	PageNum  int `form:"page_num"`
+	PageSize int `form:"page_size"`
+}

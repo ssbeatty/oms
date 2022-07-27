@@ -157,15 +157,6 @@ func (ti *TaskInstance) Done() error {
 	return ti.UpdateStatus(InstanceStatusDone)
 }
 
-func GetTaskInstanceByJob(jobId int) ([]*TaskInstance, error) {
-	var instances []*TaskInstance
-	err := db.Where("job_id", jobId).Find(&instances).Error
-	if err != nil {
-		return nil, err
-	}
-	return instances, nil
-}
-
 func GetTaskInstanceById(id int) (*TaskInstance, error) {
 	var instance *TaskInstance
 	err := db.Preload("Job").Where("id", id).First(&instance).Error
@@ -173,15 +164,6 @@ func GetTaskInstanceById(id int) (*TaskInstance, error) {
 		return nil, err
 	}
 	return instance, nil
-}
-
-func GetAllTaskInstance() ([]*TaskInstance, error) {
-	var instances []*TaskInstance
-	err := db.Find(&instances).Error
-	if err != nil {
-		return nil, err
-	}
-	return instances, nil
 }
 
 func UpdateTaskInstanceLogTrace(instance *TaskInstance, logPath string) error {

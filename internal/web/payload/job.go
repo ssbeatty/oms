@@ -34,6 +34,7 @@ type OptionsJobForm struct {
 }
 
 type GetTaskInstanceParam struct {
+	Page
 	JobId int `form:"job_id"`
 }
 

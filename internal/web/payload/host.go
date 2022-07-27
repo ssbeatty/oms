@@ -2,6 +2,10 @@ package payload
 
 // v1
 
+type GetAllHostParam struct {
+	Page
+}
+
 type GetHostParam struct {
 	Id int `uri:"id" binding:"required"`
 }

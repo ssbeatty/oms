@@ -7,6 +7,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"oms/internal/utils"
 	"oms/pkg/logger"
 	"os"
@@ -15,9 +16,11 @@ import (
 	"sync"
 )
 
-var db *DataBase
-var log *logger.Logger
-var dataPath string
+var (
+	db       *DataBase
+	dataPath string
+	log      *logger.Logger
+)
 
 type DataBase struct {
 	*gorm.DB
@@ -79,4 +82,18 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	}
 
 	return nil
+}
+
+func GetPaginateQuery[T *TaskInstance | *[]*TaskInstance | *Host | *[]*Host](
+	instance T, pageSize, page int, params map[string]interface{}, preload bool) error {
+	switch {
+	case pageSize <= 0:
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+	if preload {
+		return db.Offset(offset).Preload(clause.Associations).Limit(pageSize).Where(params).Find(instance).Error
+	}
+	return db.Offset(offset).Limit(pageSize).Where(params).Find(instance).Error
 }

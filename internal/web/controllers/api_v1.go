@@ -19,13 +19,23 @@ var parser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | c
 // api for table host
 
 func (s *Service) GetHosts(c *Context) {
-	hosts, err := models.GetAllHost()
+	var (
+		hosts []*models.Host
+		param payload.GetAllHostParam
+	)
+	err := c.ShouldBind(&param)
 	if err != nil {
-		s.Logger.Errorf("get all host error: %v", err)
 		c.ResponseError(err.Error())
-		return
+	} else {
+		err = models.GetPaginateQuery[*[]*models.Host](
+			&hosts, param.PageSize, param.PageNum, nil, true)
+		if err != nil {
+			s.Logger.Errorf("get all host error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(hosts)
 	}
-	c.ResponseOk(hosts)
 }
 
 func (s *Service) GetOneHost(c *Context) {
@@ -571,9 +581,13 @@ func (s *Service) GetInstances(c *Context) {
 	} else {
 		var instances []*models.TaskInstance
 		if param.JobId != 0 {
-			instances, err = models.GetTaskInstanceByJob(param.JobId)
+			err = models.GetPaginateQuery[*[]*models.TaskInstance](
+				&instances, param.PageSize, param.PageNum, map[string]interface{}{
+					"job_id": param.JobId,
+				}, false)
 		} else {
-			instances, err = models.GetAllTaskInstance()
+			err = models.GetPaginateQuery[*[]*models.TaskInstance](
+				&instances, param.PageSize, param.PageNum, nil, false)
 		}
 		if err != nil {
 			s.Logger.Errorf("get instances error: %v", err)
