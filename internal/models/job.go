@@ -1,9 +1,20 @@
 package models
 
 import (
+	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"io/ioutil"
+	"oms/internal/config"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
+)
+
+const (
+	InstanceStatusRunning = "running"
+	InstanceStatusDone    = "done"
 )
 
 type Job struct {
@@ -20,9 +31,10 @@ type Job struct {
 
 type TaskInstance struct {
 	Id        int       `json:"id"`
+	Uid       string    `json:"uid"`
 	JobId     int       `json:"job_id"`
 	Job       Job       `json:"-"`
-	StartTime time.Time `json:"start_time"`
+	StartTime time.Time `gorm:"index" json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 	Status    string    `gorm:"size:64;default: ready" json:"status"`
 	LogPath   string    `gorm:"size:256" json:"log_path"`
@@ -132,11 +144,17 @@ func RefreshJob(job *Job) error {
 }
 
 func (ti *TaskInstance) GenerateLogPath(tmpPath string) string {
-	return path.Join(tmpPath, fmt.Sprintf("%d.log", ti.Id))
+	tPath := ti.StartTime.Format("20060102")
+	return path.Join(tmpPath, tPath, fmt.Sprintf("%s.log", ti.Uid))
 }
 
 func (ti *TaskInstance) UpdateStatus(status string) error {
 	return db.Model(&TaskInstance{}).Where("id", ti.Id).Update("status", status).Error
+}
+
+func (ti *TaskInstance) Done() error {
+	db.Model(&TaskInstance{}).Where("id", ti.Id).Update("end_time", time.Now().Local())
+	return ti.UpdateStatus(InstanceStatusDone)
 }
 
 func GetTaskInstanceByJob(jobId int) ([]*TaskInstance, error) {
@@ -171,7 +189,7 @@ func UpdateTaskInstanceLogTrace(instance *TaskInstance, logPath string) error {
 	return db.Model(&TaskInstance{}).Where("id", instance.Id).Update("log_path", logPath).Error
 }
 
-func InsertTaskInstance(jobId int, start, end time.Time, logPath string) (*TaskInstance, error) {
+func InsertTaskInstance(jobId int, start time.Time) (*TaskInstance, error) {
 	job, err := GetJobById(jobId)
 	if err != nil {
 		return nil, err
@@ -179,8 +197,7 @@ func InsertTaskInstance(jobId int, start, end time.Time, logPath string) (*TaskI
 	instance := TaskInstance{
 		JobId:     jobId,
 		StartTime: start,
-		EndTime:   end,
-		LogPath:   logPath,
+		Uid:       uuid.NewString(),
 	}
 	err = db.Create(&instance).Error
 	if err != nil {
@@ -190,4 +207,62 @@ func InsertTaskInstance(jobId int, start, end time.Time, logPath string) (*TaskI
 	instance.Job = *job
 
 	return &instance, nil
+}
+
+func clearJobLogs(sinceBefore time.Time, job *Job) error {
+	logPath := filepath.Join(path.Join(dataPath, config.DefaultTmpPath), fmt.Sprintf("%d-%s", job.Id, job.Name))
+	files, err := ioutil.ReadDir(logPath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		parse, err := time.Parse("20060102", f.Name())
+		if err == nil {
+			if parse.Before(sinceBefore) {
+				_ = os.RemoveAll(filepath.Join(logPath, f.Name()))
+			}
+		}
+	}
+
+	return nil
+}
+
+func ClearInstance(sinceBefore time.Time, jobId int) (err error) {
+	if sinceBefore.IsZero() {
+		return errors.New("must have a sinceBefore")
+	}
+
+	var job *Job
+
+	if jobId > 0 {
+		job, err = GetJobById(jobId)
+		if err != nil {
+			return err
+		}
+		db.Where("job_id", jobId).Where("end_time < ?", sinceBefore).Delete(&TaskInstance{})
+	} else {
+		db.Where("end_time < ?", sinceBefore).Delete(&TaskInstance{})
+	}
+
+	if job != nil {
+		err := clearJobLogs(sinceBefore, job)
+		if err != nil {
+			return err
+		}
+	} else {
+		allJob, err := GetAllJob()
+		if err != nil {
+			return err
+		}
+
+		for _, job := range allJob {
+			err := clearJobLogs(sinceBefore, job)
+			if err != nil {
+				continue
+			}
+		}
+	}
+
+	return nil
 }

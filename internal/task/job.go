@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/utils"
 	"oms/pkg/transport"
@@ -25,15 +26,11 @@ const (
 	JobTypeCron     JobType = "cron"
 	JobTypeTask     JobType = "task"      // run once
 	JobTypeLongTask JobType = "long_task" // run daemon
-	DefaultTmpPath          = "tmp"
 
 	JobStatusReady   JobStatus = "ready"
 	JobStatusRunning JobStatus = "running"
 	JobStatusStop    JobStatus = "stop"
 	JobStatusDone    JobStatus = "done"
-
-	InstanceStatusRunning = "running"
-	InstanceStatusDone    = "done"
 
 	MarkText  = "###mark###"
 	ErrorText = "[error]"
@@ -41,23 +38,22 @@ const (
 
 // Job is cron task or long task
 type Job struct {
-	ID        int
-	name      string
-	Type      JobType
-	hosts     []*models.Host
-	cmd       string
-	status    atomic.Value
-	log       string // log path
-	startTime time.Time
-	spec      string
-	engine    *Manager
+	ID     int
+	name   string
+	Type   JobType
+	hosts  []*models.Host
+	cmd    string
+	status atomic.Value
+	log    string // log path
+	spec   string
+	engine *Manager
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*models.Host) *Job {
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	log := filepath.Join(path.Join(m.config().App.DataPath, DefaultTmpPath), fmt.Sprintf("%d-%s", id, name))
+	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fmt.Sprintf("%d-%s", id, name))
 
 	job := &Job{
 		ID:     id,
@@ -111,7 +107,6 @@ func (j *Job) Run() {
 		j.engine.logger.Debugf("job, name: %s, cmd: %s, done.", j.name, j.cmd)
 	}()
 
-	j.startTime = time.Now().Local()
 	j.UpdateStatus(JobStatusRunning)
 
 	var wg sync.WaitGroup
@@ -124,7 +119,7 @@ func (j *Job) Run() {
 	}
 	std := &bytes.Buffer{}
 
-	_ = instance.UpdateStatus(InstanceStatusRunning)
+	_ = instance.UpdateStatus(models.InstanceStatusRunning)
 	for _, host := range j.hosts {
 		client, err := j.engine.sshManager.NewClient(host)
 
@@ -141,13 +136,13 @@ func (j *Job) Run() {
 
 	wg.Wait()
 
-	_ = instance.UpdateStatus(InstanceStatusDone)
+	_ = instance.Done()
 	_ = ioutil.WriteFile(instance.LogPath, std.Bytes(), fs.ModePerm)
 }
 
 func (j *Job) createInstance() (*models.TaskInstance, error) {
 	now := time.Now().Local()
-	instance, err := models.InsertTaskInstance(j.ID, j.startTime, now, "")
+	instance, err := models.InsertTaskInstance(j.ID, now)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,7 @@ import (
 
 var db *DataBase
 var log *logger.Logger
+var dataPath string
 
 type DataBase struct {
 	*gorm.DB
@@ -35,11 +36,12 @@ func (d *DataBase) Unlock() {
 	}
 }
 
-func InitModels(dsn, dbName, user, pass, driver, dataPath string) error {
+func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	var d *gorm.DB
 	var err error
 	var dataSource string
 
+	dataPath = _dataPath
 	log = logger.NewLogger("db")
 
 	if driver == "mysql" {

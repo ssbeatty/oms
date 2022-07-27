@@ -37,6 +37,7 @@ app:
   port: 8080
   mode: dev
   run_start: false # 是否在运行时打开浏览器 windows
+  temp_date: 336h  # 执行日志的保存时间 默认14天
 
 db:
   driver: postgres
@@ -51,7 +52,7 @@ db:
 #### 目前已经实现的功能
 1. web界面[omsUI](https://github.com/lixin59/omsUI/blob/master/README.md)
 2. 隧道, 类似`ssh`的`-L`和`-R`
-3. cron任务和长进程的管理
+3. cron任务和exec任务的管理
 4. ssh命令批量执行
 5. 文件批量的上传 流式传输支持大文件
 6. 基于`sftp`文件浏览器

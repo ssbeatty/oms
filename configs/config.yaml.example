@@ -5,6 +5,7 @@ app:
   mode: dev
   run_start: true
   data_path: data
+  temp_date: 336h
 
 db:
   driver: sqlite

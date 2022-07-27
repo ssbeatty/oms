@@ -15,6 +15,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/task"
@@ -28,8 +29,7 @@ import (
 )
 
 const (
-	MaxPreviewSize  = 8 * 1024 * 1024
-	defaultTempPath = "tmp"
+	MaxPreviewSize = 8 * 1024 * 1024
 )
 
 var (
@@ -341,7 +341,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				fName := part.FileName()
 				escape := base64.StdEncoding.EncodeToString([]byte(fName))
 
-				p := path.Join(path.Join(s.dataPath, defaultTempPath), fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
+				p := path.Join(path.Join(s.dataPath, config.DefaultTmpPath), fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
 				tempFile := ssh.TempFile{
 					Name: fName,
 					Size: files[escape],

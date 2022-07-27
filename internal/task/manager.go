@@ -60,9 +60,12 @@ func (m *Manager) Init() *Manager {
 	if err := m.taskService.AddByFunc("build-in-loop-status", "0 * * * * *", m.CronStatusJob, true); err != nil {
 		m.logger.Errorf("init build-in-loop-status error: %v", err)
 	}
+	if err := m.taskService.AddByFunc("build-in-loop-clear-instance", "0 0 0 * * *", m.CronClearInstanceCache, true); err != nil {
+		m.logger.Errorf("init build-in-loop-clear-instance: %v", err)
+	}
 
 	// path for job log
-	err := os.MkdirAll(path.Join(m.config().App.DataPath, DefaultTmpPath), fs.ModePerm)
+	err := os.MkdirAll(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fs.ModePerm)
 	if err != nil {
 		m.logger.Errorf("error when make all tmp path, err: %v", err)
 	}

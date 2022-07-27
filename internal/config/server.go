@@ -6,10 +6,12 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"oms/internal/utils"
+	"time"
 )
 
 const (
 	defaultDataPath = "data"
+	DefaultTmpPath  = "tmp"
 )
 
 type Conf struct {
@@ -26,12 +28,13 @@ type DB struct {
 }
 
 type App struct {
-	Name     string `yaml:"name"`
-	Addr     string `yaml:"addr"`
-	Port     int    `yaml:"port"`
-	Mode     string `yaml:"mode"`
-	RunStart bool   `yaml:"run_start"`
-	DataPath string `yaml:"data_path"` // db file and tmp path
+	Name     string        `yaml:"name"`
+	Addr     string        `yaml:"addr"`
+	Port     int           `yaml:"port"`
+	Mode     string        `yaml:"mode"`
+	RunStart bool          `yaml:"run_start"`
+	DataPath string        `yaml:"data_path"` // db file and tmp path
+	TempDate time.Duration `yaml:"temp_date"`
 }
 
 // NewServerConfig 加载优先级路径 > 当前目录的config.yaml > 打包在可执行文件里的config.yaml.example
