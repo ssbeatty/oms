@@ -46,12 +46,6 @@ type FilePath struct {
 	FolderChains []*FileInfo `json:"folderChains"`
 }
 
-type ExportData struct {
-	Tags   []*models.Tag
-	Groups []*models.Group
-	Hosts  []*models.Host
-}
-
 func (s *Service) GetSSHManager() *ssh.Manager {
 	return s.sshManager
 }

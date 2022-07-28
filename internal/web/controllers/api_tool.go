@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/gocarina/gocsv"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -30,6 +31,7 @@ import (
 
 const (
 	MaxPreviewSize = 8 * 1024 * 1024
+	Utf8Dom        = "\xEF\xBB\xBF"
 )
 
 var (
@@ -579,4 +581,168 @@ func (s *Service) GetInstanceLog(c *Context) {
 			return
 		}
 	}
+}
+
+func (s *Service) DataExport(c *Context) {
+	var (
+		b    bytes.Buffer
+		data []models.HostExport
+	)
+
+	defer b.Reset()
+
+	hosts, err := models.GetAllHost()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	for _, host := range hosts {
+		tags := make([]string, 0)
+		for _, t := range host.Tags {
+			tags = append(tags, t.Name)
+		}
+
+		data = append(data, models.HostExport{
+			Name:        host.Name,
+			User:        host.User,
+			Addr:        host.Addr,
+			PassWord:    host.PassWord,
+			Port:        host.Port,
+			VNCPort:     host.VNCPort,
+			Group:       host.Group.Name,
+			GroupParams: host.Group.Params,
+			Tags:        tags,
+			KeyFile:     host.PrivateKey.KeyFile,
+			KeyName:     host.PrivateKey.Name,
+			KeyPhrase:   host.PrivateKey.Passphrase,
+		})
+	}
+
+	// 写入UTF-8 BOM
+	b.WriteString(Utf8Dom)
+	err = gocsv.Marshal(&data, &b)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	c.Data(http.StatusOK, "text/csv", b.Bytes())
+}
+
+func (s *Service) DataImport(c *Context) {
+	const (
+		EmptyFileError = "empty files"
+	)
+
+	var (
+		data []models.HostExport
+		resp payload.ImportResponse
+	)
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.ResponseError(EmptyFileError)
+		return
+	}
+	files := form.File["files"]
+
+	if len(files) == 0 {
+		c.ResponseError(EmptyFileError)
+		return
+	}
+
+	// 多个文件只取第一个
+	csvFile := files[0]
+
+	fn, err := csvFile.Open()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	content, err := ioutil.ReadAll(fn)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	// issue https://github.com/gocarina/gocsv/issues/191
+	content = bytes.TrimPrefix(content, []byte(Utf8Dom))
+
+	err = gocsv.UnmarshalBytes(content, &data)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	for _, row := range data {
+		var (
+			groupId, privateKeyID int
+			tags                  []int
+		)
+
+		// has grouped
+		if row.Group != "" {
+			var (
+				err   error
+				group *models.Group
+			)
+
+			if !models.ExistedGroup(row.Group) {
+				if row.GroupParams == "" {
+					group, err = models.InsertGroup(row.Group, "", models.GroupHostMode)
+				} else {
+					group, err = models.InsertGroup(row.Group, row.GroupParams, models.GroupOtherMode)
+				}
+				if err == nil {
+					resp.CreateGroup = append(resp.CreateGroup, group.Name)
+				}
+			} else {
+				group, _ = models.GetGroupByName(row.Group)
+			}
+
+			groupId = group.Id
+		}
+
+		for _, t := range row.Tags {
+			var (
+				tag *models.Tag
+			)
+
+			if !models.ExistedTag(t) {
+				tag, err = models.InsertTag(t)
+				if err == nil {
+					resp.CreateTag = append(resp.CreateTag, tag.Name)
+				}
+			} else {
+				tag, _ = models.GetTagByName(t)
+			}
+			tags = append(tags, tag.Id)
+		}
+
+		if row.KeyFile != "" {
+			var (
+				privateKey *models.PrivateKey
+			)
+			if !models.ExistedPrivateKey(row.KeyFile) {
+				privateKey, err = models.InsertPrivateKey(row.KeyName, row.KeyFile, row.KeyPhrase)
+				if err == nil {
+					resp.CreatePrivateKey = append(resp.CreatePrivateKey, privateKey.Name)
+				}
+			} else {
+				privateKey, err = models.GetPrivateKeyByName(row.KeyName)
+			}
+			privateKeyID = privateKey.Id
+		}
+
+		if !models.ExistedHost(row.Name, row.Addr) {
+			h, err := models.InsertHost(
+				row.Name, row.User, row.Addr, row.Port, row.PassWord, groupId, tags, privateKeyID, row.VNCPort,
+			)
+			if err == nil {
+				resp.CreateHost = append(resp.CreateHost, h.Name)
+			}
+		}
+	}
+
+	c.ResponseOk(resp)
 }

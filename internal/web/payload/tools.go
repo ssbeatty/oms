@@ -16,3 +16,10 @@ type MkdirParams struct {
 	OptionsFileParams
 	Dir string `form:"dir" binding:"required"`
 }
+
+type ImportResponse struct {
+	CreateGroup      []string `json:"create_group"`
+	CreateTag        []string `json:"create_tag"`
+	CreateHost       []string `json:"create_host"`
+	CreatePrivateKey []string `json:"create_private_key"`
+}

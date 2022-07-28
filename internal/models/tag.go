@@ -24,6 +24,15 @@ func GetTagById(id int) (*Tag, error) {
 	return &tag, nil
 }
 
+func GetTagByName(name string) (*Tag, error) {
+	tag := Tag{}
+	err := db.Where("name = ?", name).First(&tag).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
 func ExistedTag(name string) bool {
 	var tags []*Tag
 	err := db.Where("name = ?", name).Find(&tags).Error

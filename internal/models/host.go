@@ -6,6 +6,21 @@ import (
 	"strings"
 )
 
+type HostExport struct {
+	Name        string   `csv:"name"`
+	User        string   `csv:"user"`
+	Addr        string   `csv:"addr"`
+	Port        int      `csv:"port"`
+	VNCPort     int      `csv:"vnc_port"`
+	PassWord    string   `csv:"password"`
+	Group       string   `csv:"group"`
+	GroupParams string   `csv:"group_params"`
+	Tags        []string `csv:"tags"`
+	KeyFile     string   `csv:"key_file"`
+	KeyName     string   `csv:"key_name"`
+	KeyPhrase   string   `csv:"key_phrase"`
+}
+
 // Host Struct
 type Host struct {
 	Id           int        `json:"id"`

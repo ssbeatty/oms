@@ -25,6 +25,15 @@ func GetPrivateKeyById(id int) (*PrivateKey, error) {
 	return &privateKey, nil
 }
 
+func GetPrivateKeyByName(name string) (*PrivateKey, error) {
+	privateKey := PrivateKey{}
+	err := db.Where("name = ?", name).First(&privateKey).Error
+	if err != nil {
+		return nil, err
+	}
+	return &privateKey, nil
+}
+
 func InsertPrivateKey(name, keyFile, passphrase string) (*PrivateKey, error) {
 	privateKey := PrivateKey{
 		Name:       name,
@@ -71,4 +80,16 @@ func DeletePrivateKeyById(id int) error {
 		return err
 	}
 	return nil
+}
+
+func ExistedPrivateKey(keyFile string) bool {
+	var pKeys []*PrivateKey
+	err := db.Where(&PrivateKey{KeyFile: keyFile}).Find(&pKeys).Error
+	if err != nil {
+		return false
+	}
+	if len(pKeys) == 0 {
+		return false
+	}
+	return true
 }

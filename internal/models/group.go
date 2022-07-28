@@ -1,5 +1,10 @@
 package models
 
+const (
+	GroupHostMode  = 0
+	GroupOtherMode = 1
+)
+
 type Group struct {
 	Id     int    `json:"id"`
 	Name   string `gorm:"size:256;not null" json:"name"`
@@ -20,6 +25,16 @@ func GetAllGroup() ([]*Group, error) {
 func GetGroupById(id int) (*Group, error) {
 	group := Group{}
 	err := db.Where("id = ?", id).First(&group).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+func GetGroupByName(name string) (*Group, error) {
+	group := Group{}
+	err := db.Where("name = ?", name).First(&group).Error
 
 	if err != nil {
 		return nil, err
