@@ -6,6 +6,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/task"
 	"oms/internal/web/payload"
+	"time"
 )
 
 const (
@@ -602,5 +603,29 @@ func (s *Service) GetInstances(c *Context) {
 			Total:   total,
 			PageNum: param.PageNum,
 		})
+	}
+}
+
+func (s *Service) DeleteInstances(c *Context) {
+	var (
+		param payload.DeleteTaskInstanceFrom
+	)
+	err := c.ShouldBind(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		var since time.Time
+
+		if param.TimeStamp != 0 {
+			since = time.Unix(param.TimeStamp, 0)
+		} else {
+			since = time.Now().Local().Add(-s.conf.TempDate)
+		}
+
+		err = models.ClearInstance(since, param.JobId)
+		if err != nil {
+			c.ResponseError(err.Error())
+		}
+		c.ResponseOk(nil)
 	}
 }

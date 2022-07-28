@@ -343,7 +343,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				fName := part.FileName()
 				escape := base64.StdEncoding.EncodeToString([]byte(fName))
 
-				p := path.Join(path.Join(s.dataPath, config.DefaultTmpPath), fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
+				p := path.Join(path.Join(s.conf.DataPath, config.DefaultTmpPath), fmt.Sprintf("multipart-%d-%s", int(time.Now().Unix()), fName))
 				tempFile := ssh.TempFile{
 					Name: fName,
 					Size: files[escape],

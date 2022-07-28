@@ -41,3 +41,8 @@ type GetTaskInstanceParam struct {
 type GetTaskInstanceLogParam struct {
 	Id int `form:"id" binding:"required"`
 }
+
+type DeleteTaskInstanceFrom struct {
+	JobId     int   `form:"job_id"`
+	TimeStamp int64 `form:"time_stamp"`
+}

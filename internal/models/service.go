@@ -95,6 +95,8 @@ func GetPaginateQuery[T *TaskInstance | *[]*TaskInstance | *Host | *[]*Host](
 	switch {
 	case pageSize <= 0:
 		pageSize = 20
+	case page <= 0:
+		page = 1
 	}
 
 	offset := (page - 1) * pageSize

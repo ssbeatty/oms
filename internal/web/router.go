@@ -143,6 +143,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.POST("/job/start", Handle(s.StartJob))
 		apiV1.POST("/job/stop", Handle(s.StopJob))
 		apiV1.GET("/task/instance", Handle(s.GetInstances))
+		apiV1.DELETE("/task/instance", Handle(s.DeleteInstances))
 		apiV1.GET("/task/instance/log/download", Handle(s.DownloadInstanceLog))
 		apiV1.GET("/task/instance/log/get", Handle(s.GetInstanceLog))
 
@@ -182,7 +183,7 @@ func Serve(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, 
 	}
 	// todo mac
 	if runtime.GOOS == "windows" {
-		urlPath := fmt.Sprintf("http://127.0.0.1:%d", s.Port)
+		urlPath := fmt.Sprintf("http://127.0.0.1:%d", conf.Port)
 		cmd := exec.Command("cmd", "/c", "start", urlPath)
 		err := cmd.Start()
 		if err != nil {
