@@ -152,3 +152,17 @@ func TestSSHStat(t *testing.T) {
 
 	assert.NotNil(t, status)
 }
+
+func TestRunScript(t *testing.T) {
+	shell := `#/bin/bash
+ls -a
+echo 111
+ls
+echo 222
+ls -lh
+`
+	output, err := client.RunScript(shell)
+	assert.Nil(t, err)
+
+	fmt.Println(string(output))
+}

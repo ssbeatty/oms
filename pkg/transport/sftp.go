@@ -1,19 +1,59 @@
 package transport
 
 import (
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/pkg/sftp"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"os"
 	"path"
 	"path/filepath"
 )
 
+const (
+	ShellTmpPath    = ".oms"
+	WindowsShellExt = ".bat"
+	LinuxShellExt   = ".sh"
+)
+
 func (c *Client) GetSftpClient() *sftp.Client {
 	return c.sftpClient
 }
 
-func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error {
+func (c *Client) UploadFile(local, fPath string) error {
+	if c.sftpClient == nil {
+		err := c.NewSftpClient()
+		if err != nil {
+			return err
+		}
+	}
+	r, err := os.OpenFile(local, os.O_RDONLY, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+	fPath = filepath.ToSlash(fPath)
+
+	if _, err := c.sftpClient.Stat(fPath); err != nil {
+		_ = c.MkdirAll(filepath.Dir(fPath))
+	}
+
+	w, err := c.sftpClient.Create(fPath)
+	if err != nil {
+		return err
+	}
+
+	defer w.Close()
+
+	io.Copy(w, r)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (c *Client) UploadHttpFile(fileH *multipart.FileHeader, remote string) error {
 	file, err := fileH.Open()
 	if err != nil {
 		return err
@@ -43,6 +83,33 @@ func (c *Client) UploadFileOne(fileH *multipart.FileHeader, remote string) error
 	defer r.Close()
 
 	_, err = io.Copy(r, file)
+	return err
+}
+
+func (c *Client) UploadFileRaw(context string, fPath string) error {
+	if c.sftpClient == nil {
+		err := c.NewSftpClient()
+		if err != nil {
+			return err
+		}
+	}
+	fPath = filepath.ToSlash(fPath)
+
+	if _, err := c.sftpClient.Stat(fPath); err != nil {
+		_ = c.MkdirAll(filepath.Dir(fPath))
+	}
+
+	r, err := c.sftpClient.Create(fPath)
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	_, err = r.Write([]byte(context))
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -121,4 +188,44 @@ func (c *Client) RealPath(path string) (string, error) {
 
 func (c *Client) GetPwd() (string, error) {
 	return c.sftpClient.Getwd()
+}
+
+func (c *Client) RunScript(shell string) ([]byte, error) {
+
+	fPath := filepath.ToSlash(filepath.Join(ShellTmpPath, uuid.NewString()))
+
+	if c.GetTargetMachineOs() != GOOSWindows {
+		fPath += LinuxShellExt
+	} else {
+		fPath += WindowsShellExt
+	}
+
+	err := c.UploadFileRaw(shell, fPath)
+	if err != nil {
+		return nil, err
+	}
+
+	defer c.sftpClient.Remove(fPath)
+
+	session, err := c.NewPty()
+	if err != nil {
+		return nil, err
+	}
+
+	if c.GetTargetMachineOs() != GOOSWindows {
+		output, err := session.Output(fmt.Sprintf("chmod +x %s;%s", fPath, fPath))
+		if err != nil {
+			return nil, err
+		}
+
+		return output, nil
+	} else {
+		output, err := session.Output(fPath)
+		if err != nil {
+			return nil, err
+		}
+
+		return output, nil
+	}
+
 }

@@ -48,10 +48,20 @@ type MachineInfo struct {
 	Cmd  string
 }
 
+type ClientConfig struct {
+	Host       string `json:"host"`
+	User       string `json:"user"`
+	Password   string `json:"password"`
+	Passphrase string `json:"passphrase"`
+	KeyBytes   []byte `json:"key_bytes"`
+	Port       int    `json:"port"`
+}
+
 type Client struct {
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
 	Info       *MachineInfo
+	Conf       *ClientConfig
 }
 
 type Session struct {
@@ -305,6 +315,14 @@ func New(host, user, password, passphrase string, KeyBytes []byte, port int) (cl
 		Info: &MachineInfo{
 			Goos: GOOSUnknown,
 			Arch: ArchUnknown,
+		},
+		Conf: &ClientConfig{
+			Host:       host,
+			User:       user,
+			Password:   password,
+			Passphrase: passphrase,
+			KeyBytes:   KeyBytes,
+			Port:       port,
 		},
 	}
 
