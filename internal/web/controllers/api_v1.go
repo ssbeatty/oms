@@ -2,10 +2,16 @@ package controllers
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
+	"io"
+	"io/fs"
 	"oms/internal/models"
+	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/web/payload"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -631,6 +637,56 @@ func (s *Service) DeleteInstances(c *Context) {
 }
 
 // api for player scheme
+
+func (s *Service) CacheUpload(c *Context) {
+	var (
+		resp    payload.UploadResponse
+		tmpPath = filepath.Join(s.conf.DataPath, ssh.UploadPath)
+	)
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	files := form.File["files"]
+
+	if len(files) == 0 {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	for _, file := range files {
+		ret := payload.File{
+			Name:   file.Filename,
+			Size:   file.Size,
+			Status: true,
+		}
+		open, err := file.Open()
+		if err != nil {
+			ret.Status = false
+			continue
+		}
+		newPath := filepath.Join(tmpPath, uuid.NewString()+filepath.Ext(file.Filename))
+		newFile, err := os.OpenFile(newPath, os.O_RDWR|os.O_CREATE, fs.ModePerm)
+		if err != nil {
+			ret.Status = false
+			continue
+		}
+
+		_, err = io.Copy(newFile, open)
+		if err != nil {
+			ret.Status = false
+			continue
+		}
+
+		ret.CachePath = newPath
+
+		resp.Files = append(resp.Files, ret)
+	}
+
+	c.ResponseOk(resp)
+}
 
 func (s *Service) GetPluginScheme(c *Context) {
 	c.ResponseOk(s.sshManager.GetAllPluginScheme())

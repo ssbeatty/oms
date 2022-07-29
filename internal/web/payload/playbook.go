@@ -18,3 +18,14 @@ type PutPlayBookForm struct {
 type DeletePlayBookParam struct {
 	Id int `uri:"id" binding:"required"`
 }
+
+type UploadResponse struct {
+	Files []File `json:"files"`
+}
+
+type File struct {
+	Name      string `json:"name"`
+	Size      int64  `json:"size"`
+	CachePath string `json:"cache_path"`
+	Status    bool   `json:"status"`
+}

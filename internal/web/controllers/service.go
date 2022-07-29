@@ -34,6 +34,7 @@ func NewService(conf config.App, sshManager *ssh.Manager, taskManager *task.Mana
 		tunnelManager: tunnelManager,
 		metrics:       metrics.NewManager(sshManager, taskManager, tunnelManager).Init(),
 		Logger:        logger.NewLogger("web"),
+		conf:          conf,
 	}
 
 	return service

@@ -163,6 +163,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 		// player scheme
 		apiV1.GET("/scheme", Handle(s.GetPluginScheme))
+		apiV1.POST("/cache/upload", Handle(s.CacheUpload))
 		apiV1.GET("/player", Handle(s.GetPlayBooks))
 		apiV1.GET("/player/:id", Handle(s.GetOnePlayBook))
 		apiV1.POST("/player", Handle(s.PostPlayBook))
