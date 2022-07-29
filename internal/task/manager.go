@@ -63,6 +63,9 @@ func (m *Manager) Init() *Manager {
 	if err := m.taskService.AddByFunc("build-in-loop-clear-instance", "0 0 0 * * *", m.CronClearInstanceCache, true); err != nil {
 		m.logger.Errorf("init build-in-loop-clear-instance: %v", err)
 	}
+	if err := m.taskService.AddByFunc("build-in-loop-clear-upload", "0 0 0 * * *", m.CronClearUploadFiles, true); err != nil {
+		m.logger.Errorf("init build-in-loop-clear-upload: %v", err)
+	}
 
 	// path for job log
 	err := os.MkdirAll(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fs.ModePerm)

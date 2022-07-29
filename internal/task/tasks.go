@@ -6,6 +6,9 @@ package task
 
 import (
 	"oms/internal/models"
+	"oms/internal/ssh"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -30,4 +33,38 @@ func (m *Manager) CronClearInstanceCache() {
 		return
 	}
 	m.logger.Info("==================== Task CronClearInstanceCache end ====================")
+}
+
+// CronClearUploadFiles clear upload file
+func (m *Manager) CronClearUploadFiles() {
+	m.logger.Info("=====================Task CronClearUploadFiles start=====================")
+
+	existStepFiles := make(map[string]struct{})
+	playbooks, err := models.GetAllPlayBook()
+	if err != nil {
+		return
+	}
+	for _, playbook := range playbooks {
+		for _, step := range playbook.StepsObj {
+			for _, cache := range step.GetCaches() {
+				existStepFiles[filepath.ToSlash(cache)] = struct{}{}
+			}
+		}
+	}
+
+	uploadPath := filepath.Join(m.config().App.DataPath, ssh.UploadPath)
+	files, err := os.ReadDir(uploadPath)
+	if err != nil {
+		return
+	}
+
+	for _, file := range files {
+		fPath := filepath.Join(uploadPath, file.Name())
+		if _, ok := existStepFiles[filepath.ToSlash(fPath)]; !ok {
+			m.logger.Infof("delete a upload cache file: %s", fPath)
+			_ = os.Remove(fPath)
+		}
+	}
+
+	m.logger.Info("===================== Task CronClearUploadFiles end =====================")
 }

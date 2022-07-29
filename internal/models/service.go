@@ -80,7 +80,9 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 		log.Errorf("dataSource load error! exit! err: %v", err)
 		return err
 	}
-	if err = db.AutoMigrate(new(Tag), new(Group), new(Host), new(Tunnel), new(Job), new(PrivateKey), new(TaskInstance)); err != nil {
+	if err = db.AutoMigrate(
+		new(Tag), new(Group), new(Host), new(Tunnel), new(Job), new(PrivateKey), new(TaskInstance), new(PlayBook),
+	); err != nil {
 		log.Errorf("Migrate error! err: %v", err)
 		return err
 	}

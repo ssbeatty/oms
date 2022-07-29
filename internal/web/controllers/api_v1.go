@@ -629,3 +629,135 @@ func (s *Service) DeleteInstances(c *Context) {
 		c.ResponseOk(nil)
 	}
 }
+
+// api for player scheme
+
+func (s *Service) GetPluginScheme(c *Context) {
+	c.ResponseOk(s.sshManager.GetAllPluginScheme())
+}
+
+func (s *Service) GetPlayBooks(c *Context) {
+	records, err := models.GetAllPlayBook()
+	if err != nil {
+		s.Logger.Errorf("get all playbook error: %v", err)
+		c.ResponseError(err.Error())
+		return
+	}
+	c.ResponseOk(records)
+}
+
+func (s *Service) GetOnePlayBook(c *Context) {
+	var param payload.GetPlayBookParam
+	err := c.ShouldBindUri(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		record, err := models.GetPlayBookById(param.Id)
+		if err != nil {
+			s.Logger.Errorf("get one playbook error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(record)
+	}
+}
+
+func (s *Service) PostPlayBook(c *Context) {
+	var form payload.PostPlayBookForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		var (
+			caches []string
+			steps  []*models.Step // 前端定义这个step
+		)
+		err := json.Unmarshal([]byte(form.Steps), &steps)
+		if err != nil {
+			c.ResponseError("can not parse steps")
+			return
+		}
+		for _, step := range steps {
+			st := s.sshManager.NewStep(step.Type)
+			err := json.Unmarshal([]byte(step.Params), st)
+			if err != nil {
+				s.Logger.Errorf("error when parse plugin param: %s, err: %v", step.Params, err)
+				continue
+			}
+
+			caches = st.ParseCaches(st)
+			mal, _ := json.Marshal(caches)
+			step.Caches = string(mal)
+		}
+
+		rSteps, _ := json.Marshal(steps)
+
+		record, err := models.InsertPlayBook(form.Name, string(rSteps))
+		if err != nil {
+			s.Logger.Errorf("insert playbook error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		record.StepsObj = steps
+
+		c.ResponseOk(record)
+	}
+}
+
+func (s *Service) PutPlayBook(c *Context) {
+	var form payload.PutPlayBookForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		var (
+			caches []string
+			steps  []*models.Step // 前端定义这个step
+		)
+		err := json.Unmarshal([]byte(form.Steps), &steps)
+		if err != nil {
+			c.ResponseError("can not parse steps")
+			return
+		}
+		for _, step := range steps {
+			st := s.sshManager.NewStep(step.Type)
+			err := json.Unmarshal([]byte(step.Params), st)
+			if err != nil {
+				s.Logger.Errorf("error when parse plugin param: %s, err: %v", step.Params, err)
+				continue
+			}
+
+			caches = st.ParseCaches(st)
+			mal, _ := json.Marshal(caches)
+			step.Caches = string(mal)
+		}
+
+		rSteps, _ := json.Marshal(steps)
+
+		record, err := models.UpdatePlayBook(form.Id, form.Name, string(rSteps))
+		if err != nil {
+			s.Logger.Errorf("update playbook error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		record.StepsObj = steps
+
+		c.ResponseOk(record)
+	}
+}
+
+func (s *Service) DeletePlayBook(c *Context) {
+	var param payload.DeletePlayBookParam
+	err := c.ShouldBindUri(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		err := models.DeletePlayBookById(param.Id)
+		if err != nil {
+			s.Logger.Errorf("delete playbook error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(nil)
+	}
+}

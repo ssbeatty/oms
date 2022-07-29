@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"github.com/swaggest/jsonschema-go"
 	"oms/pkg/transport"
+	"reflect"
 )
 
 const (
-	CMDName   = "--name"
-	CMDScheme = "--scheme"
-	CMDClient = "--client"
-	CMDParams = "--params"
+	UploadPath = "upload"
+	CMDName    = "--name"
+	CMDScheme  = "--scheme"
+	CMDClient  = "--client"
+	CMDParams  = "--params"
 )
 
 type Step interface {
@@ -21,6 +23,8 @@ type Step interface {
 	Create() Step
 	Name() string
 	ID() string
+	SetID(id string)
+	ParseCaches(instance Step) []string
 }
 
 type Player struct {
@@ -58,6 +62,19 @@ type BaseStep struct {
 	id string // 任务步骤标识
 }
 
+func (bs *BaseStep) ParseCaches(instance Step) []string {
+	var ret []string
+	v := reflect.ValueOf(instance)
+
+	t := reflect.TypeOf(instance).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		if t.Field(i).Tag.Get("format") == "data-url" {
+			ret = append(ret, v.Elem().FieldByName(t.Field(i).Name).String())
+		}
+	}
+	return ret
+}
+
 func (bs *BaseStep) Exec(*transport.Client) ([]byte, error) {
 
 	return nil, nil
@@ -88,4 +105,8 @@ func (bs *BaseStep) Name() string {
 
 func (bs *BaseStep) ID() string {
 	return bs.id
+}
+
+func (bs *BaseStep) SetID(id string) {
+	bs.id = id
 }

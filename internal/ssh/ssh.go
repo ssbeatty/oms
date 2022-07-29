@@ -28,6 +28,11 @@ type Config struct {
 	Passphrase string
 }
 
+type Scheme struct {
+	Name   string `json:"name"`
+	Scheme string `json:"scheme"`
+}
+
 // 对host和port进行hash
 func (h *Config) serialize() int64 {
 	return utils.InetAtoN(h.Host, h.Port)
@@ -87,7 +92,7 @@ func (m *Manager) initAllPlugins() {
 		plg := filepath.Join(pluginPath, f.Name())
 		name, err := checkPlugin(plg)
 		if err != nil {
-			m.logger.Error("error when check plugin: %s, err: %v", plg, err)
+			m.logger.Errorf("error when check plugin: %s, err: %v", plg, err)
 			continue
 		}
 
@@ -162,6 +167,34 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 
 func (m *Manager) RemoveCache(host *models.Host) {
 	m.sshPoll.Remove(utils.InetAtoN(host.Addr, host.Port))
+}
+
+func (m *Manager) GetAllPluginScheme() []Scheme {
+	var ret []Scheme
+
+	for _, plugin := range m.supportPlugins {
+		sc, err := plugin.GetSchema(plugin)
+		if err != nil {
+			m.logger.Errorf("error when get plugin: %s scheme, err: %v", plugin.Name(), err)
+			continue
+		}
+		ret = append(ret, Scheme{
+			Name:   plugin.Name(),
+			Scheme: string(sc),
+		})
+	}
+
+	return ret
+}
+
+func (m *Manager) NewStep(typ string) Step {
+	for _, plugin := range m.supportPlugins {
+		if plugin.Name() == typ {
+			return plugin.Create()
+		}
+	}
+
+	return nil
 }
 
 func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, writer io.Writer) (err error) {
