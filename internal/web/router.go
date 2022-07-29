@@ -160,6 +160,8 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 		// steam version
 		apiV1.POST("/tools/upload", Handle(s.FileUploadV2))
+
+		// player scheme
 	}
 	s.Engine = r
 

@@ -2,12 +2,21 @@ package ssh
 
 import (
 	"io"
+	"io/fs"
+	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/utils"
 	"oms/pkg/cache"
 	"oms/pkg/logger"
 	"oms/pkg/transport"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
+)
+
+const (
+	PluginPath = "plugin"
 )
 
 type Config struct {
@@ -25,27 +34,68 @@ func (h *Config) serialize() int64 {
 }
 
 type Manager struct {
-	fileList   *utils.SafeMap
-	sshPoll    *cache.Cache
-	logger     *logger.Logger
-	notify     chan bool
-	subClients sync.Map
+	fileList       *utils.SafeMap
+	sshPoll        *cache.Cache
+	logger         *logger.Logger
+	notify         chan bool
+	subClients     sync.Map
+	supportPlugins map[string]Step // 注册所有的插件类型通过接口返回 表单渲染的格式
+	cfg            *config.Conf
 }
 
-func NewManager() *Manager {
+func NewManager(cfg *config.Conf) *Manager {
 	return &Manager{
 		notify:     make(chan bool, 10),
 		subClients: sync.Map{},
 		fileList:   utils.NewSafeMap(),
 		sshPoll:    cache.NewCache(1000),
 		logger:     logger.NewLogger("sshManager"),
+		cfg:        cfg,
 	}
 }
 
 func (m *Manager) Init() *Manager {
 	go m.doNotifyFileTaskList()
+	m.initAllPlugins()
 
 	return m
+}
+
+// initAllPlugins 启动时加载所有插件
+func (m *Manager) initAllPlugins() {
+	pluginPath := filepath.Join(m.cfg.App.DataPath, PluginPath)
+	if exists, _ := utils.PathExists(pluginPath); !exists {
+		_ = os.MkdirAll(pluginPath, fs.ModePerm)
+	}
+
+	m.supportPlugins = map[string]Step{
+		StepNameCMD:   &RunCmdStep{},
+		StepNameShell: &RunShellStep{},
+		StepNameFile:  &FileUploadStep{},
+	}
+
+	files, err := os.ReadDir(pluginPath)
+	if err != nil {
+		return
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		plg := filepath.Join(pluginPath, f.Name())
+		name, err := checkPlugin(plg)
+		if err != nil {
+			m.logger.Error("error when check plugin: %s, err: %v", plg, err)
+			continue
+		}
+
+		m.supportPlugins[name] = &PluginStep{
+			ScriptPath: plg,
+		}
+	}
+
 }
 
 func (m *Manager) GetSSHList() *cache.Cache {
@@ -138,4 +188,13 @@ func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, wri
 	case err := <-errChan:
 		return err
 	}
+}
+
+func checkPlugin(path string) (string, error) {
+	name, err := exec.Command(path, CMDName).Output()
+	if err != nil {
+		return "", err
+	}
+
+	return string(name), nil
 }
