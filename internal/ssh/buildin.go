@@ -23,6 +23,7 @@ func (bs *RunCmdStep) Exec(client *transport.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer session.Close()
 
 	return session.Output(bs.Cmd)
 }
@@ -43,7 +44,7 @@ type RunShellStep struct {
 
 func (bs *RunShellStep) Exec(client *transport.Client) ([]byte, error) {
 
-	return client.RunScript(bs.Shell)
+	return client.RunScript(bs.Shell, true)
 }
 
 func (bs *RunShellStep) Create() Step {

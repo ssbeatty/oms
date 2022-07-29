@@ -54,8 +54,10 @@ func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
 	return w.b.Bytes(), err
 }
 
-func (s *Session) SudoInteractively(cmd, passwd string) ([]byte, error) {
-	// todo how do when bash not bash ?
+func (c *Client) SudoInteractively(session *Session, cmd, passwd string) ([]byte, error) {
 	command := "bash -ic \"%s\""
-	return s.Sudo(fmt.Sprintf(command, cmd), passwd)
+	if !c.PathExists("/bin/bash") {
+		return session.Sudo(cmd, passwd)
+	}
+	return session.Sudo(fmt.Sprintf(command, cmd), passwd)
 }

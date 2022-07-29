@@ -44,6 +44,11 @@ func init() {
 	if err != nil {
 		return
 	}
+
+	err = client.NewSftpClient()
+	if err != nil {
+		return
+	}
 }
 
 func TestSampleCmd(t *testing.T) {
@@ -62,7 +67,7 @@ func TestSampleInterCmd(t *testing.T) {
 	session, err := client.NewPty()
 	assert.Nil(t, err)
 
-	result, err := session.OutputInteractively("ls")
+	result, err := client.OutputInteractively(session, "ls")
 	assert.Nil(t, err)
 
 	fmt.Println(string(result))
@@ -161,7 +166,7 @@ ls
 echo 222
 ls -lh
 `
-	output, err := client.RunScript(shell)
+	output, err := client.RunScript(shell, true)
 	assert.Nil(t, err)
 
 	fmt.Println(string(output))

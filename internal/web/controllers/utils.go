@@ -319,7 +319,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	}()
 
 	if sudo && client.GetTargetMachineOs() != transport.GOOSWindows {
-		msg, err = session.SudoInteractively(cmd, host.PassWord)
+		msg, err = client.SudoInteractively(session, cmd, host.PassWord)
 	} else {
 		msg, err = session.Output(cmd)
 	}

@@ -181,6 +181,16 @@ func (c *Client) ReadLink(path string) (string, error) {
 func (c *Client) Stat(path string) (os.FileInfo, error) {
 	return c.sftpClient.Stat(path)
 }
+func (c *Client) PathExists(path string) bool {
+	_, err := c.sftpClient.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
 
 func (c *Client) RealPath(path string) (string, error) {
 	return c.sftpClient.RealPath(path)
@@ -190,8 +200,7 @@ func (c *Client) GetPwd() (string, error) {
 	return c.sftpClient.Getwd()
 }
 
-func (c *Client) RunScript(shell string) ([]byte, error) {
-
+func (c *Client) RunScript(shell string, sudo bool) ([]byte, error) {
 	fPath := filepath.ToSlash(filepath.Join(ShellTmpPath, uuid.NewString()))
 
 	if c.GetTargetMachineOs() != GOOSWindows {
@@ -211,21 +220,16 @@ func (c *Client) RunScript(shell string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer session.Close()
+
+	command := fPath
 
 	if c.GetTargetMachineOs() != GOOSWindows {
-		output, err := session.Output(fmt.Sprintf("chmod +x %s;%s", fPath, fPath))
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
-	} else {
-		output, err := session.Output(fPath)
-		if err != nil {
-			return nil, err
-		}
-
-		return output, nil
+		command = fmt.Sprintf("chmod +x %s;%s", fPath, fPath)
 	}
-
+	if sudo {
+		return session.Sudo(command, c.Conf.Password)
+	} else {
+		return session.Output(command)
+	}
 }
