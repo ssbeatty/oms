@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/swaggest/jsonschema-go"
@@ -18,7 +19,7 @@ const (
 )
 
 type Step interface {
-	Exec(*transport.Client) ([]byte, error)
+	Exec(session *transport.Session) ([]byte, error)
 	GetSchema(instance Step) ([]byte, error)
 	Create() Step
 	Name() string
@@ -39,18 +40,43 @@ func NewPlayer(client *transport.Client, steps []Step) *Player {
 	}
 }
 
-func (p *Player) Run() ([]byte, error) {
-	var buf bytes.Buffer
+func (p *Player) Run(ctx context.Context) ([]byte, error) {
+	var (
+		err     error
+		buf     bytes.Buffer
+		session *transport.Session
+		quit    = make(chan struct{}, 1)
+	)
+
+	defer close(quit)
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			if session != nil {
+				session.Close()
+			}
+		case <-quit:
+			return
+		}
+	}()
 
 	for _, step := range p.Steps {
+		session, err = p.client.NewPty()
+		if err != nil {
+			return buf.Bytes(), err
+		}
+
 		// todo 优化样式
 		buf.WriteString(fmt.Sprintf("[Step %8s] ==> %s\n", step.Name(), step.ID()))
-		msg, err := step.Exec(p.client)
+		msg, err := step.Exec(session)
 		buf.Write(msg)
 
 		if err != nil {
 			return buf.Bytes(), err
 		}
+
+		session.Close()
 	}
 
 	return buf.Bytes(), nil
@@ -75,7 +101,7 @@ func (bs *BaseStep) ParseCaches(instance Step) []string {
 	return ret
 }
 
-func (bs *BaseStep) Exec(*transport.Client) ([]byte, error) {
+func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
 
 	return nil, nil
 }

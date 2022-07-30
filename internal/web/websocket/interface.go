@@ -6,6 +6,6 @@ import (
 )
 
 type WebService interface {
-	RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan interface{})
+	RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo bool, ch chan interface{})
 	GetSSHManager() *ssh.Manager
 }

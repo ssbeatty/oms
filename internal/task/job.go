@@ -2,12 +2,14 @@ package task
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"oms/internal/config"
 	"oms/internal/models"
+	"oms/internal/ssh"
 	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os"
@@ -38,54 +40,99 @@ const (
 
 // Job is cron task or long task
 type Job struct {
-	ID     int
-	name   string
-	Type   JobType
-	hosts  []*models.Host
-	cmd    string
-	status atomic.Value
-	log    string // log path
-	spec   string
-	engine *Manager
+	ID      int
+	name    string
+	Type    JobType
+	hosts   []*models.Host
+	cmd     string
+	cmdType string
+	status  atomic.Value
+	log     string // log path
+	spec    string
+	engine  *Manager
+	steps   []ssh.Step
 }
 
-func (m *Manager) NewJob(id int, name, cmd, spec string, t JobType, host []*models.Host) *Job {
+func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, t JobType, host []*models.Host) *Job {
+	var (
+		steps []ssh.Step
+	)
+
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
 	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fmt.Sprintf("%d-%s", id, name))
 
+	if cmdType == ssh.CMDTypePlayer {
+		cid, err := strconv.Atoi(cmd)
+		if err != nil {
+			return nil
+		}
+		modPlayer, err := models.GetPlayBookById(cid)
+		if err != nil {
+			return nil
+		}
+		steps, err = m.sshManager.ParseSteps(modPlayer.Steps)
+		if err != nil {
+			return nil
+		}
+	}
+
 	job := &Job{
-		ID:     id,
-		name:   name,
-		Type:   t,
-		hosts:  host,
-		cmd:    cmd,
-		spec:   spec,
-		engine: m,
-		log:    log,
+		ID:      id,
+		name:    name,
+		Type:    t,
+		hosts:   host,
+		cmd:     cmd,
+		cmdType: cmdType,
+		spec:    spec,
+		engine:  m,
+		log:     log,
+		steps:   steps,
 	}
 	job.UpdateStatus(JobStatusReady)
 
 	return job
 }
 
-func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std io.Writer) {
-	defer wg.Done()
+func (j *Job) runPlayer(client *transport.Client, passwd string) ([]byte, error) {
+	player := ssh.NewPlayer(client, j.steps)
 
+	return player.Run(context.Background())
+
+}
+
+func (j *Job) runCmd(client *transport.Client, passwd string) ([]byte, error) {
 	session, err := client.NewPty()
 	if err != nil {
 		j.engine.logger.Errorf("create new session failed, host name: %s, err: %v", err)
 	}
+	defer session.Close()
 
-	output, err := session.Sudo(j.cmd, host.PassWord)
+	return session.Sudo(j.cmd, passwd)
+}
+
+func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std io.Writer) {
+	defer wg.Done()
+
+	var (
+		err    error
+		output []byte
+	)
+
+	switch j.cmdType {
+	case ssh.CMDTypePlayer:
+		output, err = j.runPlayer(client, host.PassWord)
+	default:
+		output, err = j.runCmd(client, host.PassWord)
+	}
+
 	if err != nil {
 		j.engine.logger.Errorf("error when run cmd: %v, host name: %s, msg: %s", err, host.Name, output)
 		_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
 		_, err = std.Write(output)
 		return
 	}
-	defer session.Close()
 
 	_, _ = fmt.Fprintf(std, "%s[host_id:%d]\n", MarkText, host.Id)
 	_, err = std.Write(output)

@@ -142,7 +142,7 @@ func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error 
 		return err
 	}
 
-	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, JobType(modelJob.Type), hosts)
+	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, modelJob.CmdType, JobType(modelJob.Type), hosts)
 	realJob.UpdateStatus(JobStatus(status))
 
 	if err := m.Register(modelJob.Id, realJob); err != nil {

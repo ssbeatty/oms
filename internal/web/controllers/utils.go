@@ -293,7 +293,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	quit := make(chan bool, 1)
 	defer close(quit)
 
-	client, err := s.sshManager.NewClient(host)
+	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
 		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
@@ -336,9 +336,47 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	ch <- result
 }
 
+func (s *Service) runPlayerWithContext(host *models.Host, params string, ch chan interface{}, ctx context.Context) {
+	var (
+		msg    []byte
+		result *Result
+	)
+
+	client, err := s.sshManager.NewClient(host)
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+
+	steps, err := s.sshManager.ParseSteps(params)
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- result
+		return
+	}
+
+	player := ssh.NewPlayer(client, steps)
+
+	msg, err = player.Run(ctx)
+
+	if err != nil {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+	} else {
+		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
+	}
+
+	ch <- result
+}
+
 // RunCmdWithContext 使用在websocket接口上
-func (s *Service) RunCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan interface{}) {
+func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo bool, ch chan interface{}) {
 	ctx, cancel := context.WithTimeout(context.Background(), websocket.SSHTimeDeadline)
 	defer cancel()
-	s.runCmdWithContext(host, cmd, sudo, ch, ctx)
+	switch cmd.Type {
+	case ssh.CMDTypeShell:
+		s.runCmdWithContext(host, cmd.Params, sudo, ch, ctx)
+	case ssh.CMDTypePlayer:
+		s.runPlayerWithContext(host, cmd.Params, ch, ctx)
+	}
 }

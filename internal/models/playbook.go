@@ -13,7 +13,9 @@ type PlayBook struct {
 }
 
 func (p *PlayBook) GetStepsObj() error {
-	var steps []*Step
+	var (
+		steps []*Step
+	)
 	err := json.Unmarshal([]byte(p.Steps), &steps)
 	if err != nil {
 		return err

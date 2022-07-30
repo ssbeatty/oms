@@ -23,6 +23,7 @@ type Job struct {
 	Type        string         `gorm:"size:32;not null" json:"type"`
 	Spec        string         `gorm:"size:128" json:"spec"`
 	Cmd         string         `gorm:"size:512" json:"cmd"`
+	CmdType     string         `gorm:"size:128" json:"cmd_type"`
 	Status      string         `gorm:"size:64;default: ready" json:"status"`
 	ExecuteID   int            `json:"execute_id"`
 	ExecuteType string         `gorm:"size:64" json:"execute_type"`

@@ -200,36 +200,30 @@ func (c *Client) GetPwd() (string, error) {
 	return c.sftpClient.Getwd()
 }
 
-func (c *Client) RunScript(shell string, sudo bool) ([]byte, error) {
+func (s *Session) RunScript(shell string, sudo bool) ([]byte, error) {
 	fPath := filepath.ToSlash(filepath.Join(ShellTmpPath, uuid.NewString()))
 
-	if c.GetTargetMachineOs() != GOOSWindows {
+	if s.Client.GetTargetMachineOs() != GOOSWindows {
 		fPath += LinuxShellExt
 	} else {
 		fPath += WindowsShellExt
 	}
 
-	err := c.UploadFileRaw(shell, fPath)
+	err := s.Client.UploadFileRaw(shell, fPath)
 	if err != nil {
 		return nil, err
 	}
 
-	defer c.sftpClient.Remove(fPath)
-
-	session, err := c.NewPty()
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
+	defer s.Client.Remove(fPath)
 
 	command := fPath
 
-	if c.GetTargetMachineOs() != GOOSWindows {
+	if s.Client.GetTargetMachineOs() != GOOSWindows {
 		command = fmt.Sprintf("chmod +x %s;%s", fPath, fPath)
 	}
 	if sudo {
-		return session.Sudo(command, c.Conf.Password)
+		return s.Sudo(command, s.Client.Conf.Password)
 	} else {
-		return session.Output(command)
+		return s.Output(command)
 	}
 }

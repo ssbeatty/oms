@@ -9,20 +9,22 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/web/payload"
 	"oms/pkg/transport"
+	"strconv"
 	"time"
 )
 
 const (
 	WSStatusSuccess       = "0"
 	WSStatusError         = "-1"
-	SSHTimeDeadline       = 30 * time.Second
+	SSHTimeDeadline       = 120 * time.Second
 	DefaultStatusInterval = 2 * time.Second
 )
 
 type Request struct {
-	Type string `json:"type"`
-	Id   int    `json:"id"`
-	Cmd  string `json:"cmd"`
+	Type  string `json:"type"`
+	Id    int    `json:"id"`
+	Cmd   string `json:"cmd"`
+	CType string `json:"cmd_type"`
 }
 
 type HostStatusRequest struct {
@@ -56,7 +58,30 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 	}
 	for _, host := range hosts {
 		// TODO sudo 由host本身管理
-		go w.engine.RunCmdWithContext(host, req.Cmd, true, ch)
+		switch req.CType {
+		case ssh.CMDTypePlayer:
+			cid, err := strconv.Atoi(req.Cmd)
+			if err != nil {
+				w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "parse cmd id error", nil))
+				return
+			}
+			player, err := models.GetPlayBookById(cid)
+			if err != nil {
+				w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "playbook not found", nil))
+				return
+			}
+			cmd := ssh.Command{
+				Type:   req.CType,
+				Params: player.Steps,
+			}
+			go w.engine.RunCmdWithContext(host, cmd, true, ch)
+		default:
+			cmd := ssh.Command{
+				Type:   req.CType,
+				Params: req.Cmd,
+			}
+			go w.engine.RunCmdWithContext(host, cmd, true, ch)
+		}
 	}
 
 	for i := 0; i < len(hosts); i++ {

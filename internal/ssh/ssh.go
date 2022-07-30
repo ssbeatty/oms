@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"encoding/json"
 	"io"
 	"io/fs"
 	"oms/internal/config"
@@ -16,7 +17,9 @@ import (
 )
 
 const (
-	PluginPath = "plugin"
+	PluginPath    = "plugin"
+	CMDTypeShell  = "cmd"
+	CMDTypePlayer = "player"
 )
 
 type Config struct {
@@ -31,6 +34,11 @@ type Config struct {
 type Scheme struct {
 	Name   string `json:"name"`
 	Scheme string `json:"scheme"`
+}
+
+type Command struct {
+	Type   string
+	Params string
 }
 
 // 对host和port进行hash
@@ -195,6 +203,29 @@ func (m *Manager) NewStep(typ string) Step {
 	}
 
 	return nil
+}
+
+func (m *Manager) ParseSteps(params string) ([]Step, error) {
+	var (
+		modSteps []models.Step
+		steps    []Step
+	)
+
+	err := json.Unmarshal([]byte(params), &modSteps)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ms := range modSteps {
+		step := m.NewStep(ms.Type)
+		err := json.Unmarshal([]byte(ms.Params), step)
+		if err != nil {
+			return nil, err
+		}
+		steps = append(steps, step)
+	}
+
+	return steps, nil
 }
 
 func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, writer io.Writer) (err error) {

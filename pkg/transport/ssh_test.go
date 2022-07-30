@@ -166,7 +166,10 @@ ls
 echo 222
 ls -lh
 `
-	output, err := client.RunScript(shell, true)
+	session, err := client.NewPty()
+	assert.Nil(t, err)
+
+	output, err := session.RunScript(shell, true)
 	assert.Nil(t, err)
 
 	fmt.Println(string(output))

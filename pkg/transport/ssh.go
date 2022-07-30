@@ -65,6 +65,7 @@ type Client struct {
 }
 
 type Session struct {
+	Client     *Client
 	sshSession *ssh.Session
 	stdin      io.WriteCloser
 }
@@ -152,6 +153,7 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 		return nil, err
 	}
 	return &Session{
+		Client:     c,
 		sshSession: session,
 		stdin:      stdin,
 	}, nil
@@ -174,6 +176,7 @@ func (c *Client) NewSession() (*Session, error) {
 		return nil, err
 	}
 	return &Session{
+		Client:     c,
 		sshSession: session,
 		stdin:      stdin,
 	}, nil

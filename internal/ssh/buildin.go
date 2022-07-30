@@ -18,12 +18,7 @@ type RunCmdStep struct {
 	Cmd string `json:"cmd" required:"true"`
 }
 
-func (bs *RunCmdStep) Exec(client *transport.Client) ([]byte, error) {
-	session, err := client.NewPty()
-	if err != nil {
-		return nil, err
-	}
-	defer session.Close()
+func (bs *RunCmdStep) Exec(session *transport.Session) ([]byte, error) {
 
 	return session.Output(bs.Cmd)
 }
@@ -42,9 +37,9 @@ type RunShellStep struct {
 	Shell string `json:"shell" required:"true"`
 }
 
-func (bs *RunShellStep) Exec(client *transport.Client) ([]byte, error) {
+func (bs *RunShellStep) Exec(session *transport.Session) ([]byte, error) {
 
-	return client.RunScript(bs.Shell, true)
+	return session.RunScript(bs.Shell, true)
 }
 
 func (bs *RunShellStep) Create() Step {
@@ -62,13 +57,13 @@ type FileUploadStep struct {
 	Remote string `json:"remote" required:"true"`
 }
 
-func (bs *FileUploadStep) Exec(client *transport.Client) ([]byte, error) {
-	err := client.NewSftpClient()
+func (bs *FileUploadStep) Exec(session *transport.Session) ([]byte, error) {
+	err := session.Client.NewSftpClient()
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, client.UploadFile(bs.File, bs.Remote)
+	return nil, session.Client.UploadFile(bs.File, bs.Remote)
 }
 
 func (bs *FileUploadStep) Create() Step {
@@ -122,8 +117,8 @@ func (bs *PluginStep) GetSchema(instance Step) ([]byte, error) {
 	return exec.Command(bs.ScriptPath, CMDScheme).Output()
 }
 
-func (bs *PluginStep) Exec(client *transport.Client) ([]byte, error) {
-	configJson, _ := json.Marshal(client.Conf)
+func (bs *PluginStep) Exec(session *transport.Session) ([]byte, error) {
+	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
 	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).Output()
 }
