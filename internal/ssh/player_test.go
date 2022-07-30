@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -82,7 +83,7 @@ func TestPlayerRun(t *testing.T) {
 
 	player := NewPlayer(client, steps)
 
-	output, err := player.Run()
+	output, err := player.Run(context.Background())
 	if err != nil {
 		return
 	}
