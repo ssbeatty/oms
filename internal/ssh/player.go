@@ -19,7 +19,7 @@ const (
 )
 
 type Step interface {
-	Exec(session *transport.Session) ([]byte, error)
+	Exec(session *transport.Session, sudo bool) ([]byte, error)
 	GetSchema(instance Step) ([]byte, error)
 	Create() Step
 	Name() string
@@ -29,12 +29,14 @@ type Step interface {
 }
 
 type Player struct {
+	sudo   bool
 	client *transport.Client
 	Steps  []Step `json:"steps"`
 }
 
-func NewPlayer(client *transport.Client, steps []Step) *Player {
+func NewPlayer(client *transport.Client, steps []Step, sudo bool) *Player {
 	return &Player{
+		sudo:   sudo,
 		client: client,
 		Steps:  steps,
 	}
@@ -69,7 +71,7 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 
 		// todo 优化样式
 		buf.WriteString(fmt.Sprintf("[Step %8s] ==> %s\n", step.Name(), step.ID()))
-		msg, err := step.Exec(session)
+		msg, err := step.Exec(session, p.sudo)
 		buf.Write(msg)
 
 		if err != nil {

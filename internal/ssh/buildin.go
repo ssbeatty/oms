@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"encoding/json"
+	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os/exec"
 )
@@ -18,7 +19,10 @@ type RunCmdStep struct {
 	Cmd string `json:"cmd" required:"true"`
 }
 
-func (bs *RunCmdStep) Exec(session *transport.Session) ([]byte, error) {
+func (bs *RunCmdStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
+	if sudo {
+		return session.Sudo(bs.Cmd, session.Client.Conf.Password)
+	}
 
 	return session.Output(bs.Cmd)
 }
@@ -37,9 +41,9 @@ type RunShellStep struct {
 	Shell string `json:"shell" required:"true"`
 }
 
-func (bs *RunShellStep) Exec(session *transport.Session) ([]byte, error) {
+func (bs *RunShellStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 
-	return session.RunScript(bs.Shell, true)
+	return session.RunScript(bs.Shell, sudo)
 }
 
 func (bs *RunShellStep) Create() Step {
@@ -57,10 +61,17 @@ type FileUploadStep struct {
 	Remote string `json:"remote" required:"true"`
 }
 
-func (bs *FileUploadStep) Exec(session *transport.Session) ([]byte, error) {
+func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 	err := session.Client.NewSftpClient()
 	if err != nil {
 		return nil, err
+	}
+	if exists, err := utils.PathExists(bs.File); !exists {
+		return nil, err
+	}
+
+	if sudo {
+		// todo change fs perm
 	}
 
 	return nil, session.Client.UploadFile(bs.File, bs.Remote)
@@ -117,7 +128,7 @@ func (bs *PluginStep) GetSchema(instance Step) ([]byte, error) {
 	return exec.Command(bs.ScriptPath, CMDScheme).Output()
 }
 
-func (bs *PluginStep) Exec(session *transport.Session) ([]byte, error) {
+func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
 	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).Output()

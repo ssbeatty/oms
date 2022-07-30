@@ -95,21 +95,21 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, t JobType, hos
 	return job
 }
 
-func (j *Job) runPlayer(client *transport.Client, passwd string) ([]byte, error) {
-	player := ssh.NewPlayer(client, j.steps)
+func (j *Job) runPlayer(client *transport.Client) ([]byte, error) {
+	player := ssh.NewPlayer(client, j.steps, true)
 
 	return player.Run(context.Background())
 
 }
 
-func (j *Job) runCmd(client *transport.Client, passwd string) ([]byte, error) {
+func (j *Job) runCmd(client *transport.Client) ([]byte, error) {
 	session, err := client.NewPty()
 	if err != nil {
 		j.engine.logger.Errorf("create new session failed, host name: %s, err: %v", err)
 	}
 	defer session.Close()
 
-	return session.Sudo(j.cmd, passwd)
+	return session.Sudo(j.cmd, client.Conf.Password)
 }
 
 func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std io.Writer) {
@@ -122,9 +122,9 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 
 	switch j.cmdType {
 	case ssh.CMDTypePlayer:
-		output, err = j.runPlayer(client, host.PassWord)
+		output, err = j.runPlayer(client)
 	default:
-		output, err = j.runCmd(client, host.PassWord)
+		output, err = j.runCmd(client)
 	}
 
 	if err != nil {

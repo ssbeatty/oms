@@ -336,7 +336,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	ch <- result
 }
 
-func (s *Service) runPlayerWithContext(host *models.Host, params string, ch chan interface{}, ctx context.Context) {
+func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bool, ch chan interface{}, ctx context.Context) {
 	var (
 		msg    []byte
 		result *Result
@@ -356,7 +356,7 @@ func (s *Service) runPlayerWithContext(host *models.Host, params string, ch chan
 		return
 	}
 
-	player := ssh.NewPlayer(client, steps)
+	player := ssh.NewPlayer(client, steps, sudo)
 
 	msg, err = player.Run(ctx)
 
@@ -377,6 +377,6 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo boo
 	case ssh.CMDTypeShell:
 		s.runCmdWithContext(host, cmd.Params, sudo, ch, ctx)
 	case ssh.CMDTypePlayer:
-		s.runPlayerWithContext(host, cmd.Params, ch, ctx)
+		s.runPlayerWithContext(host, cmd.Params, sudo, ch, ctx)
 	}
 }
