@@ -516,7 +516,8 @@ func (s *Service) PostJob(c *Context) {
 			c.ResponseError(err.Error())
 			return
 		}
-		job, err := models.InsertJob(form.Name, form.Type, form.Spec, form.Cmd, form.ExecuteID, form.ExecuteType)
+		job, err := models.InsertJob(
+			form.Name, form.Type, form.Spec, form.Cmd, form.ExecuteID, form.ExecuteType, form.CmdType)
 		if err != nil {
 			s.Logger.Errorf("insert job error: %v", err)
 			c.ResponseError(err.Error())
@@ -544,7 +545,7 @@ func (s *Service) PutJob(c *Context) {
 			return
 		}
 
-		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd)
+		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd, form.CmdType)
 		if err != nil {
 			s.Logger.Errorf("update job error: %v", err)
 			c.ResponseError(err.Error())

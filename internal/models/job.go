@@ -60,7 +60,7 @@ func GetJobById(id int) (*Job, error) {
 	return &job, nil
 }
 
-func InsertJob(name, t, spec, cmd string, executeID int, executeType string) (*Job, error) {
+func InsertJob(name, t, spec, cmd string, executeID int, executeType, cmdType string) (*Job, error) {
 	job := Job{
 		Name:        name,
 		Type:        t,
@@ -68,6 +68,7 @@ func InsertJob(name, t, spec, cmd string, executeID int, executeType string) (*J
 		Cmd:         cmd,
 		ExecuteID:   executeID,
 		ExecuteType: executeType,
+		CmdType:     cmdType,
 	}
 	err := db.Create(&job).Error
 	if err != nil {
@@ -76,7 +77,7 @@ func InsertJob(name, t, spec, cmd string, executeID int, executeType string) (*J
 	return &job, nil
 }
 
-func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
+func UpdateJob(id int, name, t, spec, cmd, cmdType string) (*Job, error) {
 	job := Job{Id: id}
 	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {
@@ -93,6 +94,9 @@ func UpdateJob(id int, name, t, spec, cmd string) (*Job, error) {
 	}
 	if cmd != "" {
 		job.Cmd = cmd
+	}
+	if cmdType != "" {
+		job.CmdType = cmdType
 	}
 	err = db.Save(&job).Error
 	if err != nil {
