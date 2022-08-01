@@ -32,7 +32,7 @@ type Config struct {
 }
 
 type Scheme struct {
-	Name   string `json:"name"`
+	Type   string `json:"type"`
 	Scheme string `json:"scheme"`
 }
 
@@ -187,7 +187,7 @@ func (m *Manager) GetAllPluginScheme() []Scheme {
 			continue
 		}
 		ret = append(ret, Scheme{
-			Name:   plugin.Name(),
+			Type:   plugin.Name(),
 			Scheme: string(sc),
 		})
 	}
