@@ -1,12 +1,17 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
+	"io/ioutil"
 	"math/big"
 	"net"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 func InetNtoA(ip int64) string {
@@ -79,4 +84,17 @@ func HashSha1(s string) string {
 	bs := h.Sum(nil)
 
 	return string(bs)
+}
+
+func IsUtf8(s []byte) bool {
+	return utf8.Valid(s)
+}
+
+func GbkToUtf8(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
+	d, e := ioutil.ReadAll(reader)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
 }

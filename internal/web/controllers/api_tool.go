@@ -20,6 +20,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/task"
+	"oms/internal/utils"
 	"oms/internal/web/payload"
 	"os"
 	"path"
@@ -626,7 +627,10 @@ func (s *Service) DataExport(c *Context) {
 		c.ResponseError(err.Error())
 		return
 	}
-	c.Data(http.StatusOK, "text/csv", b.Bytes())
+
+	c.Writer.Header().Set("Content-type", "application/octet-stream")
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=%s", "export.csv"))
+	c.String(http.StatusOK, b.String())
 }
 
 func (s *Service) DataImport(c *Context) {
@@ -668,6 +672,14 @@ func (s *Service) DataImport(c *Context) {
 
 	// issue https://github.com/gocarina/gocsv/issues/191
 	content = bytes.TrimPrefix(content, []byte(Utf8Dom))
+
+	if !utils.IsUtf8(content) {
+		content, err = utils.GbkToUtf8(content)
+		if err != nil {
+			c.ResponseError(err.Error())
+			return
+		}
+	}
 
 	err = gocsv.UnmarshalBytes(content, &data)
 	if err != nil {
