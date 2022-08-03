@@ -26,11 +26,18 @@ func (p *PlayBook) GetStepsObj() error {
 }
 
 type Step struct {
+	Seq    int    `json:"seq"`
 	Type   string `json:"type"`
 	Name   string `json:"name"`
 	Caches string `json:"caches,omitempty"`
 	Params string `json:"params"`
 }
+
+type StepSlice []Step
+
+func (s StepSlice) Len() int           { return len(s) }
+func (s StepSlice) Less(i, j int) bool { return s[i].Seq < s[j].Seq }
+func (s StepSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
 func (s *Step) GetCaches() []string {
 	var caches []string

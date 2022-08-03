@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"sync"
 )
 
@@ -215,6 +216,8 @@ func (m *Manager) ParseSteps(params string) ([]Step, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Sort(models.StepSlice(modSteps))
 
 	for _, ms := range modSteps {
 		step := m.NewStep(ms.Type)
