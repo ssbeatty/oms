@@ -162,7 +162,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.POST("/tools/upload", Handle(s.FileUploadV2))
 
 		// player scheme
-		apiV1.GET("/scheme", Handle(s.GetPluginScheme))
+		apiV1.GET("/schema", Handle(s.GetPluginSchema))
 		apiV1.POST("/cache/upload", Handle(s.CacheUpload))
 		apiV1.GET("/player", Handle(s.GetPlayBooks))
 		apiV1.GET("/player/:id", Handle(s.GetOnePlayBook))

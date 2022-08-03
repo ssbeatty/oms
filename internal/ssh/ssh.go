@@ -32,8 +32,8 @@ type Config struct {
 }
 
 type Scheme struct {
-	Type   string `json:"type"`
-	Scheme string `json:"scheme"`
+	Type   string      `json:"type"`
+	Scheme interface{} `json:"scheme"`
 }
 
 type Command struct {
@@ -177,7 +177,7 @@ func (m *Manager) RemoveCache(host *models.Host) {
 	m.sshPoll.Remove(utils.InetAtoN(host.Addr, host.Port))
 }
 
-func (m *Manager) GetAllPluginScheme() []Scheme {
+func (m *Manager) GetAllPluginSchema() []Scheme {
 	var ret []Scheme
 
 	for _, plugin := range m.supportPlugins {
@@ -188,7 +188,7 @@ func (m *Manager) GetAllPluginScheme() []Scheme {
 		}
 		ret = append(ret, Scheme{
 			Type:   plugin.Name(),
-			Scheme: string(sc),
+			Scheme: sc,
 		})
 	}
 

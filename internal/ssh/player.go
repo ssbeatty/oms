@@ -3,7 +3,6 @@ package ssh
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/swaggest/jsonschema-go"
 	"oms/pkg/transport"
@@ -20,7 +19,7 @@ const (
 
 type Step interface {
 	Exec(session *transport.Session, sudo bool) ([]byte, error)
-	GetSchema(instance Step) ([]byte, error)
+	GetSchema(instance Step) (interface{}, error)
 	Create() Step
 	Name() string
 	ID() string
@@ -108,7 +107,7 @@ func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
 	return nil, nil
 }
 
-func (bs *BaseStep) GetSchema(instance Step) ([]byte, error) {
+func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
 	reflector := jsonschema.Reflector{}
 
 	schema, err := reflector.Reflect(instance)
@@ -116,11 +115,7 @@ func (bs *BaseStep) GetSchema(instance Step) ([]byte, error) {
 		return nil, err
 	}
 
-	j, err := json.MarshalIndent(schema, "", " ")
-	if err != nil {
-		return nil, err
-	}
-	return j, nil
+	return schema, nil
 }
 
 func (bs *BaseStep) Create() Step {

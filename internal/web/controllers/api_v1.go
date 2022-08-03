@@ -689,8 +689,8 @@ func (s *Service) CacheUpload(c *Context) {
 	c.ResponseOk(resp)
 }
 
-func (s *Service) GetPluginScheme(c *Context) {
-	c.ResponseOk(s.sshManager.GetAllPluginScheme())
+func (s *Service) GetPluginSchema(c *Context) {
+	c.ResponseOk(s.sshManager.GetAllPluginSchema())
 }
 
 func (s *Service) GetPlayBooks(c *Context) {

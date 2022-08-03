@@ -119,13 +119,25 @@ func (bs *PluginStep) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (bs *PluginStep) GetSchema(instance Step) ([]byte, error) {
+func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
+	ret := make(map[string]interface{})
+
 	_, err := exec.LookPath(bs.ScriptPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return exec.Command(bs.ScriptPath, CMDScheme).Output()
+	b, err := exec.Command(bs.ScriptPath, CMDScheme).Output()
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(b, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
