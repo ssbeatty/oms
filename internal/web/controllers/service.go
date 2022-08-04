@@ -45,12 +45,12 @@ type Context struct {
 }
 
 func (c *Context) ResponseError(msg string) {
-	d := payload.GenerateResponsePayload(HttpStatusError, msg, nil)
+	d := payload.GenerateErrorResponse(HttpStatusError, msg)
 	c.JSON(http.StatusOK, d)
 }
 
 func (c *Context) ResponseOk(data interface{}) {
-	d := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, data)
+	d := payload.GenerateDataResponse(HttpStatusOk, HttpResponseSuccess, data)
 	c.JSON(http.StatusOK, d)
 }
 

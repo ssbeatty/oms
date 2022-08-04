@@ -49,7 +49,7 @@ func (s *Service) RunCmd(c *Context) {
 	} else {
 		hosts, err := models.ParseHostList(params.Type, params.Id)
 		if err != nil || len(hosts) == 0 {
-			data := payload.GenerateResponsePayload(HttpStatusError, payload.ErrHostParseEmpty, nil)
+			data := payload.GenerateErrorResponse(HttpStatusError, payload.ErrHostParseEmpty)
 			c.JSON(http.StatusOK, data)
 			c.ResponseError("")
 			return
@@ -69,7 +69,7 @@ func (s *Service) GetPathInfo(c *Context) {
 	} else {
 		results, err := s.GetPathInfoExec(params.HostId, params.Id)
 		if err != nil {
-			data := payload.GenerateResponsePayload(HttpStatusError, err.Error(), nil)
+			data := payload.GenerateErrorResponse(HttpStatusError, err.Error())
 			c.JSON(http.StatusOK, data)
 			return
 		}
@@ -242,7 +242,7 @@ func (s *Service) FileUploadUnBlock(c *Context) {
 	var remoteFile string
 	id, err := strconv.Atoi(c.PostForm("id"))
 	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "can not parse param id", nil)
+		data := payload.GenerateErrorResponse(HttpStatusError, "can not parse param id")
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -262,7 +262,7 @@ func (s *Service) FileUploadUnBlock(c *Context) {
 	hosts, _ := models.ParseHostList(pType, id)
 
 	s.UploadFileUnBlock(hosts, files, remoteFile)
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	data := payload.GenerateMsgResponse(HttpStatusOk, HttpResponseSuccess)
 	c.JSON(http.StatusOK, data)
 
 }
@@ -288,7 +288,7 @@ func (s *Service) FileUploadV2(c *Context) {
 
 	mediaType, params, err := mime.ParseMediaType(c.Request.Header.Get("Content-Type"))
 	if err != nil {
-		data := payload.GenerateResponsePayload(HttpStatusError, "parse content type error", nil)
+		data := payload.GenerateErrorResponse(HttpStatusError, "parse content type error")
 		c.JSON(http.StatusOK, data)
 		return
 	}
@@ -325,7 +325,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				case "id":
 					id, err = strconv.Atoi(string(all))
 					if err != nil {
-						data := payload.GenerateResponsePayload(HttpStatusError, "parse params id error", nil)
+						data := payload.GenerateErrorResponse(HttpStatusError, "parse params id error")
 						c.JSON(http.StatusOK, data)
 						return
 					}
@@ -334,7 +334,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				// TODO skip repeat file
 				hosts, err := models.ParseHostList(dType, id)
 				if err != nil || len(hosts) == 0 {
-					data := payload.GenerateResponsePayload(HttpStatusError, "hosts parse error", nil)
+					data := payload.GenerateErrorResponse(HttpStatusError, "hosts parse error")
 					c.JSON(http.StatusOK, data)
 					return
 				}
@@ -352,7 +352,7 @@ func (s *Service) FileUploadV2(c *Context) {
 				}
 				tmp, err := os.OpenFile(tempFile.Path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, os.ModePerm)
 				if err != nil {
-					data := payload.GenerateResponsePayload(HttpStatusError, "create tmp file error", nil)
+					data := payload.GenerateErrorResponse(HttpStatusError, "create tmp file error")
 					c.JSON(http.StatusOK, data)
 					return
 				}
@@ -372,7 +372,7 @@ func (s *Service) FileUploadV2(c *Context) {
 						}
 						os.Remove(tempFile.Path)
 					}
-					data := payload.GenerateResponsePayload(HttpStatusError, "io copy error", nil)
+					data := payload.GenerateErrorResponse(HttpStatusError, "io copy error")
 					c.JSON(http.StatusOK, data)
 					return
 				}
@@ -385,7 +385,7 @@ func (s *Service) FileUploadV2(c *Context) {
 			}
 		}
 	}
-	data := payload.GenerateResponsePayload(HttpStatusOk, HttpResponseSuccess, nil)
+	data := payload.GenerateMsgResponse(HttpStatusOk, HttpResponseSuccess)
 	c.JSON(http.StatusOK, data)
 }
 

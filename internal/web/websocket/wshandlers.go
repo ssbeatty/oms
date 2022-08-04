@@ -43,41 +43,48 @@ func (w *WSConnect) InitHandlers() *WSConnect {
 
 func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 	w.logger.Infof("handler ssh shell recv a message: %s", msg.Body)
-	req := &Request{}
-	ch := make(chan interface{})
+	var (
+		execNum int
+		req     = &Request{}
+		ch      = make(chan *ssh.Result)
+	)
+
+	defer close(ch)
 
 	err := json.Unmarshal(msg.Body, req)
 	if err != nil {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "can not parse payload"))
 		return
 	}
 	hosts, err := models.ParseHostList(req.Type, req.Id)
 	if err != nil || len(hosts) == 0 {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "host empty", nil))
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "host empty"))
 		return
 	}
+	defer w.logger.Infof("cmd exec success, total: %d, exec: %d", len(hosts), execNum)
+
 	for _, host := range hosts {
 		// TODO sudo 由host本身管理
 		switch req.CType {
 		case ssh.CMDTypePlayer:
 			cid, err := strconv.Atoi(req.Cmd)
 			if err != nil {
-				w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "parse cmd id error", nil))
+				w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "parse cmd id error"))
 				return
 			}
 			player, err := models.GetPlayBookById(cid)
 			if err != nil {
-				w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "playbook not found", nil))
+				w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "playbook not found"))
 				return
 			}
 			cmd := ssh.Command{
-				Type:   req.CType,
+				Type:   ssh.CMDTypePlayer,
 				Params: player.Steps,
 			}
 			go w.engine.RunCmdWithContext(host, cmd, true, ch)
 		default:
 			cmd := ssh.Command{
-				Type:   req.CType,
+				Type:   ssh.CMDTypeShell,
 				Params: req.Cmd,
 			}
 			go w.engine.RunCmdWithContext(host, cmd, true, ch)
@@ -86,10 +93,14 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 
 	for i := 0; i < len(hosts); i++ {
 		res := <-ch
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", res))
+		res.Seq = i
+
+		execNum++
+		w.WriteMsg(payload.GenerateDataResponse(WSStatusSuccess, "success", res))
 	}
 
-	close(ch)
+	w.WriteMsg(payload.GenerateMsgResponse(
+		WSStatusSuccess, fmt.Sprintf("cmd exec success, total: %d, exec: %d", len(hosts), execNum)))
 }
 
 func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
@@ -119,7 +130,7 @@ func (w *WSConnect) HandlerFTaskStatus(conn *websocket.Conn, msg *WsMsg) {
 			return
 		case resp := <-notifyCh:
 			if len(resp) > 0 {
-				w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", resp))
+				w.WriteMsg(payload.GenerateDataResponse(WSStatusSuccess, "success", resp))
 			}
 		}
 	}
@@ -133,18 +144,18 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 
 	err := json.Unmarshal(msg.Body, req)
 	if err != nil {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "can not parse payload", nil))
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "can not parse payload"))
 		return
 	}
 	hosts, err := models.ParseHostList(req.Type, req.Id)
 	if err != nil || len(hosts) == 0 {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, "parse host array empty", nil))
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "parse host array empty"))
 		return
 	}
 
 	client, err := w.engine.GetSSHManager().NewClient(hosts[0])
 	if err != nil {
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id), nil))
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, fmt.Sprintf("error when new ssh client, id: %d", hosts[0].Id)))
 		return
 	}
 
@@ -164,10 +175,10 @@ func (w *WSConnect) HandlerHostStatus(conn *websocket.Conn, msg *WsMsg) {
 		}
 		err := transport.GetAllStats(client, status, nil)
 		if err != nil {
-			w.WriteMsg(payload.GenerateResponsePayload(WSStatusError, fmt.Sprintf("error when get ssh status"), nil))
+			w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "error when get ssh status"))
 			return
 		}
-		w.WriteMsg(payload.GenerateResponsePayload(WSStatusSuccess, "success", status))
+		w.WriteMsg(payload.GenerateDataResponse(WSStatusSuccess, "success", status))
 	}
 
 	go sendHostMsg(&isRunning)

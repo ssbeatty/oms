@@ -58,6 +58,7 @@ type ClientConfig struct {
 }
 
 type Client struct {
+	conn       net.Conn
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
 	Info       *MachineInfo
@@ -131,8 +132,16 @@ func (c *Client) CollectTargetMachineInfo() error {
 	return nil
 }
 
+func (c *Client) newSession() (*ssh.Session, error) {
+	err := c.conn.SetDeadline(time.Now().Add(DefaultTimeout))
+	if err != nil {
+		return nil, err
+	}
+	return c.sshClient.NewSession()
+}
+
 func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
-	session, err := c.sshClient.NewSession()
+	session, err := c.newSession()
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +173,7 @@ func (c *Client) NewPty() (*Session, error) {
 }
 
 func (c *Client) NewSession() (*Session, error) {
-	session, err := c.sshClient.NewSession()
+	session, err := c.newSession()
 	if err != nil {
 		return nil, err
 	}
@@ -281,6 +290,19 @@ func AuthWithPrivateKeyBytes(key []byte, password string) (ssh.AuthMethod, error
 	return ssh.PublicKeys(signer), nil
 }
 
+func Dial(network, addr string, config *ssh.ClientConfig) (net.Conn, *ssh.Client, error) {
+	conn, err := net.DialTimeout(network, addr, config.Timeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	c, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		return nil, nil, err
+	}
+	return conn, ssh.NewClient(c, chans, reqs), nil
+}
+
 // New 创建SSH client
 func New(host, user, password, passphrase string, KeyBytes []byte, port int) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
@@ -308,12 +330,13 @@ func New(host, user, password, passphrase string, KeyBytes []byte, port int) (cl
 		clientConfig.Auth = append(clientConfig.Auth, auth)
 	}
 
-	sshClient, err := ssh.Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)), clientConfig)
+	conn, sshClient, err := Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)), clientConfig)
 
 	if err != nil {
 		return client, errors.New("Failed to dial ssh: " + err.Error())
 	}
 	client = &Client{
+		conn:      conn,
 		sshClient: sshClient,
 		Info: &MachineInfo{
 			Goos: GOOSUnknown,

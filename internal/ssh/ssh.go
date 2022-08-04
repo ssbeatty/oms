@@ -32,14 +32,22 @@ type Config struct {
 	Passphrase string
 }
 
-type Scheme struct {
+type Schema struct {
 	Type   string      `json:"type"`
-	Scheme interface{} `json:"scheme"`
+	Schema interface{} `json:"schema"`
 }
 
 type Command struct {
 	Type   string
 	Params string
+}
+
+type Result struct {
+	Seq      int    `json:"seq"`
+	Status   bool   `json:"status"`
+	HostId   int    `json:"host_id"`
+	HostName string `json:"hostname"`
+	Msg      string `json:"msg"`
 }
 
 // 对host和port进行hash
@@ -121,7 +129,7 @@ func (m *Manager) GetFileList() *utils.SafeMap {
 }
 
 func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
-	var config = &Config{
+	var c = &Config{
 		Host:     host.Addr,
 		Port:     host.Port,
 		User:     host.User,
@@ -133,25 +141,25 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 			m.logger.Errorf("error when get private key")
 			return nil, err
 		}
-		config.KeyBytes = []byte(privateKey.KeyFile)
-		config.Passphrase = privateKey.Passphrase
+		c.KeyBytes = []byte(privateKey.KeyFile)
+		c.Passphrase = privateKey.Passphrase
 	}
-	if cli, ok := m.sshPoll.Get(config.serialize()); ok {
+	if cli, ok := m.sshPoll.Get(c.serialize()); ok {
 		ss, err := cli.(*transport.Client).NewSession()
 
 		if err != nil {
-			m.sshPoll.Remove(config.serialize())
+			m.sshPoll.Remove(c.serialize())
 		} else {
 			defer ss.Close()
 			return cli.(*transport.Client), nil
 		}
 	}
 
-	cli, err := transport.New(config.Host, config.User, config.Password, config.Passphrase, config.KeyBytes, config.Port)
+	cli, err := transport.New(c.Host, c.User, c.Password, c.Passphrase, c.KeyBytes, c.Port)
 	if err != nil {
 		return nil, err
 	}
-	m.sshPoll.Add(config.serialize(), cli)
+	m.sshPoll.Add(c.serialize(), cli)
 	return cli, nil
 }
 
@@ -178,8 +186,8 @@ func (m *Manager) RemoveCache(host *models.Host) {
 	m.sshPoll.Remove(utils.InetAtoN(host.Addr, host.Port))
 }
 
-func (m *Manager) GetAllPluginSchema() []Scheme {
-	var ret []Scheme
+func (m *Manager) GetAllPluginSchema() []Schema {
+	var ret []Schema
 
 	for _, plugin := range m.supportPlugins {
 		sc, err := plugin.GetSchema(plugin)
@@ -187,9 +195,9 @@ func (m *Manager) GetAllPluginSchema() []Scheme {
 			m.logger.Errorf("error when get plugin: %s scheme, err: %v", plugin.Name(), err)
 			continue
 		}
-		ret = append(ret, Scheme{
+		ret = append(ret, Schema{
 			Type:   plugin.Name(),
-			Scheme: sc,
+			Schema: sc,
 		})
 	}
 

@@ -19,13 +19,6 @@ import (
 	"time"
 )
 
-type Result struct {
-	Status   bool   `json:"status"`
-	HostId   int    `json:"host_id"`
-	HostName string `json:"hostname"`
-	Msg      string `json:"msg"`
-}
-
 type FileInfo struct {
 	Id            string    `json:"id"`
 	Name          string    `json:"name"`
@@ -51,18 +44,18 @@ func (s *Service) GetSSHManager() *ssh.Manager {
 }
 
 // RunCmdOneAsync 搭配RunCmd使用
-func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch chan *Result, wg *sync.WaitGroup) {
+func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch chan *ssh.Result, wg *sync.WaitGroup) {
 	var msg []byte
-	var result *Result
+	var result *ssh.Result
 	client, err := s.sshManager.NewClient(host)
 	if err != nil {
-		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		return
 	}
 	session, err := client.NewPty()
 	if err != nil {
 		s.Logger.Errorf("RunCmdOneAsync create new session failed, err: %v", err)
-		ch <- &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		ch <- &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		return
 	}
 	defer session.Close()
@@ -73,9 +66,9 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 		msg, err = session.Output(cmd)
 	}
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
 	} else {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
 	ch <- result
@@ -83,9 +76,9 @@ func (s *Service) RunCmdOneAsync(host *models.Host, cmd string, sudo bool, ch ch
 }
 
 // RunCmdExec 用于http接口
-func (s *Service) RunCmdExec(hosts []*models.Host, cmd string, sudo bool) []*Result {
-	var results []*Result
-	channel := make(chan *Result, len(hosts))
+func (s *Service) RunCmdExec(hosts []*models.Host, cmd string, sudo bool) []*ssh.Result {
+	var results []*ssh.Result
+	channel := make(chan *ssh.Result, len(hosts))
 	defer close(channel)
 	wg := sync.WaitGroup{}
 	for _, host := range hosts {
@@ -285,24 +278,24 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 	return client.MkdirAll(realPath)
 }
 
-func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan interface{}, ctx context.Context) {
+func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *ssh.Result, ctx context.Context) {
 	var msg []byte
 	var errMsg string
-	var result *Result
+	var result *ssh.Result
 
 	quit := make(chan bool, 1)
 	defer close(quit)
 
 	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
 	}
 	session, err := client.NewPty()
 	if err != nil {
 		s.Logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
 	}
@@ -325,9 +318,9 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	}
 
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
 	} else {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
 	if errMsg != "" {
@@ -336,22 +329,22 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	ch <- result
 }
 
-func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bool, ch chan interface{}, ctx context.Context) {
+func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bool, ch chan *ssh.Result, ctx context.Context) {
 	var (
 		msg    []byte
-		result *Result
+		result *ssh.Result
 	)
 
 	client, err := s.sshManager.NewClient(host)
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
 	}
 
 	steps, err := s.sshManager.ParseSteps(params)
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error()}
 		ch <- result
 		return
 	}
@@ -361,16 +354,16 @@ func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bo
 	msg, err = player.Run(ctx)
 
 	if err != nil {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg)}
 	} else {
-		result = &Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
+		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg)}
 	}
 
 	ch <- result
 }
 
 // RunCmdWithContext 使用在websocket接口上
-func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo bool, ch chan interface{}) {
+func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo bool, ch chan *ssh.Result) {
 	ctx, cancel := context.WithTimeout(context.Background(), websocket.SSHTimeDeadline)
 	defer cancel()
 	switch cmd.Type {
