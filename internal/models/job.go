@@ -197,7 +197,7 @@ func InsertTaskInstance(jobId int, start time.Time) (*TaskInstance, error) {
 }
 
 func clearJobLogs(sinceBefore time.Time, job *Job) error {
-	logPath := filepath.Join(path.Join(dataPath, config.DefaultTmpPath), fmt.Sprintf("%d-%s", job.Id, job.Name))
+	logPath := filepath.Join(path.Join(dataPath, config.DefaultTaskTmpPath), fmt.Sprintf("%d-%s", job.Id, job.Name))
 	files, err := ioutil.ReadDir(logPath)
 	if err != nil {
 		return err

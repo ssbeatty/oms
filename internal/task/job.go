@@ -61,7 +61,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, t JobType, hos
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
-	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fmt.Sprintf("%d-%s", id, name))
+	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTaskTmpPath), fmt.Sprintf("%d-%s", id, name))
 
 	if cmdType == ssh.CMDTypePlayer {
 		cid, err := strconv.Atoi(cmd)

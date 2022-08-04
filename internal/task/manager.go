@@ -7,6 +7,7 @@ package task
 import (
 	"errors"
 	"io/fs"
+	"io/ioutil"
 	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
@@ -51,6 +52,21 @@ func (m *Manager) config() *config.Conf {
 	return m.cfg.Load().(*config.Conf)
 }
 
+// 删除tmp的文件 可能是上传时阻塞没有删除
+func (m *Manager) clearTmpPath() error {
+	tmpPath := path.Join(m.config().App.DataPath, config.DefaultTmpPath)
+
+	dir, err := ioutil.ReadDir(tmpPath)
+	if err != nil {
+		return err
+	}
+	for _, d := range dir {
+		_ = os.RemoveAll(path.Join(tmpPath, d.Name()))
+	}
+
+	return nil
+}
+
 // Init 启动crontab daemon, 注册全局任务, 创建日志文件夹并初始化job
 func (m *Manager) Init() *Manager {
 	// init schedule engine
@@ -70,7 +86,17 @@ func (m *Manager) Init() *Manager {
 	// path for job log
 	err := os.MkdirAll(path.Join(m.config().App.DataPath, config.DefaultTmpPath), fs.ModePerm)
 	if err != nil {
-		m.logger.Errorf("error when make all tmp path, err: %v", err)
+		m.logger.Errorf("error when make tmp path, err: %v", err)
+	}
+
+	err = os.MkdirAll(path.Join(m.config().App.DataPath, config.DefaultTaskTmpPath), fs.ModePerm)
+	if err != nil {
+		m.logger.Errorf("error when make task tmp path, err: %v", err)
+	}
+
+	err = m.clearTmpPath()
+	if err != nil {
+		m.logger.Errorf("error when clear tmp path, err: %v", err)
 	}
 
 	// once do init all job in database

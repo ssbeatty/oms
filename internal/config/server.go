@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	defaultDataPath = "data"
-	DefaultTmpPath  = "tmp"
+	defaultDataPath    = "data"
+	DefaultTmpPath     = "tmp"
+	DefaultTaskTmpPath = "tasks"
 )
 
 type Conf struct {
