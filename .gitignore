@@ -9,3 +9,5 @@ hosts
 /build
 /bin
 /data
+
+*.exe
