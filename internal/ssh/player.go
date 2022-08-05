@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/invopop/jsonschema"
+	"github.com/ssbeatty/jsonschema"
 	"oms/pkg/transport"
 	"reflect"
 )
@@ -107,9 +107,9 @@ func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
 }
 
 func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
-	jsonschema.Reflect(instance)
+	ref := jsonschema.Reflector{DoNotReference: true}
 
-	return jsonschema.Reflect(instance), nil
+	return ref.Reflect(instance), nil
 }
 
 func (bs *BaseStep) Create() Step {

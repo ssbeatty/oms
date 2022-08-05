@@ -5,12 +5,15 @@ import (
 	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os/exec"
+	"path"
 )
 
 const (
-	StepNameCMD   = "cmd"
-	StepNameShell = "shell"
-	StepNameFile  = "file"
+	StepNameCMD       = "cmd"
+	StepNameShell     = "shell"
+	StepNameFile      = "file"
+	StepMultiNameFile = "multi_file"
+	GUIDLength        = 36
 )
 
 // RunCmdStep 执行cmd
@@ -83,6 +86,40 @@ func (bs *FileUploadStep) Create() Step {
 
 func (bs *FileUploadStep) Name() string {
 	return StepNameFile
+}
+
+type MultiFileUploadStep struct {
+	BaseStep
+	Files     []string `json:"files" jsonschema:"format=data-url,required=true"`
+	RemoteDir string   `json:"remote_dir" jsonschema:"required=true"`
+}
+
+func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
+	err := session.Client.NewSftpClient()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range bs.Files {
+		_, fName := path.Split(f)
+		if fName != "" && len(fName) > GUIDLength {
+			fName = fName[36:]
+			err := session.Client.UploadFile(f, fName)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func (bs *MultiFileUploadStep) Create() Step {
+	return &MultiFileUploadStep{}
+}
+
+func (bs *MultiFileUploadStep) Name() string {
+	return StepMultiNameFile
 }
 
 // PluginStep 调用外部程序比如python或者go的脚本来获取输出

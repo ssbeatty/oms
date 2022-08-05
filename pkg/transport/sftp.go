@@ -46,7 +46,7 @@ func (c *Client) UploadFile(local, fPath string) error {
 
 	defer w.Close()
 
-	io.Copy(w, r)
+	_, err = io.Copy(w, r)
 	if err != nil {
 		return err
 	}

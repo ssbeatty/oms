@@ -744,11 +744,7 @@ func (t *Schema) stringKeywords(tags []string) {
 			case "pattern":
 				t.Pattern = val
 			case "format":
-				switch val {
-				case "date-time", "email", "hostname", "ipv4", "ipv6", "uri", "uuid":
-					t.Format = val
-					break
-				}
+				t.Format = val
 			case "readOnly":
 				i, _ := strconv.ParseBool(val)
 				t.ReadOnly = i
@@ -874,13 +870,23 @@ func (t *Schema) setExtra(key, val string) {
 			t.Extras[key] = append(existingVal, val)
 		case int:
 			t.Extras[key], _ = strconv.Atoi(val)
+		case bool:
+			t.Extras[key] = (val == "true" || val == "t")
 		}
 	} else {
 		switch key {
 		case "minimum":
 			t.Extras[key], _ = strconv.Atoi(val)
 		default:
-			t.Extras[key] = val
+			var x interface{}
+			if val == "true" {
+				x = true
+			} else if val == "false" {
+				x = false
+			} else {
+				x = val
+			}
+			t.Extras[key] = x
 		}
 	}
 }

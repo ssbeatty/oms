@@ -9,12 +9,12 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20220727205534-7fbf8e1b37fb
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/invopop/jsonschema v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/sftp v1.13.4
 	github.com/prometheus/client_golang v1.11.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.6.0
+	github.com/ssbeatty/jsonschema v0.1.0
 	github.com/ssbeatty/sqlite v1.0.4
 	github.com/stretchr/testify v1.7.2
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
@@ -38,6 +38,7 @@ require (
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
+	github.com/invopop/jsonschema v0.6.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect

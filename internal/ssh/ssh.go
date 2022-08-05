@@ -91,9 +91,10 @@ func (m *Manager) initAllPlugins() {
 	}
 
 	m.supportPlugins = map[string]Step{
-		StepNameCMD:   &RunCmdStep{},
-		StepNameShell: &RunShellStep{},
-		StepNameFile:  &FileUploadStep{},
+		StepNameCMD:       &RunCmdStep{},
+		StepNameShell:     &RunShellStep{},
+		StepNameFile:      &FileUploadStep{},
+		StepMultiNameFile: &MultiFileUploadStep{},
 	}
 
 	files, err := os.ReadDir(pluginPath)

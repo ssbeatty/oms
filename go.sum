@@ -276,6 +276,8 @@ github.com/spf13/cobra v0.0.5/go.mod h1:3K3wKZymM7VvHMDS9+Akkh4K60UwM26emMESw8tL
 github.com/spf13/jwalterweatherman v1.0.0/go.mod h1:cQK4TGJAtQXfYWX+Ddv3mKDzgVb68N+wFjFa4jdeBTo=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
+github.com/ssbeatty/jsonschema v0.1.0 h1:1trPAdSKel00EtyzDZuKxmYeS3I+pFGYDkjMGqQ+gp8=
+github.com/ssbeatty/jsonschema v0.1.0/go.mod h1:Zu6eFk/ASwOij5XoC3hgmZ6O0KCMJniPvHNXcwNuFH4=
 github.com/ssbeatty/sqlite v1.0.4 h1:XvwnP6UJ5gIzvVzHCnOLaayix9JUlSlb07wJ5o38i7o=
 github.com/ssbeatty/sqlite v1.0.4/go.mod h1:Xzynuw8L4uIfGOeN5LhtmrihyOjRCgDb8ynl1OW1qNg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

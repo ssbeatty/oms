@@ -668,7 +668,7 @@ func (s *Service) CacheUpload(c *Context) {
 			ret.Status = false
 			continue
 		}
-		newPath := filepath.Join(tmpPath, uuid.NewString()+filepath.Ext(file.Filename))
+		newPath := filepath.Join(tmpPath, uuid.NewString()+file.Filename)
 		newFile, err := os.OpenFile(newPath, os.O_RDWR|os.O_CREATE, fs.ModePerm)
 		if err != nil {
 			ret.Status = false
