@@ -45,15 +45,18 @@ func TestGenJsonSchema(t *testing.T) {
 		return
 	}
 
-	fmt.Println(schema)
+	marshal, _ := json.Marshal(schema)
+
+	fmt.Println(string(marshal))
 
 	s := RunShellStep{}
 	schema, err = s.GetSchema(&s)
 	if err != nil {
 		return
 	}
+	marshal, _ = json.Marshal(schema)
 
-	fmt.Println(schema)
+	fmt.Println(string(marshal))
 
 	f := FileUploadStep{}
 	schema, err = f.GetSchema(&f)
@@ -61,7 +64,9 @@ func TestGenJsonSchema(t *testing.T) {
 		return
 	}
 
-	fmt.Println(schema)
+	marshal, _ = json.Marshal(schema)
+
+	fmt.Println(string(marshal))
 }
 
 func TestPlayerRun(t *testing.T) {

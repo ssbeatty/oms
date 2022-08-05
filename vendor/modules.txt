@@ -59,6 +59,12 @@ github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
 ## explicit; go 1.12
 github.com/gorilla/websocket
+# github.com/iancoleman/orderedmap v0.2.0
+## explicit
+github.com/iancoleman/orderedmap
+# github.com/invopop/jsonschema v0.6.0
+## explicit; go 1.16
+github.com/invopop/jsonschema
 # github.com/jackc/chunkreader/v2 v2.0.1
 ## explicit; go 1.12
 github.com/jackc/chunkreader/v2
@@ -174,12 +180,6 @@ github.com/ssbeatty/sqlite
 # github.com/stretchr/testify v1.7.2
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
-# github.com/swaggest/jsonschema-go v0.3.35
-## explicit; go 1.17
-github.com/swaggest/jsonschema-go
-# github.com/swaggest/refl v1.0.2
-## explicit; go 1.17
-github.com/swaggest/refl
 # github.com/ugorji/go/codec v1.2.6
 ## explicit; go 1.11
 github.com/ugorji/go/codec

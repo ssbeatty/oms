@@ -233,6 +233,7 @@ func (m *Manager) ParseSteps(params string) ([]Step, error) {
 		if err != nil {
 			return nil, err
 		}
+		step.SetID(ms.Name)
 		steps = append(steps, step)
 	}
 

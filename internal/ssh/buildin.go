@@ -16,7 +16,7 @@ const (
 // RunCmdStep 执行cmd
 type RunCmdStep struct {
 	BaseStep
-	Cmd string `json:"cmd" required:"true"`
+	Cmd string `json:"cmd" jsonschema:"required=true"`
 }
 
 func (bs *RunCmdStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
@@ -38,7 +38,7 @@ func (bs *RunCmdStep) Name() string {
 // RunShellStep 执行shell
 type RunShellStep struct {
 	BaseStep
-	Shell string `json:"shell" required:"true"`
+	Shell string `json:"shell" jsonschema:"required=true"`
 }
 
 func (bs *RunShellStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
@@ -57,8 +57,8 @@ func (bs *RunShellStep) Name() string {
 // FileUploadStep 上传文件
 type FileUploadStep struct {
 	BaseStep
-	File   string `json:"file" required:"true" format:"data-url"`
-	Remote string `json:"remote" required:"true"`
+	File   string `json:"file" jsonschema:"format=data-url,required=true"`
+	Remote string `json:"remote" jsonschema:"required=true"`
 }
 
 func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {

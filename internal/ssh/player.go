@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/swaggest/jsonschema-go"
+	"github.com/invopop/jsonschema"
 	"oms/pkg/transport"
 	"reflect"
 )
@@ -107,14 +107,9 @@ func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
 }
 
 func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
-	reflector := jsonschema.Reflector{}
+	jsonschema.Reflect(instance)
 
-	schema, err := reflector.Reflect(instance)
-	if err != nil {
-		return nil, err
-	}
-
-	return schema, nil
+	return jsonschema.Reflect(instance), nil
 }
 
 func (bs *BaseStep) Create() Step {
