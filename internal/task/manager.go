@@ -94,6 +94,11 @@ func (m *Manager) Init() *Manager {
 		m.logger.Errorf("error when make task tmp path, err: %v", err)
 	}
 
+	err = os.MkdirAll(path.Join(m.config().App.DataPath, config.UploadPath), fs.ModePerm)
+	if err != nil {
+		m.logger.Errorf("error when make task tmp path, err: %v", err)
+	}
+
 	err = m.clearTmpPath()
 	if err != nil {
 		m.logger.Errorf("error when clear tmp path, err: %v", err)

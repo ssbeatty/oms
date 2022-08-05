@@ -13,6 +13,7 @@ const (
 	defaultDataPath    = "data"
 	DefaultTmpPath     = "tmp"
 	DefaultTaskTmpPath = "tasks"
+	UploadPath         = "upload"
 )
 
 type Conf struct {

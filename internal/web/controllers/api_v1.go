@@ -6,8 +6,8 @@ import (
 	"github.com/robfig/cron/v3"
 	"io"
 	"io/fs"
+	"oms/internal/config"
 	"oms/internal/models"
-	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/web/payload"
 	"os"
@@ -642,7 +642,7 @@ func (s *Service) DeleteInstances(c *Context) {
 func (s *Service) CacheUpload(c *Context) {
 	var (
 		resp    payload.UploadResponse
-		tmpPath = filepath.Join(s.conf.DataPath, ssh.UploadPath)
+		tmpPath = filepath.Join(s.conf.DataPath, config.UploadPath)
 	)
 
 	form, err := c.MultipartForm()

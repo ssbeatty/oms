@@ -5,8 +5,8 @@ task job init
 package task
 
 import (
+	"oms/internal/config"
 	"oms/internal/models"
-	"oms/internal/ssh"
 	"os"
 	"path/filepath"
 	"time"
@@ -47,7 +47,7 @@ func (m *Manager) CronClearUploadFiles() {
 		}
 	}
 
-	uploadPath := filepath.Join(m.config().App.DataPath, ssh.UploadPath)
+	uploadPath := filepath.Join(m.config().App.DataPath, config.UploadPath)
 	files, err := os.ReadDir(uploadPath)
 	if err != nil {
 		return

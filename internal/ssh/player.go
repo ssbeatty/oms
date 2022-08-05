@@ -10,11 +10,10 @@ import (
 )
 
 const (
-	UploadPath = "upload"
-	CMDName    = "--name"
-	CMDScheme  = "--scheme"
-	CMDClient  = "--client"
-	CMDParams  = "--params"
+	CMDName   = "--name"
+	CMDScheme = "--scheme"
+	CMDClient = "--client"
+	CMDParams = "--params"
 )
 
 type Step interface {
