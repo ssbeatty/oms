@@ -5,7 +5,7 @@ import (
 	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os/exec"
-	"path"
+	"path/filepath"
 )
 
 const (
@@ -101,9 +101,9 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 	}
 
 	for _, f := range bs.Files {
-		_, fName := path.Split(f)
+		fName := filepath.Base(f)
 		if fName != "" && len(fName) > GUIDLength {
-			fName = fName[36:]
+			fName = filepath.ToSlash(filepath.Join(bs.RemoteDir, fName[GUIDLength:]))
 			err := session.Client.UploadFile(f, fName)
 			if err != nil {
 				return nil, err
