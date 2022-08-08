@@ -23,6 +23,7 @@ type Job struct {
 	Type        string         `gorm:"size:32;not null" json:"type"`
 	Spec        string         `gorm:"size:128" json:"spec"`
 	Cmd         string         `gorm:"size:512" json:"cmd"`
+	CmdId       int            `json:"cmd_id"`
 	CmdType     string         `gorm:"size:128" json:"cmd_type"`
 	Status      string         `gorm:"size:64;default: ready" json:"status"`
 	ExecuteID   int            `json:"execute_id"`
@@ -60,12 +61,13 @@ func GetJobById(id int) (*Job, error) {
 	return &job, nil
 }
 
-func InsertJob(name, t, spec, cmd string, executeID int, executeType, cmdType string) (*Job, error) {
+func InsertJob(name, t, spec, cmd string, executeID, cmdId int, executeType, cmdType string) (*Job, error) {
 	job := Job{
 		Name:        name,
 		Type:        t,
 		Spec:        spec,
 		Cmd:         cmd,
+		CmdId:       cmdId,
 		ExecuteID:   executeID,
 		ExecuteType: executeType,
 		CmdType:     cmdType,
@@ -77,7 +79,7 @@ func InsertJob(name, t, spec, cmd string, executeID int, executeType, cmdType st
 	return &job, nil
 }
 
-func UpdateJob(id int, name, t, spec, cmd, cmdType string) (*Job, error) {
+func UpdateJob(id int, name, t, spec, cmd, cmdType string, cmdId int) (*Job, error) {
 	job := Job{Id: id}
 	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {
@@ -97,6 +99,9 @@ func UpdateJob(id int, name, t, spec, cmd, cmdType string) (*Job, error) {
 	}
 	if cmdType != "" {
 		job.CmdType = cmdType
+	}
+	if cmdId != 0 {
+		job.CmdId = cmdId
 	}
 	err = db.Save(&job).Error
 	if err != nil {

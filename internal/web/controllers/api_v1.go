@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"oms/internal/config"
 	"oms/internal/models"
+	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/web/payload"
 	"os"
@@ -516,14 +517,18 @@ func (s *Service) PostJob(c *Context) {
 			c.ResponseError(err.Error())
 			return
 		}
+		if form.CmdType == ssh.CMDTypePlayer && form.CmdId == 0 {
+			c.ResponseError("cmd_id can not null")
+			return
+		}
 		job, err := models.InsertJob(
-			form.Name, form.Type, form.Spec, form.Cmd, form.ExecuteID, form.ExecuteType, form.CmdType)
+			form.Name, form.Type, form.Spec, form.Cmd, form.ExecuteID, form.CmdId, form.ExecuteType, form.CmdType)
 		if err != nil {
 			s.Logger.Errorf("insert job error: %v", err)
 			c.ResponseError(err.Error())
 			return
 		}
-		err = s.taskManager.NewJobWithRegister(job, string(task.JobStatusReady))
+		_, err = s.taskManager.NewJobWithRegister(job, string(task.JobStatusReady))
 		if err != nil {
 			c.ResponseError(err.Error())
 			return
@@ -545,7 +550,7 @@ func (s *Service) PutJob(c *Context) {
 			return
 		}
 
-		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd, form.CmdType)
+		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd, form.CmdType, form.CmdId)
 		if err != nil {
 			s.Logger.Errorf("update job error: %v", err)
 			c.ResponseError(err.Error())
@@ -554,7 +559,7 @@ func (s *Service) PutJob(c *Context) {
 		// 这个错误忽略是为了修改时候只要确认停止即可
 		_ = s.taskManager.UnRegister(form.Id, true)
 
-		err = s.taskManager.NewJobWithRegister(job, job.Status)
+		_, err = s.taskManager.NewJobWithRegister(job, job.Status)
 		if err != nil {
 			c.ResponseError(err.Error())
 			return

@@ -121,15 +121,11 @@ func (m *Manager) GetJobList() *utils.SafeMap {
 	return m.taskPoll
 }
 
-// Register 开始task & 添加到poll
-func (m *Manager) Register(id int, job *Job) error {
+// register 开始task & 添加到poll
+func (m *Manager) register(id int, job *Job) error {
 	if job.Status() == JobStatusRunning {
 		m.logger.Info("task is running already.")
 		return errors.New("task is running already")
-	}
-	err := m.startJob(job)
-	if err != nil {
-		return err
 	}
 
 	m.taskPoll.Store(id, job)
@@ -167,22 +163,23 @@ func (m *Manager) UnRegister(id int, clear bool) error {
 }
 
 // NewJobWithRegister 新建一个job并注册到task poll
-func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) error {
+func (m *Manager) NewJobWithRegister(modelJob *models.Job, status string) (*Job, error) {
 	hosts, err := models.ParseHostList(modelJob.ExecuteType, modelJob.ExecuteID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	realJob := m.NewJob(modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, modelJob.CmdType, JobType(modelJob.Type), hosts)
+	realJob := m.NewJob(
+		modelJob.Id, modelJob.Name, modelJob.Cmd, modelJob.Spec, modelJob.CmdType, modelJob.CmdId, JobType(modelJob.Type), hosts)
 	realJob.UpdateStatus(JobStatus(status))
 
-	if err := m.Register(modelJob.Id, realJob); err != nil {
-		return err
+	if err := m.register(modelJob.Id, realJob); err != nil {
+		return nil, err
 	}
 
 	m.logger.Infof("register a new job, type: %s, name: %s, cmd: %s success", modelJob.Type, modelJob.Name, modelJob.Cmd)
 
-	return nil
+	return realJob, nil
 }
 
 // RemoveJob 从task poll删除，并删除model
@@ -227,16 +224,20 @@ func (m *Manager) startJob(job *Job) error {
 // StartJob 从models注册并启动job
 func (m *Manager) StartJob(modelJob *models.Job) error {
 	m.logger.Infof("received signal to start job: %d", modelJob.Id)
-	job, ok := m.GetJob(modelJob.Id)
+	realJob, ok := m.GetJob(modelJob.Id)
 	if ok {
-		job.UpdateStatus(JobStatusReady)
-		err := m.startJob(job)
+		realJob.UpdateStatus(JobStatusReady)
+		err := m.startJob(realJob)
 		if err != nil {
 			return err
 		}
 		return nil
 	} else {
-		err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
+		realJob, err := m.NewJobWithRegister(modelJob, string(JobStatusReady))
+		if err != nil {
+			return err
+		}
+		err = m.startJob(realJob)
 		if err != nil {
 			return err
 		}
@@ -275,9 +276,13 @@ func (m *Manager) initJobFromModels(modelJobs []*models.Job) {
 			// 任务执行结束了 不能每次启动都执行 仅当为task时 cron正常来说还是应该执行
 			status = string(JobStatusStop)
 		}
-		err := m.NewJobWithRegister(modelJob, status)
+		realJob, err := m.NewJobWithRegister(modelJob, status)
 		if err != nil {
 			m.logger.Errorf("error when register a new job, err: %v", err)
+		}
+		err = m.startJob(realJob)
+		if err != nil {
+			m.logger.Errorf("error when start job: %s, err: %v", realJob.Name(), err)
 		}
 	}
 }

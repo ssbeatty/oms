@@ -53,7 +53,7 @@ type Job struct {
 	steps   []ssh.Step
 }
 
-func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, t JobType, host []*models.Host) *Job {
+func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t JobType, host []*models.Host) *Job {
 	var (
 		steps []ssh.Step
 	)
@@ -64,11 +64,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, t JobType, hos
 	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTaskTmpPath), fmt.Sprintf("%d-%s", id, name))
 
 	if cmdType == ssh.CMDTypePlayer {
-		cid, err := strconv.Atoi(cmd)
-		if err != nil {
-			return nil
-		}
-		modPlayer, err := models.GetPlayBookById(cid)
+		modPlayer, err := models.GetPlayBookById(cmdId)
 		if err != nil {
 			return nil
 		}

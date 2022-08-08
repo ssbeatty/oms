@@ -12,7 +12,8 @@ type PostJobForm struct {
 	Name        string `form:"name" binding:"required"`
 	Type        string `form:"type" binding:"required"`
 	Spec        string `form:"spec"`
-	Cmd         string `form:"cmd" binding:"required"`
+	Cmd         string `form:"cmd"`
+	CmdId       int    `form:"cmd_id"`
 	CmdType     string `form:"cmd_type" binding:"required"`
 	ExecuteID   int    `form:"execute_id" binding:"required"`
 	ExecuteType string `form:"execute_type" binding:"required"`
@@ -24,6 +25,7 @@ type PutJobForm struct {
 	Type    string `form:"type"`
 	Spec    string `form:"spec"`
 	Cmd     string `form:"cmd"`
+	CmdId   int    `form:"cmd_id"`
 	CmdType string `form:"cmd_type"`
 }
 
