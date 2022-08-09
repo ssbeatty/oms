@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultTempDate = 14 * 24 * time.Hour
+)
+
 // CronStatusJob 获取host状态并更新到数据库
 func (m *Manager) CronStatusJob() {
 	hosts, err := models.GetAllHostWithOutPreload()
@@ -25,7 +29,11 @@ func (m *Manager) CronStatusJob() {
 
 // CronClearInstanceCache clear instance cache
 func (m *Manager) CronClearInstanceCache() {
-	err := models.ClearInstance(time.Now().Local().Add(-m.config().App.TempDate), 0)
+	tempDate := DefaultTempDate
+	if int(m.config().App.TempDate) != 0 {
+		tempDate = m.config().App.TempDate
+	}
+	err := models.ClearInstance(time.Now().Local().Add(-tempDate), 0)
 	if err != nil {
 		return
 	}
