@@ -174,3 +174,10 @@ ls -lh
 
 	fmt.Println(string(output))
 }
+
+func TestChmod(t *testing.T) {
+	err := client.Chmod("/root/test")
+
+	assert.Nil(t, err)
+
+}

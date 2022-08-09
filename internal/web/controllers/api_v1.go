@@ -557,7 +557,7 @@ func (s *Service) PutJob(c *Context) {
 			return
 		}
 		// 这个错误忽略是为了修改时候只要确认停止即可
-		_ = s.taskManager.UnRegister(form.Id, true)
+		_ = s.taskManager.UnRegister(form.Id, false)
 
 		_, err = s.taskManager.NewJobWithRegister(job, job.Status)
 		if err != nil {

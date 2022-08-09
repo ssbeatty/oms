@@ -22,7 +22,7 @@ func (c *Client) GetSftpClient() *sftp.Client {
 	return c.sftpClient
 }
 
-func (c *Client) UploadFile(local, fPath string) error {
+func (c *Client) UploadFile(local, fPath string, fName string) error {
 	if c.sftpClient == nil {
 		err := c.NewSftpClient()
 		if err != nil {
@@ -35,8 +35,12 @@ func (c *Client) UploadFile(local, fPath string) error {
 	}
 	fPath = filepath.ToSlash(fPath)
 
-	if _, err := c.sftpClient.Stat(fPath); err != nil {
+	if ok := c.PathExists(fPath); !ok {
 		_ = c.MkdirAll(filepath.Dir(fPath))
+	}
+
+	if fh, err := c.sftpClient.Stat(fPath); err == nil && fh.IsDir() {
+		fPath = filepath.ToSlash(filepath.Join(fPath, fName))
 	}
 
 	w, err := c.sftpClient.Create(fPath)
@@ -50,7 +54,8 @@ func (c *Client) UploadFile(local, fPath string) error {
 	if err != nil {
 		return err
 	}
-	return err
+
+	return nil
 }
 
 func (c *Client) UploadHttpFile(fileH *multipart.FileHeader, remote string) error {
@@ -181,6 +186,7 @@ func (c *Client) ReadLink(path string) (string, error) {
 func (c *Client) Stat(path string) (os.FileInfo, error) {
 	return c.sftpClient.Stat(path)
 }
+
 func (c *Client) PathExists(path string) bool {
 	_, err := c.sftpClient.Stat(path)
 	if err == nil {
@@ -226,4 +232,30 @@ func (s *Session) RunScript(shell string, sudo bool) ([]byte, error) {
 	} else {
 		return s.Output(command)
 	}
+}
+
+func (c *Client) Chmod(path string) error {
+	fh, err := c.sftpClient.Stat(path)
+	if err != nil {
+		return err
+	}
+	if fh.IsDir() {
+		walker := c.sftpClient.Walk(path)
+		for walker.Step() {
+			if walker.Err() != nil {
+				continue
+			}
+			err := c.sftpClient.Chmod(walker.Path(), fs.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		err := c.sftpClient.Chmod(path, fs.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

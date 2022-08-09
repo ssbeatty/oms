@@ -1,11 +1,15 @@
-package ssh
+package buildin
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/ssbeatty/jsonschema"
 	"oms/internal/utils"
 	"oms/pkg/transport"
 	"os/exec"
 	"path/filepath"
+	"reflect"
+	"strings"
 )
 
 const (
@@ -13,8 +17,87 @@ const (
 	StepNameShell     = "shell"
 	StepNameFile      = "file"
 	StepMultiNameFile = "multi_file"
-	GUIDLength        = 36
+
+	GUIDLength = 36
+	CMDName    = "--name"
+	CMDScheme  = "--scheme"
+	CMDClient  = "--client"
+	CMDParams  = "--params"
+
+	GOOSWindows = "windows"
 )
+
+type Step interface {
+	Exec(session *transport.Session, sudo bool) ([]byte, error)
+	GetSchema(instance Step) (interface{}, error)
+	Create() Step
+	Name() string
+	ID() string
+	SetID(id string)
+	ParseCaches(instance Step) []string
+}
+
+// build in
+
+type BaseStep struct {
+	id string // 任务步骤标识
+}
+
+func readStringArray(v reflect.Value) (vals []string) {
+	count := v.Len()
+
+	for i := 0; i < count; i++ {
+		child := v.Index(i)
+		s := child.String()
+		vals = append(vals, s)
+	}
+
+	return
+}
+
+func (bs *BaseStep) ParseCaches(instance Step) []string {
+	var ret []string
+	v := reflect.ValueOf(instance)
+
+	t := reflect.TypeOf(instance).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		if strings.Contains(t.Field(i).Tag.Get("jsonschema"), "format=data-url") {
+			if t.Field(i).Type.Kind() == reflect.String {
+				ret = append(ret, v.Elem().Field(i).String())
+			} else if t.Field(i).Type.Kind() == reflect.Slice {
+				ret = readStringArray(v.Elem().Field(i))
+			}
+		}
+	}
+	return ret
+}
+
+func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
+
+	return nil, nil
+}
+
+func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
+	ref := jsonschema.Reflector{DoNotReference: true}
+
+	return ref.Reflect(instance), nil
+}
+
+func (bs *BaseStep) Create() Step {
+	return nil
+}
+
+func (bs *BaseStep) Name() string {
+	return ""
+}
+
+func (bs *BaseStep) ID() string {
+	return bs.id
+}
+
+func (bs *BaseStep) SetID(id string) {
+	bs.id = id
+}
 
 // RunCmdStep 执行cmd
 type RunCmdStep struct {
@@ -60,8 +143,9 @@ func (bs *RunShellStep) Name() string {
 // FileUploadStep 上传文件
 type FileUploadStep struct {
 	BaseStep
-	File   string `json:"file" jsonschema:"format=data-url,required=true"`
-	Remote string `json:"remote" jsonschema:"required=true"`
+	File    string `json:"file" jsonschema:"format=data-url"`
+	Options string `json:"options" jsonschema:"enum=upload,enum=remove,required=true" jsonschema_description:"upload: 上传到远端 remove: 删除远端文件或者目录"`
+	Remote  string `json:"remote" jsonschema:"required=true" jsonschema_description:"远程文件路径"`
 }
 
 func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
@@ -69,15 +153,29 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	if exists, err := utils.PathExists(bs.File); !exists {
-		return nil, err
-	}
 
 	if sudo {
 		// todo change fs perm
 	}
 
-	return nil, session.Client.UploadFile(bs.File, bs.Remote)
+	switch bs.Options {
+	case "upload":
+		if exists, err := utils.PathExists(bs.File); !exists {
+			return nil, err
+		}
+		fName := filepath.Base(bs.File)
+		if fName != "" && len(fName) > GUIDLength {
+			fName = fName[GUIDLength:]
+		}
+		return nil, session.Client.UploadFile(bs.File, bs.Remote, fName)
+	case "remove":
+		if session.Client.IsDir(bs.Remote) {
+			return nil, session.Client.RemoveDir(bs.Remote)
+		}
+		return nil, session.Client.Remove(bs.Remote)
+	default:
+		return nil, errors.New("do not support options")
+	}
 }
 
 func (bs *FileUploadStep) Create() Step {
@@ -91,7 +189,7 @@ func (bs *FileUploadStep) Name() string {
 type MultiFileUploadStep struct {
 	BaseStep
 	Files     []string `json:"files" jsonschema:"format=data-url,required=true"`
-	RemoteDir string   `json:"remote_dir" jsonschema:"required=true"`
+	RemoteDir string   `json:"remote_dir" jsonschema:"required=true" jsonschema_description:"远程文件夹路径"`
 }
 
 func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
@@ -103,8 +201,8 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 	for _, f := range bs.Files {
 		fName := filepath.Base(f)
 		if fName != "" && len(fName) > GUIDLength {
-			fName = filepath.ToSlash(filepath.Join(bs.RemoteDir, fName[GUIDLength:]))
-			err := session.Client.UploadFile(f, fName)
+			fPath := filepath.ToSlash(filepath.Join(bs.RemoteDir, fName[GUIDLength:]))
+			err := session.Client.UploadFile(f, fPath, fName[GUIDLength:])
 			if err != nil {
 				return nil, err
 			}

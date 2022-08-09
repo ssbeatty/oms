@@ -50,29 +50,15 @@ type Job struct {
 	log     string // log path
 	spec    string
 	engine  *Manager
-	steps   []ssh.Step
+	cmdId   int
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t JobType, host []*models.Host) *Job {
-	var (
-		steps []ssh.Step
-	)
 
 	if name == "" {
 		name = strconv.Itoa(id)
 	}
 	log := filepath.Join(path.Join(m.config().App.DataPath, config.DefaultTaskTmpPath), fmt.Sprintf("%d-%s", id, name))
-
-	if cmdType == ssh.CMDTypePlayer {
-		modPlayer, err := models.GetPlayBookById(cmdId)
-		if err != nil {
-			return nil
-		}
-		steps, err = m.sshManager.ParseSteps(modPlayer.Steps)
-		if err != nil {
-			return nil
-		}
-	}
 
 	job := &Job{
 		ID:      id,
@@ -84,7 +70,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t J
 		spec:    spec,
 		engine:  m,
 		log:     log,
-		steps:   steps,
+		cmdId:   cmdId,
 	}
 	job.UpdateStatus(JobStatusReady)
 
@@ -92,7 +78,15 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t J
 }
 
 func (j *Job) runPlayer(client *transport.Client) ([]byte, error) {
-	player := ssh.NewPlayer(client, j.steps, true)
+	modPlayer, err := models.GetPlayBookById(j.cmdId)
+	if err != nil {
+		return nil, err
+	}
+	steps, err := j.engine.sshManager.ParseSteps(modPlayer.Steps)
+	if err != nil {
+		return nil, err
+	}
+	player := ssh.NewPlayer(client, steps, true)
 
 	return player.Run(context.Background())
 
@@ -126,6 +120,7 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 	if err != nil {
 		j.engine.logger.Errorf("error when run cmd: %v, host name: %s, msg: %s", err, host.Name, output)
 		_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
+		_, _ = fmt.Fprintf(std, "程序输出错误:\n%s output:\n", err.Error())
 		_, err = std.Write(output)
 		return
 	}
@@ -164,7 +159,7 @@ func (j *Job) Run() {
 
 	_ = instance.UpdateStatus(models.InstanceStatusRunning)
 	for _, host := range j.hosts {
-		client, err := j.engine.sshManager.NewClient(host)
+		client, err := j.engine.sshManager.NewClientWithSftp(host)
 
 		if err != nil {
 			j.engine.logger.Errorf("error when new ssh client, host name: %s, err: %v", err, host.Name)
@@ -220,7 +215,7 @@ func (j *Job) Close() {
 	case JobTypeCron:
 		j.engine.taskService.Remove(strconv.Itoa(j.ID))
 	}
-	j.UpdateStatus(JobStatusDone)
+	j.UpdateStatus(JobStatusStop)
 }
 
 func (j *Job) Name() string {

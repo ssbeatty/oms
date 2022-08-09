@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"oms/internal/config"
 	"oms/internal/models"
+	"oms/internal/ssh/buildin"
 	"oms/internal/utils"
 	"oms/pkg/cache"
 	"oms/pkg/logger"
@@ -61,7 +62,7 @@ type Manager struct {
 	logger         *logger.Logger
 	notify         chan bool
 	subClients     sync.Map
-	supportPlugins map[string]Step // 注册所有的插件类型通过接口返回 表单渲染的格式
+	supportPlugins map[string]buildin.Step // 注册所有的插件类型通过接口返回 表单渲染的格式
 	cfg            *config.Conf
 }
 
@@ -90,11 +91,11 @@ func (m *Manager) initAllPlugins() {
 		_ = os.MkdirAll(pluginPath, fs.ModePerm)
 	}
 
-	m.supportPlugins = map[string]Step{
-		StepNameCMD:       &RunCmdStep{},
-		StepNameShell:     &RunShellStep{},
-		StepNameFile:      &FileUploadStep{},
-		StepMultiNameFile: &MultiFileUploadStep{},
+	m.supportPlugins = map[string]buildin.Step{
+		buildin.StepNameCMD:       &buildin.RunCmdStep{},
+		buildin.StepNameShell:     &buildin.RunShellStep{},
+		buildin.StepNameFile:      &buildin.FileUploadStep{},
+		buildin.StepMultiNameFile: &buildin.MultiFileUploadStep{},
 	}
 
 	files, err := os.ReadDir(pluginPath)
@@ -114,7 +115,7 @@ func (m *Manager) initAllPlugins() {
 			continue
 		}
 
-		m.supportPlugins[name] = &PluginStep{
+		m.supportPlugins[name] = &buildin.PluginStep{
 			ScriptPath: plg,
 		}
 	}
@@ -205,7 +206,7 @@ func (m *Manager) GetAllPluginSchema() []Schema {
 	return ret
 }
 
-func (m *Manager) NewStep(typ string) Step {
+func (m *Manager) NewStep(typ string) buildin.Step {
 	for _, plugin := range m.supportPlugins {
 		if plugin.Name() == typ {
 			return plugin.Create()
@@ -215,10 +216,10 @@ func (m *Manager) NewStep(typ string) Step {
 	return nil
 }
 
-func (m *Manager) ParseSteps(params string) ([]Step, error) {
+func (m *Manager) ParseSteps(params string) ([]buildin.Step, error) {
 	var (
 		modSteps []models.Step
-		steps    []Step
+		steps    []buildin.Step
 	)
 
 	err := json.Unmarshal([]byte(params), &modSteps)
@@ -268,7 +269,7 @@ func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, wri
 }
 
 func checkPlugin(path string) (string, error) {
-	name, err := exec.Command(path, CMDName).Output()
+	name, err := exec.Command(path, buildin.CMDName).Output()
 	if err != nil {
 		return "", err
 	}

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultSort = "id ASC"
+	defaultSort = "id DESC"
 )
 
 var (
