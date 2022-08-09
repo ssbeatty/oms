@@ -120,7 +120,6 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 	if err != nil {
 		j.engine.logger.Errorf("error when run cmd: %v, host name: %s, msg: %s", err, host.Name, output)
 		_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
-		_, _ = fmt.Fprintf(std, "程序输出错误:\n%s output:\n", err.Error())
 		_, err = std.Write(output)
 		return
 	}

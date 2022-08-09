@@ -52,9 +52,11 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 		// todo 优化样式
 		buf.WriteString(fmt.Sprintf("[Step %8s] ==> %s\n", step.Name(), step.ID()))
 		msg, err := step.Exec(session, p.sudo)
+
 		buf.Write(msg)
 
 		if err != nil {
+			buf.Write([]byte(err.Error()))
 			return buf.Bytes(), err
 		}
 
