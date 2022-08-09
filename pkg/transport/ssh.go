@@ -19,7 +19,7 @@ import (
 */
 
 const (
-	DefaultTimeout = 10 * time.Second
+	DefaultTimeout = time.Minute
 	KillSignal     = "0x09"
 
 	GOOSLinux   = "linux"

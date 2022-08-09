@@ -2,6 +2,7 @@ package buildin
 
 import (
 	"encoding/json"
+	"fmt"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/parser"
 	"github.com/pkg/errors"
@@ -42,7 +43,7 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 
 	switch bs.Value.(type) {
 	case string:
-		value = bs.Value.(string)
+		value = fmt.Sprintf("\"%s\"", bs.Value.(string))
 	case []string, []interface{}:
 		switch ext {
 		case "json":
@@ -72,7 +73,14 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 		return nil, err
 	}
 
-	_, err = fn.WriteAt([]byte(file.String()), 0)
+	fn.Close()
+
+	fn, err = session.Client.GetSftpClient().OpenFile(bs.Remote, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = fn.Write([]byte(file.String()))
 	if err != nil {
 		return nil, err
 	}
