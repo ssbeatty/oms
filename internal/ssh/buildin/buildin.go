@@ -16,6 +16,7 @@ const (
 	StepNameFile      = "file"
 	StepMultiNameFile = "multi_file"
 	StepNameZipFile   = "zip"
+	StepNameYamlJson  = "json_yaml"
 
 	GUIDLength = 36
 	CMDName    = "--name"

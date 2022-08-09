@@ -97,6 +97,7 @@ func (m *Manager) initAllPlugins() {
 		buildin.StepNameFile:      &buildin.FileUploadStep{},
 		buildin.StepMultiNameFile: &buildin.MultiFileUploadStep{},
 		buildin.StepNameZipFile:   &buildin.ZipFileStep{},
+		buildin.StepNameYamlJson:  &buildin.JsonYamlReplaceStep{},
 	}
 
 	files, err := os.ReadDir(pluginPath)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"oms/internal/ssh/buildin"
 	"oms/pkg/transport"
 	"testing"
 )
@@ -39,7 +40,7 @@ func init() {
 }
 
 func TestGenJsonSchema(t *testing.T) {
-	r := RunCmdStep{}
+	r := buildin.RunCmdStep{}
 	schema, err := r.GetSchema(&r)
 	if err != nil {
 		return
@@ -49,7 +50,7 @@ func TestGenJsonSchema(t *testing.T) {
 
 	fmt.Println(string(marshal))
 
-	s := RunShellStep{}
+	s := buildin.RunShellStep{}
 	schema, err = s.GetSchema(&s)
 	if err != nil {
 		return
@@ -58,7 +59,7 @@ func TestGenJsonSchema(t *testing.T) {
 
 	fmt.Println(string(marshal))
 
-	f := FileUploadStep{}
+	f := buildin.FileUploadStep{}
 	schema, err = f.GetSchema(&f)
 	if err != nil {
 		return
@@ -70,20 +71,14 @@ func TestGenJsonSchema(t *testing.T) {
 }
 
 func TestPlayerRun(t *testing.T) {
-	var steps []Step
+	var steps []buildin.Step
 
-	steps = append(steps, &RunCmdStep{
+	steps = append(steps, &buildin.RunCmdStep{
 		Cmd: "ls -a",
-		BaseStep: BaseStep{
-			id: "run ls -a",
-		},
 	})
 
-	steps = append(steps, &RunShellStep{
+	steps = append(steps, &buildin.RunShellStep{
 		Shell: "ls -l",
-		BaseStep: BaseStep{
-			id: "run ls -l",
-		},
 	})
 
 	player := NewPlayer(client, steps, true)
