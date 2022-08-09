@@ -2,12 +2,10 @@ package buildin
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/ssbeatty/jsonschema"
-	"oms/internal/utils"
+	"io/fs"
 	"oms/pkg/transport"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 )
@@ -17,6 +15,7 @@ const (
 	StepNameShell     = "shell"
 	StepNameFile      = "file"
 	StepMultiNameFile = "multi_file"
+	StepNameZipFile   = "zip"
 
 	GUIDLength = 36
 	CMDName    = "--name"
@@ -24,7 +23,8 @@ const (
 	CMDClient  = "--client"
 	CMDParams  = "--params"
 
-	GOOSWindows = "windows"
+	GOOSWindows   = "windows"
+	DefaultFileFs = fs.FileMode(0644)
 )
 
 type Step interface {
@@ -138,86 +138,6 @@ func (bs *RunShellStep) Create() Step {
 
 func (bs *RunShellStep) Name() string {
 	return StepNameShell
-}
-
-// FileUploadStep 上传文件
-type FileUploadStep struct {
-	BaseStep
-	File    string `json:"file" jsonschema:"format=data-url"`
-	Options string `json:"options" jsonschema:"enum=upload,enum=remove,required=true" jsonschema_description:"upload: 上传到远端 remove: 删除远端文件或者目录"`
-	Remote  string `json:"remote" jsonschema:"required=true" jsonschema_description:"远程文件路径"`
-}
-
-func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
-	err := session.Client.NewSftpClient()
-	if err != nil {
-		return nil, err
-	}
-
-	if sudo {
-		// todo change fs perm
-	}
-
-	switch bs.Options {
-	case "upload":
-		if exists, err := utils.PathExists(bs.File); !exists {
-			return nil, err
-		}
-		fName := filepath.Base(bs.File)
-		if fName != "" && len(fName) > GUIDLength {
-			fName = fName[GUIDLength:]
-		}
-		return nil, session.Client.UploadFile(bs.File, bs.Remote, fName)
-	case "remove":
-		if session.Client.IsDir(bs.Remote) {
-			return nil, session.Client.RemoveDir(bs.Remote)
-		}
-		return nil, session.Client.Remove(bs.Remote)
-	default:
-		return nil, errors.New("do not support options")
-	}
-}
-
-func (bs *FileUploadStep) Create() Step {
-	return &FileUploadStep{}
-}
-
-func (bs *FileUploadStep) Name() string {
-	return StepNameFile
-}
-
-type MultiFileUploadStep struct {
-	BaseStep
-	Files     []string `json:"files" jsonschema:"format=data-url,required=true"`
-	RemoteDir string   `json:"remote_dir" jsonschema:"required=true" jsonschema_description:"远程文件夹路径"`
-}
-
-func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
-	err := session.Client.NewSftpClient()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, f := range bs.Files {
-		fName := filepath.Base(f)
-		if fName != "" && len(fName) > GUIDLength {
-			fPath := filepath.ToSlash(filepath.Join(bs.RemoteDir, fName[GUIDLength:]))
-			err := session.Client.UploadFile(f, fPath, fName[GUIDLength:])
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return nil, nil
-}
-
-func (bs *MultiFileUploadStep) Create() Step {
-	return &MultiFileUploadStep{}
-}
-
-func (bs *MultiFileUploadStep) Name() string {
-	return StepMultiNameFile
 }
 
 // PluginStep 调用外部程序比如python或者go的脚本来获取输出
