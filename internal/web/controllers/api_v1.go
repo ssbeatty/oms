@@ -24,8 +24,17 @@ const (
 
 var parser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 
-// api for table host
+// @BasePath /api/v1
 
+// GetHosts
+// @Summary 获取所有主机
+// @Description 获取所有主机
+// @Tags host
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.Host}
+// @Failure 400 {object} payload.Response
+// @Router /host [get]
 func (s *Service) GetHosts(c *Context) {
 	var (
 		hosts []*models.Host
@@ -46,6 +55,16 @@ func (s *Service) GetHosts(c *Context) {
 	}
 }
 
+// GetOneHost
+// @Summary 获取单个主机
+// @Description 获取单个主机
+// @Param id path int true  "主机 ID"
+// @Tags host
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Host}
+// @Failure 400 {object} payload.Response
+// @Router /host/{id} [get]
 func (s *Service) GetOneHost(c *Context) {
 	var param payload.GetHostParam
 	err := c.ShouldBindUri(&param)
@@ -62,6 +81,24 @@ func (s *Service) GetOneHost(c *Context) {
 	}
 }
 
+// PostHost
+// @Summary 创建主机
+// @Description 创建主机
+// @Param hostname formData string true "主机名称"
+// @Param user formData string true "用户名"
+// @Param addr formData string true "地址"
+// @Param port formData integer true "SSH端口"
+// @Param password formData string false "SSH密码"
+// @Param group formData integer false "组ID"
+// @Param private_key_id formData integer false "密钥ID"
+// @Param tags formData string false "标签ID列表序列化字符串"
+// @Param vnc_port formData integer false "VNC端口"
+// @Tags host
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Host}
+// @Failure 400 {object} payload.Response
+// @Router /host [post]
 func (s *Service) PostHost(c *Context) {
 	var form payload.PostHostForm
 	err := c.ShouldBind(&form)
@@ -80,6 +117,25 @@ func (s *Service) PostHost(c *Context) {
 	}
 }
 
+// PutHost
+// @Summary 更新主机
+// @Description 更新主机
+// @Param id formData integer true "主机 ID"
+// @Param hostname formData string false "主机名称"
+// @Param user formData string false "用户名"
+// @Param addr formData string false "地址"
+// @Param port formData integer false "SSH端口"
+// @Param password formData string false "SSH密码"
+// @Param group formData integer false "组ID"
+// @Param private_key_id formData integer false "密钥ID"
+// @Param tags formData string false "标签ID列表序列化字符串"
+// @Param vnc_port formData integer false "VNC端口"
+// @Tags host
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Host}
+// @Failure 400 {object} payload.Response
+// @Router /host [put]
 func (s *Service) PutHost(c *Context) {
 	var form payload.PutHostForm
 	err := c.ShouldBind(&form)
@@ -100,6 +156,16 @@ func (s *Service) PutHost(c *Context) {
 	}
 }
 
+// DeleteHost
+// @Summary 删除主机
+// @Description 删除主机
+// @Param id path int true  "主机 ID"
+// @Tags host
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /host/{id} [delete]
 func (s *Service) DeleteHost(c *Context) {
 	var param payload.DeleteHostParam
 	err := c.ShouldBindUri(&param)

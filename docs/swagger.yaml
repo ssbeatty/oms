@@ -1,0 +1,293 @@
+basePath: /api/v1
+definitions:
+  models.Group:
+    properties:
+      id:
+        type: integer
+      mode:
+        description: 0.主机模式, 1.其他匹配模式主机不生效
+        type: integer
+      name:
+        type: string
+      params:
+        type: string
+    type: object
+  models.Host:
+    properties:
+      addr:
+        type: string
+      group:
+        $ref: '#/definitions/models.Group'
+      group_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      port:
+        type: integer
+      private_key_id:
+        type: integer
+      status:
+        type: boolean
+      tags:
+        items:
+          $ref: '#/definitions/models.Tag'
+        type: array
+      tunnels:
+        items:
+          $ref: '#/definitions/models.Tunnel'
+        type: array
+      user:
+        type: string
+      vnc_port:
+        type: integer
+    type: object
+  models.Tag:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.Tunnel:
+    properties:
+      destination:
+        type: string
+      error_msg:
+        type: string
+      host_id:
+        type: integer
+      id:
+        type: integer
+      mode:
+        type: string
+      source:
+        type: string
+      status:
+        type: integer
+    type: object
+  payload.Response:
+    properties:
+      code:
+        type: string
+      data: {}
+      msg:
+        type: string
+      type:
+        description: data msg error
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /host:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有主机
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Host'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有主机
+      tags:
+      - host
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建主机
+      parameters:
+      - description: 主机名称
+        in: formData
+        name: hostname
+        required: true
+        type: string
+      - description: 用户名
+        in: formData
+        name: user
+        required: true
+        type: string
+      - description: 地址
+        in: formData
+        name: addr
+        required: true
+        type: string
+      - description: SSH端口
+        in: formData
+        name: port
+        required: true
+        type: integer
+      - description: SSH密码
+        in: formData
+        name: password
+        type: string
+      - description: 组ID
+        in: formData
+        name: group
+        type: integer
+      - description: 密钥ID
+        in: formData
+        name: private_key_id
+        type: integer
+      - description: 标签ID列表序列化字符串
+        in: formData
+        name: tags
+        type: string
+      - description: VNC端口
+        in: formData
+        name: vnc_port
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Host'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建主机
+      tags:
+      - host
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新主机
+      parameters:
+      - description: 主机 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 主机名称
+        in: formData
+        name: hostname
+        type: string
+      - description: 用户名
+        in: formData
+        name: user
+        type: string
+      - description: 地址
+        in: formData
+        name: addr
+        type: string
+      - description: SSH端口
+        in: formData
+        name: port
+        type: integer
+      - description: SSH密码
+        in: formData
+        name: password
+        type: string
+      - description: 组ID
+        in: formData
+        name: group
+        type: integer
+      - description: 密钥ID
+        in: formData
+        name: private_key_id
+        type: integer
+      - description: 标签ID列表序列化字符串
+        in: formData
+        name: tags
+        type: string
+      - description: VNC端口
+        in: formData
+        name: vnc_port
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Host'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新主机
+      tags:
+      - host
+  /host/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除主机
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除主机
+      tags:
+      - host
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个主机
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Host'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个主机
+      tags:
+      - host
+swagger: "2.0"

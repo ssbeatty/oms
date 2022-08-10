@@ -5,9 +5,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"html/template"
 	"mime"
 	"net/http"
+	"oms/docs"
 	"oms/internal/config"
 	"oms/internal/ssh"
 	"oms/internal/task"
@@ -68,6 +71,10 @@ func Handle(h HandlerFunc) gin.HandlerFunc {
 func InitRouter(s *controllers.Service) *controllers.Service {
 	r := gin.Default()
 	r.Use(CORS).Use(exportHeaders)
+
+	// swagger docs
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	// static files
 	box := packr.NewBox(assetsFilepath)
