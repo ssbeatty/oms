@@ -874,7 +874,7 @@ func (s *Service) PutJob(c *Context) {
 			return
 		}
 
-		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd, form.CmdType, form.CmdId)
+		job, err := models.UpdateJob(form.Id, form.Name, form.Type, form.Spec, form.Cmd, form.CmdType, form.CmdId, form.ExecuteID, form.ExecuteType)
 		if err != nil {
 			s.Logger.Errorf("update job error: %v", err)
 			c.ResponseError(err.Error())

@@ -36,6 +36,7 @@ type Config struct {
 type Schema struct {
 	Type   string      `json:"type"`
 	Schema interface{} `json:"schema"`
+	Desc   string      `json:"desc"`
 }
 
 type Command struct {
@@ -202,6 +203,7 @@ func (m *Manager) GetAllPluginSchema() []Schema {
 		}
 		ret = append(ret, Schema{
 			Type:   plugin.Name(),
+			Desc:   plugin.Desc(),
 			Schema: sc,
 		})
 	}

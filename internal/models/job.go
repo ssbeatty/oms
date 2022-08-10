@@ -79,7 +79,7 @@ func InsertJob(name, t, spec, cmd string, executeID, cmdId int, executeType, cmd
 	return &job, nil
 }
 
-func UpdateJob(id int, name, t, spec, cmd, cmdType string, cmdId int) (*Job, error) {
+func UpdateJob(id int, name, t, spec, cmd, cmdType string, cmdId, executeId int, executeType string) (*Job, error) {
 	job := Job{Id: id}
 	err := db.Where("id = ?", id).First(&job).Error
 	if err != nil {
@@ -102,6 +102,12 @@ func UpdateJob(id int, name, t, spec, cmd, cmdType string, cmdId int) (*Job, err
 	}
 	if cmdId != 0 {
 		job.CmdId = cmdId
+	}
+	if executeId != 0 {
+		job.ExecuteID = executeId
+	}
+	if executeType != "" {
+		job.ExecuteType = executeType
 	}
 	err = db.Save(&job).Error
 	if err != nil {

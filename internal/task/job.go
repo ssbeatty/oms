@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
-	"io/ioutil"
 	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
@@ -51,6 +49,72 @@ type Job struct {
 	spec    string
 	engine  *Manager
 	cmdId   int
+}
+
+func NewSyncBuffer(fd *os.File) *syncBuffer {
+
+	buf := &syncBuffer{
+		fd:   fd,
+		quit: make(chan struct{}, 1),
+	}
+
+	go buf.flushComboOutput()
+
+	return buf
+}
+
+type syncBuffer struct {
+	bytes.Buffer
+	fd   *os.File
+	quit chan struct{}
+	mu   sync.Mutex
+}
+
+func (w *syncBuffer) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.Buffer.Write(p)
+}
+
+func (w *syncBuffer) WriteWithMsg(output []byte, msg string) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	_, _ = fmt.Fprintf(&w.Buffer, msg)
+
+	return w.Buffer.Write(output)
+}
+
+func (w *syncBuffer) flush() {
+	if w.Buffer.Len() != 0 {
+		_, err := w.fd.Write(w.Buffer.Bytes())
+		if err != nil {
+			return
+		}
+		w.Buffer.Reset()
+	}
+}
+
+func (w *syncBuffer) Close() {
+	w.flush()
+
+	w.quit <- struct{}{}
+	defer w.fd.Close()
+}
+
+func (w *syncBuffer) flushComboOutput() {
+	tick := time.NewTicker(time.Millisecond * time.Duration(120))
+
+	defer tick.Stop()
+	for {
+		select {
+		case <-tick.C:
+			w.flush()
+		case <-w.quit:
+			return
+		}
+	}
 }
 
 func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t JobType, host []*models.Host) *Job {
@@ -102,7 +166,7 @@ func (j *Job) runCmd(client *transport.Client) ([]byte, error) {
 	return session.Sudo(j.cmd, client.Conf.Password)
 }
 
-func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std io.Writer) {
+func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std *syncBuffer) {
 	defer wg.Done()
 
 	var (
@@ -119,13 +183,11 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 
 	if err != nil {
 		j.engine.logger.Errorf("error when run cmd: %v, host name: %s, msg: %s", err, host.Name, output)
-		_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
-		_, err = std.Write(output)
+		_, err = std.WriteWithMsg(output, fmt.Sprintf("%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText))
 		return
 	}
 
-	_, _ = fmt.Fprintf(std, "%s[host_id:%d]\n", MarkText, host.Id)
-	_, err = std.Write(output)
+	_, err = std.WriteWithMsg(output, fmt.Sprintf("%s[host_id:%d]\n", MarkText, host.Id))
 	if err != nil {
 		j.engine.logger.Debugf("error write outputs, err: %v", err)
 	}
@@ -136,7 +198,7 @@ func (j *Job) Run() {
 	if j.Status() == JobStatusStop {
 		return
 	}
-	j.engine.logger.Infof("job, name: %s, cmd: %s, running.", j.name, j.cmd)
+	j.engine.logger.Debugf("job, name: %s, cmd: %s, running.", j.name, j.cmd)
 	defer func() {
 		if j.Status() == JobStatusRunning {
 			j.UpdateStatus(JobStatusDone)
@@ -154,7 +216,16 @@ func (j *Job) Run() {
 		j.engine.logger.Errorf("error when create instance, err: %v", err)
 		return
 	}
-	std := &bytes.Buffer{}
+
+	fd, err := os.OpenFile(instance.LogPath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, fs.ModePerm)
+	if err != nil {
+		j.engine.logger.Errorf("error when open tmp file, err: %v", err)
+		return
+	}
+
+	std := NewSyncBuffer(fd)
+
+	defer std.Close()
 
 	_ = instance.UpdateStatus(models.InstanceStatusRunning)
 	for _, host := range j.hosts {
@@ -163,8 +234,7 @@ func (j *Job) Run() {
 		if err != nil {
 			j.engine.logger.Errorf("error when new ssh client, host name: %s, err: %v", err, host.Name)
 
-			_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n", MarkText, host.Id, ErrorText)
-			_, _ = fmt.Fprintf(std, "[FATIL ERROR]: %s: \n", err.Error())
+			_, _ = fmt.Fprintf(std, "%s[host_id:%d]%s\n[FATIL ERROR]: %s: \n", MarkText, host.Id, ErrorText, err.Error())
 			continue
 		}
 
@@ -174,7 +244,6 @@ func (j *Job) Run() {
 	wg.Wait()
 
 	_ = instance.Done()
-	_ = ioutil.WriteFile(instance.LogPath, std.Bytes(), fs.ModePerm)
 }
 
 func (j *Job) createInstance() (*models.TaskInstance, error) {

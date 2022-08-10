@@ -58,6 +58,10 @@ func (bs *FileUploadStep) Name() string {
 	return StepNameFile
 }
 
+func (bs *FileUploadStep) Desc() string {
+	return "文件操作"
+}
+
 // MultiFileUploadStep 上传多个文件
 type MultiFileUploadStep struct {
 	BaseStep
@@ -91,6 +95,10 @@ func (bs *MultiFileUploadStep) Create() Step {
 
 func (bs *MultiFileUploadStep) Name() string {
 	return StepMultiNameFile
+}
+
+func (bs *MultiFileUploadStep) Desc() string {
+	return "上传多个文件"
 }
 
 // ZipFileStep 上传多个文件
@@ -242,4 +250,8 @@ func (bs *ZipFileStep) Create() Step {
 
 func (bs *ZipFileStep) Name() string {
 	return StepNameZipFile
+}
+
+func (bs *ZipFileStep) Desc() string {
+	return "解压缩文件"
 }

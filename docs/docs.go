@@ -3065,6 +3065,9 @@ const docTemplate = `{
         "ssh.Result": {
             "type": "object",
             "properties": {
+                "addr": {
+                    "type": "string"
+                },
                 "host_id": {
                     "type": "integer"
                 },
@@ -3085,6 +3088,9 @@ const docTemplate = `{
         "ssh.Schema": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "schema": {},
                 "type": {
                     "type": "string"

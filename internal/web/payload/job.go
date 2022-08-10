@@ -20,13 +20,15 @@ type PostJobForm struct {
 }
 
 type PutJobForm struct {
-	Id      int    `form:"id" binding:"required"`
-	Name    string `form:"name"`
-	Type    string `form:"type"`
-	Spec    string `form:"spec"`
-	Cmd     string `form:"cmd"`
-	CmdId   int    `form:"cmd_id"`
-	CmdType string `form:"cmd_type"`
+	Id          int    `form:"id" binding:"required"`
+	Name        string `form:"name"`
+	Type        string `form:"type"`
+	Spec        string `form:"spec"`
+	Cmd         string `form:"cmd"`
+	CmdId       int    `form:"cmd_id"`
+	CmdType     string `form:"cmd_type"`
+	ExecuteID   int    `form:"execute_id"`
+	ExecuteType string `form:"execute_type"`
 }
 
 type DeleteJobParam struct {

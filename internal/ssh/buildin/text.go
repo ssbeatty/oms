@@ -113,3 +113,7 @@ func (bs *JsonYamlReplaceStep) Create() Step {
 func (bs *JsonYamlReplaceStep) Name() string {
 	return StepNameYamlJson
 }
+
+func (bs *JsonYamlReplaceStep) Desc() string {
+	return "修改Json(Yaml)文件"
+}

@@ -226,6 +226,8 @@ definitions:
     type: object
   ssh.Result:
     properties:
+      addr:
+        type: string
       host_id:
         type: integer
       hostname:
@@ -239,6 +241,8 @@ definitions:
     type: object
   ssh.Schema:
     properties:
+      desc:
+        type: string
       schema: {}
       type:
         type: string

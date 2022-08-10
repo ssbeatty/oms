@@ -20,6 +20,7 @@ const (
 
 	GUIDLength = 36
 	CMDName    = "--name"
+	CMDDesc    = "--desc"
 	CMDScheme  = "--scheme"
 	CMDClient  = "--client"
 	CMDParams  = "--params"
@@ -33,6 +34,7 @@ type Step interface {
 	GetSchema(instance Step) (interface{}, error)
 	Create() Step
 	Name() string
+	Desc() string
 	ID() string
 	SetID(id string)
 	ParseCaches(instance Step) []string
@@ -96,6 +98,10 @@ func (bs *BaseStep) ID() string {
 	return bs.id
 }
 
+func (bs *BaseStep) Desc() string {
+	return ""
+}
+
 func (bs *BaseStep) SetID(id string) {
 	bs.id = id
 }
@@ -122,6 +128,10 @@ func (bs *RunCmdStep) Name() string {
 	return StepNameCMD
 }
 
+func (bs *RunCmdStep) Desc() string {
+	return "执行一条命令"
+}
+
 // RunShellStep 执行shell
 type RunShellStep struct {
 	BaseStep
@@ -139,6 +149,10 @@ func (bs *RunShellStep) Create() Step {
 
 func (bs *RunShellStep) Name() string {
 	return StepNameShell
+}
+
+func (bs *RunShellStep) Desc() string {
+	return "执行shell脚本"
 }
 
 // PluginStep 调用外部程序比如python或者go的脚本来获取输出
@@ -200,4 +214,12 @@ func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error
 	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
 	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).Output()
+}
+
+func (bs *PluginStep) Desc() string {
+	desc, err := exec.Command(bs.ScriptPath, CMDDesc).Output()
+	if err != nil {
+		return ""
+	}
+	return string(desc)
 }
