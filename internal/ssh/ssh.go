@@ -49,6 +49,7 @@ type Result struct {
 	HostId   int    `json:"host_id"`
 	HostName string `json:"hostname"`
 	Msg      string `json:"msg"`
+	Addr     string `json:"addr"`
 }
 
 // 对host和port进行hash
