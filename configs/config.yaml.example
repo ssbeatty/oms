@@ -1,7 +1,7 @@
 app:
   name: oms
   addr: 0.0.0.0
-  port: 8080
+  port: 9090
   mode: dev
   run_start: true
   data_path: data

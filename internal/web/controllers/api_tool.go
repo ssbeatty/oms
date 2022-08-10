@@ -41,6 +41,21 @@ var (
 	green = color.New(color.FgGreen).SprintFunc()
 )
 
+// @BasePath /api/v1
+
+// RunCmd
+// @Summary 执行一条命令
+// @Description 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+// @Param id query integer true "执行者 ID"
+// @Param type query string true "执行者类型" example(host,group,tag)
+// @Param cmd query string true "命令"
+// @Param sudo query bool false "是否sudo执行"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]ssh.Result}
+// @Failure 400 {object} payload.Response
+// @Router /tools/cmd [get]
 func (s *Service) RunCmd(c *Context) {
 	var params payload.CmdParams
 	err := c.ShouldBind(&params)
@@ -61,6 +76,17 @@ func (s *Service) RunCmd(c *Context) {
 	}
 }
 
+// GetPathInfo
+// @Summary 目录列表
+// @Description 目录列表
+// @Param id query string true "远端文件路径"
+// @Param host_id query integer true "主机 ID"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=FilePath}
+// @Failure 400 {object} payload.Response
+// @Router /tools/browse [get]
 func (s *Service) GetPathInfo(c *Context) {
 	var params payload.OptionsFileParams
 	err := c.ShouldBind(&params)
@@ -77,6 +103,17 @@ func (s *Service) GetPathInfo(c *Context) {
 	}
 }
 
+// DownLoadFile
+// @Summary 下载文件
+// @Description 下载文件
+// @Param id query string true "远端文件路径"
+// @Param host_id query integer true "主机 ID"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce application/octet-stream
+// @Success 200
+// @Failure 400 {object} payload.Response
+// @Router /tools/download [get]
 func (s *Service) DownLoadFile(c *Context) {
 	var params payload.OptionsFileParams
 	err := c.ShouldBind(&params)
@@ -121,6 +158,17 @@ func (s *Service) DownLoadFile(c *Context) {
 	}
 }
 
+// DeleteFile
+// @Summary 删除文件
+// @Description 删除文件
+// @Param id formData string true "远端文件路径"
+// @Param host_id formData integer true "主机 ID"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tools/delete [post]
 func (s *Service) DeleteFile(c *Context) {
 	var params payload.OptionsFileParams
 	err := c.ShouldBind(&params)
@@ -136,6 +184,18 @@ func (s *Service) DeleteFile(c *Context) {
 	}
 }
 
+// MakeDirRemote
+// @Summary 创建文件夹
+// @Description 创建文件夹
+// @Param id formData string true "远端文件路径"
+// @Param host_id formData integer true "主机 ID"
+// @Param dir formData string true "远端目录地址"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tools/mkdir [post]
 func (s *Service) MakeDirRemote(c *Context) {
 	var params payload.MkdirParams
 	err := c.ShouldBind(&params)
@@ -151,6 +211,16 @@ func (s *Service) MakeDirRemote(c *Context) {
 	}
 }
 
+// StartJob
+// @Summary 启动任务
+// @Description 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+// @Param id formData integer true "任务 ID"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job/start [post]
 func (s *Service) StartJob(c *Context) {
 	var form payload.OptionsJobForm
 	err := c.ShouldBind(&form)
@@ -174,6 +244,17 @@ func (s *Service) StartJob(c *Context) {
 	}
 }
 
+// StopJob
+// @Summary 停止任务
+// todo 修改任务调度
+// @Description 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+// @Param id formData integer true "任务 ID"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job/stop [post]
 func (s *Service) StopJob(c *Context) {
 	var form payload.OptionsJobForm
 	err := c.ShouldBind(&form)
@@ -197,6 +278,17 @@ func (s *Service) StopJob(c *Context) {
 	}
 }
 
+// FilePreview
+// @Summary 文件预览
+// @Description 文件预览
+// @Param id query string true "远端文件路径"
+// @Param host_id query integer true "主机 ID"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tools/preview [get]
 func (s *Service) FilePreview(c *Context) {
 	var params payload.OptionsFileParams
 	err := c.ShouldBind(&params)
@@ -267,6 +359,19 @@ func (s *Service) FileUploadUnBlock(c *Context) {
 
 }
 
+// FileUploadV2
+// @Summary 上传文件到主机
+// @Description 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+// @Param X-Files header string true "预处理文件列表" example({"filename base64": "file.size"})
+// @Param id formData integer true "执行者 ID"
+// @Param type formData string true "执行者类型" example(host,group,tag)
+// @Param remote formData string true "远端文件夹"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tools/upload [post]
 func (s *Service) FileUploadV2(c *Context) {
 	var id int
 	var remoteFile, dType string
@@ -505,6 +610,16 @@ func (s *Service) DownloadInstanceLog(c *Context) {
 	}
 }
 
+// GetInstanceLog
+// @Summary 获取任务执行日志
+// @Description 获取任务执行日志
+// @Param id query integer true "执行记录 ID"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /task/instance/log/get [get]
 func (s *Service) GetInstanceLog(c *Context) {
 	var (
 		param payload.GetTaskInstanceLogParam
@@ -584,6 +699,15 @@ func (s *Service) GetInstanceLog(c *Context) {
 	}
 }
 
+// DataExport
+// @Summary 导出资产文件csv
+// @Description 导出资产文件csv
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce application/octet-stream
+// @Success 200
+// @Failure 400 {object} payload.Response
+// @Router /tools/export [get]
 func (s *Service) DataExport(c *Context) {
 	var (
 		b    bytes.Buffer
@@ -633,6 +757,16 @@ func (s *Service) DataExport(c *Context) {
 	c.String(http.StatusOK, b.String())
 }
 
+// DataImport
+// @Summary 导入资产文件csv
+// @Description 导入资产文件csv
+// @Param files formData file true "csv文件"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.HostExport}
+// @Failure 400 {object} payload.Response
+// @Router /tools/import [post]
 func (s *Service) DataImport(c *Context) {
 	const (
 		EmptyFileError = "empty files"

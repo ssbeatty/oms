@@ -5,7 +5,9 @@
 
 **API文档**
 
-[markdown](./api/v1/README.md)    [swagger](./api/v1/swagger.json)
+运行后访问 http://127.0.0.1:9090/swagger/index.html
+
+[swagger](./docs/swagger.json)
 
 #### 使用说明
 1. 安装编译
@@ -34,7 +36,7 @@ packr build -o oms.exe cmd/omsd/main.go
 app:
   name: oms
   addr: 127.0.0.1
-  port: 8080
+  port: 9090
   mode: dev
   run_start: false # 是否在运行时打开浏览器 windows
   temp_date: 336h  # 执行日志的保存时间 默认14天
@@ -69,7 +71,7 @@ services:
     image: ghcr.io/ssbeatty/oms/oms:v0.5.4
     restart: always
     ports:
-      - "8085:8080"
+      - "9090:9090"
     volumes:
       - ./data:/opt/oms/data
       - ./config:/etc/oms

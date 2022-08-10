@@ -1,5 +1,45 @@
 basePath: /api/v1
 definitions:
+  controllers.FileInfo:
+    properties:
+      children_ids:
+        items:
+          type: string
+        type: array
+      childrenCount:
+        type: integer
+      ext:
+        type: string
+      icon:
+        type: string
+      id:
+        type: string
+      isDir:
+        type: boolean
+      isHidden:
+        type: boolean
+      isSymlink:
+        type: boolean
+      modDate:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: string
+      size:
+        type: integer
+    type: object
+  controllers.FilePath:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/controllers.FileInfo'
+        type: array
+      folderChains:
+        items:
+          $ref: '#/definitions/controllers.FileInfo'
+        type: array
+    type: object
   models.Group:
     properties:
       id:
@@ -41,6 +81,35 @@ definitions:
       user:
         type: string
       vnc_port:
+        type: integer
+    type: object
+  models.HostExport:
+    properties:
+      addr:
+        type: string
+      group:
+        type: string
+      groupParams:
+        type: string
+      keyFile:
+        type: string
+      keyName:
+        type: string
+      keyPhrase:
+        type: string
+      name:
+        type: string
+      passWord:
+        type: string
+      port:
+        type: integer
+      tags:
+        items:
+          type: string
+        type: array
+      user:
+        type: string
+      vncport:
         type: integer
     type: object
   models.Job:
@@ -154,6 +223,19 @@ definitions:
       type:
         description: data msg error
         type: string
+    type: object
+  ssh.Result:
+    properties:
+      host_id:
+        type: integer
+      hostname:
+        type: string
+      msg:
+        type: string
+      seq:
+        type: integer
+      status:
+        type: boolean
     type: object
   ssh.Schema:
     properties:
@@ -766,6 +848,66 @@ paths:
       summary: 获取单个任务
       tags:
       - job
+  /job/start:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+      parameters:
+      - description: 任务 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Job'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 启动任务
+      tags:
+      - job
+  /job/stop:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+      parameters:
+      - description: 任务 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Job'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 停止任务
+      tags:
+      - job
   /player:
     get:
       consumes:
@@ -1313,6 +1455,325 @@ paths:
       summary: 获取所有任务执行结果
       tags:
       - job
+  /task/instance/log/get:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取任务执行日志
+      parameters:
+      - description: 执行记录 ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取任务执行日志
+      tags:
+      - tool
+  /tools/browse:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 目录列表
+      parameters:
+      - description: 远端文件路径
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: 主机 ID
+        in: query
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controllers.FilePath'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 目录列表
+      tags:
+      - tool
+  /tools/cmd:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+      parameters:
+      - description: 执行者 ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: 执行者类型
+        example: host,group,tag
+        in: query
+        name: type
+        required: true
+        type: string
+      - description: 命令
+        in: query
+        name: cmd
+        required: true
+        type: string
+      - description: 是否sudo执行
+        in: query
+        name: sudo
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ssh.Result'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 执行一条命令
+      tags:
+      - tool
+  /tools/delete:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除文件
+      parameters:
+      - description: 远端文件路径
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: 主机 ID
+        in: formData
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除文件
+      tags:
+      - tool
+  /tools/download:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 下载文件
+      parameters:
+      - description: 远端文件路径
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: 主机 ID
+        in: query
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 下载文件
+      tags:
+      - tool
+  /tools/export:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 导出资产文件csv
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 导出资产文件csv
+      tags:
+      - tool
+  /tools/import:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 导入资产文件csv
+      parameters:
+      - description: csv文件
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.HostExport'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 导入资产文件csv
+      tags:
+      - tool
+  /tools/mkdir:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建文件夹
+      parameters:
+      - description: 远端文件路径
+        in: formData
+        name: id
+        required: true
+        type: string
+      - description: 主机 ID
+        in: formData
+        name: host_id
+        required: true
+        type: integer
+      - description: 远端目录地址
+        in: formData
+        name: dir
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建文件夹
+      tags:
+      - tool
+  /tools/preview:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 文件预览
+      parameters:
+      - description: 远端文件路径
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: 主机 ID
+        in: query
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 文件预览
+      tags:
+      - tool
+  /tools/upload:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+      parameters:
+      - description: 预处理文件列表
+        example: '{"filename base64": "file.size"}'
+        in: header
+        name: X-Files
+        required: true
+        type: string
+      - description: 执行者 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 执行者类型
+        example: host,group,tag
+        in: formData
+        name: type
+        required: true
+        type: string
+      - description: 远端文件夹
+        in: formData
+        name: remote
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 上传文件到主机
+      tags:
+      - tool
   /tunnel:
     get:
       consumes:
