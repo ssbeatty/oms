@@ -43,11 +43,88 @@ definitions:
       vnc_port:
         type: integer
     type: object
+  models.Job:
+    properties:
+      cmd:
+        type: string
+      cmd_id:
+        type: integer
+      cmd_type:
+        type: string
+      execute_id:
+        type: integer
+      execute_type:
+        type: string
+      id:
+        type: integer
+      instances:
+        items:
+          $ref: '#/definitions/models.TaskInstance'
+        type: array
+      name:
+        type: string
+      spec:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+    type: object
+  models.PlayBook:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/models.Step'
+        type: array
+    type: object
+  models.PrivateKey:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.Step:
+    properties:
+      caches:
+        type: string
+      name:
+        type: string
+      params:
+        type: string
+      seq:
+        type: integer
+      type:
+        type: string
+    type: object
   models.Tag:
     properties:
       id:
         type: integer
       name:
+        type: string
+    type: object
+  models.TaskInstance:
+    properties:
+      end_time:
+        type: string
+      id:
+        type: integer
+      job_id:
+        type: integer
+      log_data:
+        type: string
+      log_path:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: string
+      uid:
         type: string
     type: object
   models.Tunnel:
@@ -78,14 +155,214 @@ definitions:
         description: data msg error
         type: string
     type: object
+  ssh.Schema:
+    properties:
+      schema: {}
+      type:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /cache/upload:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 上传临时文件
+      parameters:
+      - description: multi文件
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 上传临时文件
+      tags:
+      - player
+  /group:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有组
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Group'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有组
+      tags:
+      - group
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建组
+      parameters:
+      - description: 组名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: 组参数
+        in: formData
+        name: params
+        type: string
+      - description: 组类型
+        in: formData
+        name: mode
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建组
+      tags:
+      - group
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新组
+      parameters:
+      - description: 组 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 组名称
+        in: formData
+        name: name
+        type: string
+      - description: 组参数
+        in: formData
+        name: params
+        type: string
+      - description: 组类型
+        in: formData
+        name: mode
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新组
+      tags:
+      - group
+  /group/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除组
+      parameters:
+      - description: 组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除组
+      tags:
+      - group
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个组
+      parameters:
+      - description: 组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Group'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个组
+      tags:
+      - group
   /host:
     get:
       consumes:
       - application/x-www-form-urlencoded
       description: 获取所有主机
+      parameters:
+      - description: 页码数
+        in: query
+        name: page_num
+        type: integer
+      - default: 20
+        description: 分页尺寸
+        in: query
+        name: page_size
+        type: integer
       produces:
       - application/json
       responses:
@@ -290,4 +567,921 @@ paths:
       summary: 获取单个主机
       tags:
       - host
+  /job:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有任务
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Job'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有任务
+      tags:
+      - job
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建任务
+      parameters:
+      - description: 任务名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: 任务类型
+        example: cron,local
+        in: formData
+        name: type
+        required: true
+        type: string
+      - description: Cron表达式
+        in: formData
+        name: spec
+        type: string
+      - description: 任务命令
+        in: formData
+        name: cmd
+        type: string
+      - description: 剧本ID
+        in: formData
+        name: cmd_id
+        type: integer
+      - description: 任务命令类型
+        example: cmd,player
+        in: formData
+        name: cmd_type
+        required: true
+        type: string
+      - description: 执行者 ID
+        in: formData
+        name: execute_id
+        required: true
+        type: integer
+      - description: 执行者类型
+        example: host,group,tag
+        in: formData
+        name: execute_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Job'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建任务
+      tags:
+      - job
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新任务
+      parameters:
+      - description: 任务 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 任务名称
+        in: formData
+        name: name
+        type: string
+      - description: 任务类型
+        example: cron,local
+        in: formData
+        name: type
+        type: string
+      - description: Cron表达式
+        in: formData
+        name: spec
+        type: string
+      - description: 任务命令
+        in: formData
+        name: cmd
+        type: string
+      - description: 剧本ID
+        in: formData
+        name: cmd_id
+        type: integer
+      - description: 任务命令类型
+        example: cmd,player
+        in: formData
+        name: cmd_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Job'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新任务
+      tags:
+      - job
+  /job/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除任务
+      parameters:
+      - description: 任务 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除任务
+      tags:
+      - job
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个任务
+      parameters:
+      - description: 任务 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Job'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个任务
+      tags:
+      - job
+  /player:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有剧本
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.PlayBook'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有剧本
+      tags:
+      - player
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建剧本
+      parameters:
+      - description: 剧本名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: 剧本步骤序列化字符串
+        example: '[{"seq":0,"type":"cmd","name":"执行ls","caches":"null","params":"{\"cmd\":\"ls\"}"}]'
+        in: formData
+        name: steps
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PlayBook'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建剧本
+      tags:
+      - player
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新剧本
+      parameters:
+      - description: 剧本 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 剧本名称
+        in: formData
+        name: name
+        type: string
+      - description: 剧本步骤序列化字符串
+        example: '[{"seq":0,"type":"cmd","name":"执行ls","caches":"null","params":"{\"cmd\":\"ls\"}"}]'
+        in: formData
+        name: steps
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PlayBook'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新剧本
+      tags:
+      - player
+  /player/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除剧本
+      parameters:
+      - description: 剧本 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除剧本
+      tags:
+      - player
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个剧本
+      parameters:
+      - description: 剧本 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PlayBook'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个剧本
+      tags:
+      - player
+  /private_key:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有密钥
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.PrivateKey'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有密钥
+      tags:
+      - private_key
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建密钥
+      parameters:
+      - description: 密钥名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: 密钥密码
+        in: formData
+        name: passphrase
+        type: string
+      - description: 密钥文件
+        in: formData
+        name: key_file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PrivateKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建密钥
+      tags:
+      - private_key
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新密钥
+      parameters:
+      - description: 密钥 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 密钥名称
+        in: formData
+        name: name
+        type: string
+      - description: 密钥密码
+        in: formData
+        name: passphrase
+        type: string
+      - description: 密钥文件
+        in: formData
+        name: key_file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PrivateKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新密钥
+      tags:
+      - private_key
+  /private_key/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除密钥
+      parameters:
+      - description: 密钥 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除密钥
+      tags:
+      - private_key
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个密钥
+      parameters:
+      - description: 密钥 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.PrivateKey'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个密钥
+      tags:
+      - private_key
+  /schema:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有插件Schema
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ssh.Schema'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有插件Schema
+      tags:
+      - player
+  /tag:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有标签
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Tag'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有标签
+      tags:
+      - tag
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建标签
+      parameters:
+      - description: 标签名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tag'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建标签
+      tags:
+      - tag
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新标签
+      parameters:
+      - description: 标签 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 标签名称
+        in: formData
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tag'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新标签
+      tags:
+      - tag
+  /tag/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除标签
+      parameters:
+      - description: 标签 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除标签
+      tags:
+      - tag
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个标签
+      parameters:
+      - description: 标签 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tag'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个标签
+      tags:
+      - tag
+  /task/instance:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除任务执行结果
+      parameters:
+      - description: 任务 ID
+        in: formData
+        name: job_id
+        type: integer
+      - description: 截止时间戳(之前的数据都将删除)
+        in: formData
+        name: time_stamp
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除任务执行结果
+      tags:
+      - job
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有任务执行结果
+      parameters:
+      - description: 任务 ID
+        in: query
+        name: job_id
+        type: integer
+      - description: 页码数
+        in: query
+        name: page_num
+        type: integer
+      - default: 20
+        description: 分页尺寸
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.TaskInstance'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有任务执行结果
+      tags:
+      - job
+  /tunnel:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有隧道
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Tunnel'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有隧道
+      tags:
+      - tunnel
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建隧道
+      parameters:
+      - description: 隧道模式
+        example: local,remote
+        in: formData
+        name: mode
+        required: true
+        type: string
+      - description: 源地址
+        in: formData
+        name: source
+        required: true
+        type: string
+      - description: 目的地址
+        in: formData
+        name: destination
+        required: true
+        type: integer
+      - description: 主机 ID
+        in: formData
+        name: host_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tunnel'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建隧道
+      tags:
+      - tunnel
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新隧道
+      parameters:
+      - description: 隧道 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 隧道模式
+        example: local,remote
+        in: formData
+        name: mode
+        type: string
+      - description: 源地址
+        in: formData
+        name: source
+        type: string
+      - description: 目的地址
+        in: formData
+        name: destination
+        type: integer
+      - description: 主机 ID
+        in: formData
+        name: host_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tunnel'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新隧道
+      tags:
+      - tunnel
+  /tunnel/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除隧道
+      parameters:
+      - description: 隧道 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除隧道
+      tags:
+      - group
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个隧道
+      parameters:
+      - description: 隧道 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Tunnel'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个隧道
+      tags:
+      - tunnel
 swagger: "2.0"

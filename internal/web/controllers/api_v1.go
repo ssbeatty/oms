@@ -29,6 +29,8 @@ var parser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | c
 // GetHosts
 // @Summary 获取所有主机
 // @Description 获取所有主机
+// @Param page_num query int false  "页码数"
+// @Param page_size query int false  "分页尺寸" default(20)
 // @Tags host
 // @Accept x-www-form-urlencoded
 // @Produce json
@@ -182,8 +184,15 @@ func (s *Service) DeleteHost(c *Context) {
 	}
 }
 
-// api for table PrivateKey
-
+// GetPrivateKeys
+// @Summary 获取所有密钥
+// @Description 获取所有密钥
+// @Tags private_key
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.PrivateKey}
+// @Failure 400 {object} payload.Response
+// @Router /private_key [get]
 func (s *Service) GetPrivateKeys(c *Context) {
 	privateKeys, err := models.GetAllPrivateKey()
 	if err != nil {
@@ -194,6 +203,16 @@ func (s *Service) GetPrivateKeys(c *Context) {
 	c.ResponseOk(privateKeys)
 }
 
+// GetOnePrivateKey
+// @Summary 获取单个密钥
+// @Description 获取单个密钥
+// @Param id path int true  "密钥 ID"
+// @Tags private_key
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PrivateKey}
+// @Failure 400 {object} payload.Response
+// @Router /private_key/{id} [get]
 func (s *Service) GetOnePrivateKey(c *Context) {
 	var param payload.GetPrivateKeyParam
 	err := c.ShouldBindUri(&param)
@@ -210,6 +229,18 @@ func (s *Service) GetOnePrivateKey(c *Context) {
 	}
 }
 
+// PostPrivateKey
+// @Summary 创建密钥
+// @Description 创建密钥
+// @Param name formData string true "密钥名称"
+// @Param passphrase formData string false "密钥密码"
+// @Param key_file formData file true "密钥文件"
+// @Tags private_key
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PrivateKey}
+// @Failure 400 {object} payload.Response
+// @Router /private_key [post]
 func (s *Service) PostPrivateKey(c *Context) {
 	var form payload.PostPrivateKeyForm
 	err := c.ShouldBind(&form)
@@ -232,6 +263,19 @@ func (s *Service) PostPrivateKey(c *Context) {
 	}
 }
 
+// PutPrivateKey
+// @Summary 更新密钥
+// @Description 更新密钥
+// @Param id formData integer true "密钥 ID"
+// @Param name formData string false "密钥名称"
+// @Param passphrase formData string false "密钥密码"
+// @Param key_file formData file false "密钥文件"
+// @Tags private_key
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PrivateKey}
+// @Failure 400 {object} payload.Response
+// @Router /private_key [put]
 func (s *Service) PutPrivateKey(c *Context) {
 	var form payload.PutPrivateKeyForm
 	err := c.ShouldBind(&form)
@@ -257,6 +301,16 @@ func (s *Service) PutPrivateKey(c *Context) {
 	}
 }
 
+// DeletePrivateKey
+// @Summary 删除密钥
+// @Description 删除密钥
+// @Param id path int true  "密钥 ID"
+// @Tags private_key
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /private_key/{id} [delete]
 func (s *Service) DeletePrivateKey(c *Context) {
 	var param payload.DeletePrivateKeyParam
 	err := c.ShouldBindUri(&param)
@@ -273,8 +327,15 @@ func (s *Service) DeletePrivateKey(c *Context) {
 	}
 }
 
-// api for table group
-
+// GetGroups
+// @Summary 获取所有组
+// @Description 获取所有组
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.Group}
+// @Failure 400 {object} payload.Response
+// @Router /group [get]
 func (s *Service) GetGroups(c *Context) {
 	groups, err := models.GetAllGroup()
 	if err != nil {
@@ -285,6 +346,16 @@ func (s *Service) GetGroups(c *Context) {
 	c.ResponseOk(groups)
 }
 
+// GetOneGroup
+// @Summary 获取单个组
+// @Description 获取单个组
+// @Param id path int true  "组 ID"
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Group}
+// @Failure 400 {object} payload.Response
+// @Router /group/{id} [get]
 func (s *Service) GetOneGroup(c *Context) {
 	var param payload.GetGroupParam
 	err := c.ShouldBindUri(&param)
@@ -301,6 +372,18 @@ func (s *Service) GetOneGroup(c *Context) {
 	}
 }
 
+// PostGroup
+// @Summary 创建组
+// @Description 创建组
+// @Param name formData string true "组名称"
+// @Param params formData string false "组参数"
+// @Param mode formData int true "组类型" example(0:主机模式,1:匹配模式)
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Group}
+// @Failure 400 {object} payload.Response
+// @Router /group [post]
 func (s *Service) PostGroup(c *Context) {
 	var form payload.PostGroupForm
 	err := c.ShouldBind(&form)
@@ -317,6 +400,19 @@ func (s *Service) PostGroup(c *Context) {
 	}
 }
 
+// PutGroup
+// @Summary 更新组
+// @Description 更新组
+// @Param id formData integer true "组 ID"
+// @Param name formData string false "组名称"
+// @Param params formData string false "组参数"
+// @Param mode formData int false "组类型" example(0:主机模式,1:匹配模式)
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Group}
+// @Failure 400 {object} payload.Response
+// @Router /group [put]
 func (s *Service) PutGroup(c *Context) {
 	var form payload.PutGroupForm
 	err := c.ShouldBind(&form)
@@ -333,6 +429,16 @@ func (s *Service) PutGroup(c *Context) {
 	}
 }
 
+// DeleteGroup
+// @Summary 删除组
+// @Description 删除组
+// @Param id path int true  "组 ID"
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /group/{id} [delete]
 func (s *Service) DeleteGroup(c *Context) {
 	var param payload.DeleteGroupParam
 	err := c.ShouldBindUri(&param)
@@ -349,8 +455,15 @@ func (s *Service) DeleteGroup(c *Context) {
 	}
 }
 
-// api for table tag
-
+// GetTags
+// @Summary 获取所有标签
+// @Description 获取所有标签
+// @Tags tag
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.Tag}
+// @Failure 400 {object} payload.Response
+// @Router /tag [get]
 func (s *Service) GetTags(c *Context) {
 	tags, err := models.GetAllTag()
 	if err != nil {
@@ -361,6 +474,16 @@ func (s *Service) GetTags(c *Context) {
 	c.ResponseOk(tags)
 }
 
+// GetOneTag
+// @Summary 获取单个标签
+// @Description 获取单个标签
+// @Param id path int true  "标签 ID"
+// @Tags tag
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tag}
+// @Failure 400 {object} payload.Response
+// @Router /tag/{id} [get]
 func (s *Service) GetOneTag(c *Context) {
 	var param payload.GetTagParam
 	err := c.ShouldBindUri(&param)
@@ -377,6 +500,16 @@ func (s *Service) GetOneTag(c *Context) {
 	}
 }
 
+// PostTag
+// @Summary 创建标签
+// @Description 创建标签
+// @Param name formData string true "标签名称"
+// @Tags tag
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tag}
+// @Failure 400 {object} payload.Response
+// @Router /tag [post]
 func (s *Service) PostTag(c *Context) {
 	var form payload.PostTagForm
 	err := c.ShouldBind(&form)
@@ -393,6 +526,17 @@ func (s *Service) PostTag(c *Context) {
 	}
 }
 
+// PutTag
+// @Summary 更新标签
+// @Description 更新标签
+// @Param id formData integer true "标签 ID"
+// @Param name formData string false "标签名称"
+// @Tags tag
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tag}
+// @Failure 400 {object} payload.Response
+// @Router /tag [put]
 func (s *Service) PutTag(c *Context) {
 	var form payload.PutTagForm
 	err := c.ShouldBind(&form)
@@ -409,6 +553,16 @@ func (s *Service) PutTag(c *Context) {
 	}
 }
 
+// DeleteTag
+// @Summary 删除标签
+// @Description 删除标签
+// @Param id path int true  "标签 ID"
+// @Tags tag
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tag/{id} [delete]
 func (s *Service) DeleteTag(c *Context) {
 	var param payload.DeleteTagParam
 	err := c.ShouldBindUri(&param)
@@ -425,8 +579,15 @@ func (s *Service) DeleteTag(c *Context) {
 	}
 }
 
-// api for table tunnel
-
+// GetTunnels
+// @Summary 获取所有隧道
+// @Description 获取所有隧道
+// @Tags tunnel
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.Tunnel}
+// @Failure 400 {object} payload.Response
+// @Router /tunnel [get]
 func (s *Service) GetTunnels(c *Context) {
 	var param payload.GetTunnelsParam
 	err := c.ShouldBind(&param)
@@ -448,6 +609,16 @@ func (s *Service) GetTunnels(c *Context) {
 	}
 }
 
+// GetOneTunnel
+// @Summary 获取单个隧道
+// @Description 获取单个隧道
+// @Param id path int true  "隧道 ID"
+// @Tags tunnel
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tunnel}
+// @Failure 400 {object} payload.Response
+// @Router /tunnel/{id} [get]
 func (s *Service) GetOneTunnel(c *Context) {
 	var param payload.GetTunnelParam
 	err := c.ShouldBindUri(&param)
@@ -464,6 +635,19 @@ func (s *Service) GetOneTunnel(c *Context) {
 	}
 }
 
+// PostTunnel
+// @Summary 创建隧道
+// @Description 创建隧道
+// @Param mode formData string true "隧道模式" example(local,remote)
+// @Param source formData string true "源地址"
+// @Param destination formData int true "目的地址"
+// @Param host_id formData int true "主机 ID"
+// @Tags tunnel
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tunnel}
+// @Failure 400 {object} payload.Response
+// @Router /tunnel [post]
 func (s *Service) PostTunnel(c *Context) {
 	var form payload.PostTunnelForm
 	err := c.ShouldBind(&form)
@@ -494,6 +678,20 @@ func (s *Service) PostTunnel(c *Context) {
 	}
 }
 
+// PutTunnel
+// @Summary 更新隧道
+// @Description 更新隧道
+// @Param id formData integer true "隧道 ID"
+// @Param mode formData string false "隧道模式" example(local,remote)
+// @Param source formData string false "源地址"
+// @Param destination formData int false "目的地址"
+// @Param host_id formData int false "主机 ID"
+// @Tags tunnel
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Tunnel}
+// @Failure 400 {object} payload.Response
+// @Router /tunnel [put]
 func (s *Service) PutTunnel(c *Context) {
 	var form payload.PutTunnelForm
 	err := c.ShouldBind(&form)
@@ -520,6 +718,16 @@ func (s *Service) PutTunnel(c *Context) {
 	}
 }
 
+// DeleteTunnel
+// @Summary 删除隧道
+// @Description 删除隧道
+// @Param id path int true  "隧道 ID"
+// @Tags group
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tunnel/{id} [delete]
 func (s *Service) DeleteTunnel(c *Context) {
 	var param payload.DeleteTunnelParam
 	err := c.ShouldBindUri(&param)
@@ -537,8 +745,15 @@ func (s *Service) DeleteTunnel(c *Context) {
 	}
 }
 
-// api for table job
-
+// GetJobs
+// @Summary 获取所有任务
+// @Description 获取所有任务
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job [get]
 func (s *Service) GetJobs(c *Context) {
 	var param payload.GetJobsParam
 	err := c.ShouldBind(&param)
@@ -556,6 +771,16 @@ func (s *Service) GetJobs(c *Context) {
 	}
 }
 
+// GetOneJob
+// @Summary 获取单个任务
+// @Description 获取单个任务
+// @Param id path int true  "任务 ID"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job/{id} [get]
 func (s *Service) GetOneJob(c *Context) {
 	var param payload.GetJobParam
 	err := c.ShouldBindUri(&param)
@@ -572,6 +797,23 @@ func (s *Service) GetOneJob(c *Context) {
 	}
 }
 
+// PostJob
+// @Summary 创建任务
+// @Description 创建任务
+// @Param name formData string true "任务名称"
+// @Param type formData string true "任务类型" example(cron,local)
+// @Param spec formData string false "Cron表达式"
+// @Param cmd formData string false "任务命令"
+// @Param cmd_id formData integer false "剧本ID"
+// @Param cmd_type formData string true "任务命令类型" example(cmd,player)
+// @Param execute_id formData integer true "执行者 ID"
+// @Param execute_type formData string true "执行者类型" example(host,group,tag)
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job [post]
 func (s *Service) PostJob(c *Context) {
 	var form payload.PostJobForm
 	err := c.ShouldBind(&form)
@@ -604,6 +846,22 @@ func (s *Service) PostJob(c *Context) {
 	}
 }
 
+// PutJob
+// @Summary 更新任务
+// @Description 更新任务
+// @Param id formData integer true "任务 ID"
+// @Param name formData string false "任务名称"
+// @Param type formData string false "任务类型" example(cron,local)
+// @Param spec formData string false "Cron表达式"
+// @Param cmd formData string false "任务命令"
+// @Param cmd_id formData integer false "剧本ID"
+// @Param cmd_type formData string false "任务命令类型" example(cmd,player)
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job [put]
 func (s *Service) PutJob(c *Context) {
 	var form payload.PutJobForm
 	err := c.ShouldBind(&form)
@@ -634,6 +892,16 @@ func (s *Service) PutJob(c *Context) {
 	}
 }
 
+// DeleteJob
+// @Summary 删除任务
+// @Description 删除任务
+// @Param id path int true  "任务 ID"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /job/{id} [delete]
 func (s *Service) DeleteJob(c *Context) {
 	var param payload.DeleteJobParam
 	err := c.ShouldBindUri(&param)
@@ -650,8 +918,18 @@ func (s *Service) DeleteJob(c *Context) {
 	}
 }
 
-// api for table task instance
-
+// GetInstances
+// @Summary 获取所有任务执行结果
+// @Description 获取所有任务执行结果
+// @Param job_id query int false  "任务 ID"
+// @Param page_num query int false  "页码数"
+// @Param page_size query int false  "分页尺寸" default(20)
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.TaskInstance}
+// @Failure 400 {object} payload.Response
+// @Router /task/instance [get]
 func (s *Service) GetInstances(c *Context) {
 	var (
 		total int64
@@ -684,6 +962,17 @@ func (s *Service) GetInstances(c *Context) {
 	}
 }
 
+// DeleteInstances
+// @Summary 删除任务执行结果
+// @Description 删除任务执行结果
+// @Param job_id formData integer false "任务 ID"
+// @Param time_stamp formData integer false "截止时间戳(之前的数据都将删除)"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /task/instance [delete]
 func (s *Service) DeleteInstances(c *Context) {
 	var (
 		param payload.DeleteTaskInstanceFrom
@@ -708,8 +997,16 @@ func (s *Service) DeleteInstances(c *Context) {
 	}
 }
 
-// api for player scheme
-
+// CacheUpload
+// @Summary 上传临时文件
+// @Description 上传临时文件
+// @Param files formData file true "multi文件"
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /cache/upload [post]
 func (s *Service) CacheUpload(c *Context) {
 	var (
 		resp    payload.UploadResponse
@@ -760,10 +1057,28 @@ func (s *Service) CacheUpload(c *Context) {
 	c.ResponseOk(resp)
 }
 
+// GetPluginSchema
+// @Summary 获取所有插件Schema
+// @Description 获取所有插件Schema
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]ssh.Schema}
+// @Failure 400 {object} payload.Response
+// @Router /schema [get]
 func (s *Service) GetPluginSchema(c *Context) {
 	c.ResponseOk(s.sshManager.GetAllPluginSchema())
 }
 
+// GetPlayBooks
+// @Summary 获取所有剧本
+// @Description 获取所有剧本
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.PlayBook}
+// @Failure 400 {object} payload.Response
+// @Router /player [get]
 func (s *Service) GetPlayBooks(c *Context) {
 	records, err := models.GetAllPlayBook()
 	if err != nil {
@@ -774,6 +1089,16 @@ func (s *Service) GetPlayBooks(c *Context) {
 	c.ResponseOk(records)
 }
 
+// GetOnePlayBook
+// @Summary 获取单个剧本
+// @Description 获取单个剧本
+// @Param id path int true  "剧本 ID"
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PlayBook}
+// @Failure 400 {object} payload.Response
+// @Router /player/{id} [get]
 func (s *Service) GetOnePlayBook(c *Context) {
 	var param payload.GetPlayBookParam
 	err := c.ShouldBindUri(&param)
@@ -790,6 +1115,17 @@ func (s *Service) GetOnePlayBook(c *Context) {
 	}
 }
 
+// PostPlayBook
+// @Summary 创建剧本
+// @Description 创建剧本
+// @Param name formData string true "剧本名称"
+// @Param steps formData string true "剧本步骤序列化字符串" example([{"seq":0,"type":"cmd","name":"执行ls","caches":"null","params":"{\"cmd\":\"ls\"}"}])
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PlayBook}
+// @Failure 400 {object} payload.Response
+// @Router /player [post]
 func (s *Service) PostPlayBook(c *Context) {
 	var form payload.PostPlayBookForm
 	err := c.ShouldBind(&form)
@@ -832,6 +1168,18 @@ func (s *Service) PostPlayBook(c *Context) {
 	}
 }
 
+// PutPlayBook
+// @Summary 更新剧本
+// @Description 更新剧本
+// @Param id formData integer true "剧本 ID"
+// @Param name formData string false "剧本名称"
+// @Param steps formData string false "剧本步骤序列化字符串" example([{"seq":0,"type":"cmd","name":"执行ls","caches":"null","params":"{\"cmd\":\"ls\"}"}])
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.PlayBook}
+// @Failure 400 {object} payload.Response
+// @Router /player [put]
 func (s *Service) PutPlayBook(c *Context) {
 	var form payload.PutPlayBookForm
 	err := c.ShouldBind(&form)
@@ -874,6 +1222,16 @@ func (s *Service) PutPlayBook(c *Context) {
 	}
 }
 
+// DeletePlayBook
+// @Summary 删除剧本
+// @Description 删除剧本
+// @Param id path int true  "剧本 ID"
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /player/{id} [delete]
 func (s *Service) DeletePlayBook(c *Context) {
 	var param payload.DeletePlayBookParam
 	err := c.ShouldBindUri(&param)
