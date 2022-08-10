@@ -274,7 +274,7 @@ func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, wri
 }
 
 func checkPlugin(path string) (string, error) {
-	name, err := exec.Command(path, buildin.CMDName).Output()
+	name, err := exec.Command(path, buildin.CMDName).CombinedOutput()
 	if err != nil {
 		return "", err
 	}

@@ -160,7 +160,7 @@ func (bs *RunShellStep) Desc() string {
 // 插件需要提供Scheme 以供渲染表单
 type PluginStep struct {
 	BaseStep
-	Data       interface{} `json:"data"`
+	Data       interface{}
 	ScriptPath string
 }
 
@@ -174,7 +174,7 @@ func (bs *PluginStep) Create() Step {
 }
 
 func (bs *PluginStep) Name() string {
-	name, err := exec.Command(bs.ScriptPath, CMDName).Output()
+	name, err := exec.Command(bs.ScriptPath, CMDName).CombinedOutput()
 	if err != nil {
 		return ""
 	}
@@ -189,6 +189,10 @@ func (bs *PluginStep) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (bs *PluginStep) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&bs.Data)
+}
+
 func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 	ret := make(map[string]interface{})
 
@@ -197,7 +201,7 @@ func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 		return nil, err
 	}
 
-	b, err := exec.Command(bs.ScriptPath, CMDScheme).Output()
+	b, err := exec.Command(bs.ScriptPath, CMDScheme).CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
@@ -213,11 +217,11 @@ func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
-	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).Output()
+	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).CombinedOutput()
 }
 
 func (bs *PluginStep) Desc() string {
-	desc, err := exec.Command(bs.ScriptPath, CMDDesc).Output()
+	desc, err := exec.Command(bs.ScriptPath, CMDDesc).CombinedOutput()
 	if err != nil {
 		return ""
 	}
