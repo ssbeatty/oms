@@ -9,7 +9,6 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/web/payload"
 	"oms/pkg/transport"
-	"strconv"
 	"time"
 )
 
@@ -25,6 +24,7 @@ type Request struct {
 	Id    int    `json:"id"`
 	Cmd   string `json:"cmd"`
 	CType string `json:"cmd_type"`
+	CmdId int    `json:"cmd_id"`
 }
 
 type HostStatusRequest struct {
@@ -67,12 +67,7 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 		// TODO sudo 由host本身管理
 		switch req.CType {
 		case ssh.CMDTypePlayer:
-			cid, err := strconv.Atoi(req.Cmd)
-			if err != nil {
-				w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "parse cmd id error"))
-				return
-			}
-			player, err := models.GetPlayBookById(cid)
+			player, err := models.GetPlayBookById(req.CmdId)
 			if err != nil {
 				w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "playbook not found"))
 				return
