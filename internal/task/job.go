@@ -32,8 +32,9 @@ const (
 	JobStatusStop    JobStatus = "stop"
 	JobStatusDone    JobStatus = "done"
 
-	MarkText  = "###mark###"
-	ErrorText = "[error]"
+	MarkText     = "###mark###"
+	ErrorText    = "[error]"
+	DoneMartText = "###done###"
 )
 
 // Job is cron task or long task
@@ -242,6 +243,8 @@ func (j *Job) Run() {
 	}
 
 	wg.Wait()
+
+	_, _ = fmt.Fprintf(std, "%s\n", DoneMartText)
 
 	_ = instance.Done()
 }

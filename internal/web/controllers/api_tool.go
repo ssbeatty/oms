@@ -641,15 +641,20 @@ func (s *Service) GetInstanceLog(c *Context) {
 			defer file.Close()
 
 			var (
-				buffer bytes.Buffer
-				host   *models.Host
-				idx    int
+				buffer         bytes.Buffer
+				host           *models.Host
+				idx            int
+				total, success int
 			)
 			buffer.WriteString(blue(strings.Repeat("#", 40)) + "\r\n\r\n")
 			buffer.WriteString(green("#  start run  #\r\n"))
 			buffer.WriteString(fmt.Sprintf("Id    : %s\r\n", blue(instance.Id)))
 			buffer.WriteString(fmt.Sprintf("Job   : %s\r\n", blue(instance.Job.Name)))
-			buffer.WriteString(fmt.Sprintf("Cmd   : %s\r\n", blue(instance.Job.Cmd)))
+			if instance.Job.CmdType == ssh.CMDTypeShell {
+				buffer.WriteString(fmt.Sprintf("Cmd   : %s\r\n", blue(instance.Job.Cmd)))
+			} else {
+				buffer.WriteString(fmt.Sprintf("Player: %s\r\n", blue(instance.Job.CmdId)))
+			}
 			buffer.WriteString(fmt.Sprintf("Start : %s\r\n", blue(instance.StartTime.Format(time.RFC3339))))
 			buffer.WriteString(fmt.Sprintf("End   : %s\r\n", blue(instance.EndTime.Format(time.RFC3339))))
 			buffer.WriteString(fmt.Sprintf("Usage : %s\r\n", blue(instance.EndTime.Sub(instance.StartTime))))
@@ -660,6 +665,8 @@ func (s *Service) GetInstanceLog(c *Context) {
 
 				if strings.HasPrefix(line, task.MarkText) {
 					idx++
+					total++
+
 					idRaw := regexp.MustCompile("\\d+").FindString(line)
 					hostId, err := strconv.Atoi(idRaw)
 					if err != nil {
@@ -674,17 +681,20 @@ func (s *Service) GetInstanceLog(c *Context) {
 					if strings.HasSuffix(line, task.ErrorText) {
 						buffer.WriteString(red(fmt.Sprintf("## Seq: %d host info ##\r\n", idx)))
 					} else {
+						success++
 						buffer.WriteString(green(fmt.Sprintf("## Seq: %d host info ##\r\n", idx)))
 					}
 					buffer.WriteString(fmt.Sprintf("Host: %s\tId: %s\r\n", blue(host.Name), blue(host.Id)))
 					buffer.WriteString(fmt.Sprintf("Addr: %s\r\n", blue(fmt.Sprintf("%s:%d", host.Addr, host.Port))))
 					buffer.WriteString(strings.Repeat("-", 40) + "\r\n")
+				} else if strings.HasPrefix(line, task.DoneMartText) {
+					buffer.WriteString("\r\n")
+					buffer.WriteString(blue(fmt.Sprintf("执行完毕, 一共: %d个主机, 成功: %d个\r\n", total, success)))
 				} else {
 					buffer.WriteString(line)
 					buffer.WriteString("\r\n")
 				}
 			}
-			buffer.WriteString("\r\n")
 			buffer.WriteString(blue(strings.Repeat("#", 40)) + "\r\n")
 
 			if err := scanner.Err(); err != nil {

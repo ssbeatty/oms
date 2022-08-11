@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/fatih/color"
 	"oms/internal/ssh/buildin"
 	"oms/pkg/transport"
+)
+
+var (
+	cyan = color.New(color.FgCyan).SprintFunc()
 )
 
 type Player struct {
@@ -49,8 +54,7 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 			return buf.Bytes(), err
 		}
 
-		// todo 优化样式
-		buf.WriteString(fmt.Sprintf("[Step %8s] ==> %s\n", step.Name(), step.ID()))
+		buf.WriteString(cyan(fmt.Sprintf("[Step %8s] ==> \"%s\"\r\n", step.Name(), step.ID())))
 		msg, err := step.Exec(session, p.sudo)
 
 		buf.Write(msg)
