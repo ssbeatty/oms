@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -83,7 +84,7 @@ func HashSha1(s string) string {
 	h.Write([]byte(s))
 	bs := h.Sum(nil)
 
-	return string(bs)
+	return base64.StdEncoding.EncodeToString(bs)
 }
 
 func IsUtf8(s []byte) bool {
