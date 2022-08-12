@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"oms/pkg/transport"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 )
@@ -21,7 +22,7 @@ const (
 	GUIDLength  = 36
 	CMDName     = "name"
 	CMDDesc     = "desc"
-	CMDScheme   = "scheme"
+	CMDScheme   = "schema"
 	CMDCommand  = "exec"
 	ParamClient = "--client"
 	ParamParams = "--params"
@@ -218,8 +219,15 @@ func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
-	return exec.Command(
-		bs.ScriptPath, CMDCommand, ParamClient, string(configJson), ParamParams, string(params)).CombinedOutput()
+
+	abs, err := filepath.Abs(bs.ScriptPath)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.Command(
+		abs, CMDCommand, ParamClient, string(configJson), ParamParams, string(params))
+	cmd.Dir = filepath.Dir(bs.ScriptPath)
+	return cmd.CombinedOutput()
 }
 
 func (bs *PluginStep) Desc() string {

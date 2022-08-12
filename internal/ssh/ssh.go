@@ -109,27 +109,20 @@ func (m *Manager) initAllPlugins() {
 		buildin.StepNameYamlJson:  &buildin.JsonYamlReplaceStep{},
 	}
 
-	files, err := os.ReadDir(pluginPath)
-	if err != nil {
-		return
-	}
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
+	_ = filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
 		}
-
-		plg := filepath.Join(pluginPath, f.Name())
-		name, err := checkPlugin(plg)
+		name, err := checkPlugin(path)
 		if err != nil {
-			m.logger.Errorf("error when check plugin: %s, err: %v", plg, err)
-			continue
+			return nil
 		}
 
 		m.supportPlugins[name] = &buildin.PluginStep{
-			ScriptPath: plg,
+			ScriptPath: path,
 		}
-	}
+		return nil
+	})
 
 }
 

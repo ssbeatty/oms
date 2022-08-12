@@ -55,7 +55,6 @@ func (w *WSConnect) HandlerResize(conn *websocket.Conn, msg *WsMsg) {
 	}
 
 	w.size = req
-	w.WriteMsg(payload.GenerateMsgResponse(WSStatusSuccess, "resize success"))
 }
 
 func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
