@@ -2053,7 +2053,7 @@ const docTemplate = `{
         },
         "/tools/cmd": {
             "get": {
-                "description": "启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度",
+                "description": "执行一条命令",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -2387,7 +2387,7 @@ const docTemplate = `{
         },
         "/tools/upload": {
             "post": {
-                "description": "停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度",
+                "description": "上传文件到主机",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],

@@ -17,13 +17,15 @@ type Player struct {
 	sudo   bool
 	client *transport.Client
 	Steps  []buildin.Step `json:"steps"`
+	size   *WindowSize
 }
 
-func NewPlayer(client *transport.Client, steps []buildin.Step, sudo bool) *Player {
+func NewPlayer(client *transport.Client, steps []buildin.Step, sudo bool, size *WindowSize) *Player {
 	return &Player{
 		sudo:   sudo,
 		client: client,
 		Steps:  steps,
+		size:   size,
 	}
 }
 
@@ -49,7 +51,11 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 	}()
 
 	for _, step := range p.Steps {
-		session, err = p.client.NewPty()
+		if p.size != nil {
+			session, err = p.client.NewSessionWithPty(p.size.Cols, p.size.Rows)
+		} else {
+			session, err = p.client.NewPty()
+		}
 		if err != nil {
 			return buf.Bytes(), err
 		}

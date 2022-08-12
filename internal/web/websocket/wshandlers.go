@@ -37,8 +37,25 @@ func (w *WSConnect) InitHandlers() *WSConnect {
 		"WS_CMD":      w.HandlerSSHShell,
 		"FILE_STATUS": w.HandlerFTaskStatus,
 		"HOST_STATUS": w.HandlerHostStatus,
+		"RESIZE":      w.HandlerResize,
 	}
 	return w
+}
+
+func (w *WSConnect) HandlerResize(conn *websocket.Conn, msg *WsMsg) {
+	w.logger.Infof("handler resize recv a message: %s", msg.Body)
+	var (
+		req = ssh.WindowSize{}
+	)
+
+	err := json.Unmarshal(msg.Body, &req)
+	if err != nil {
+		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "can not parse payload"))
+		return
+	}
+
+	w.size = req
+	w.WriteMsg(payload.GenerateMsgResponse(WSStatusSuccess, "resize success"))
 }
 
 func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
@@ -73,16 +90,20 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 				return
 			}
 			cmd := ssh.Command{
-				Type:   ssh.CMDTypePlayer,
-				Params: player.Steps,
+				Type:       ssh.CMDTypePlayer,
+				Params:     player.Steps,
+				Sudo:       true,
+				WindowSize: w.size,
 			}
-			go w.engine.RunCmdWithContext(host, cmd, true, ch)
+			go w.engine.RunCmdWithContext(host, cmd, ch)
 		default:
 			cmd := ssh.Command{
-				Type:   ssh.CMDTypeShell,
-				Params: req.Cmd,
+				Type:       ssh.CMDTypeShell,
+				Params:     req.Cmd,
+				Sudo:       true,
+				WindowSize: w.size,
 			}
-			go w.engine.RunCmdWithContext(host, cmd, true, ch)
+			go w.engine.RunCmdWithContext(host, cmd, ch)
 		}
 	}
 

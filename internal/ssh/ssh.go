@@ -40,8 +40,15 @@ type Schema struct {
 }
 
 type Command struct {
-	Type   string
-	Params string
+	Type       string
+	Params     string
+	Sudo       bool
+	WindowSize WindowSize
+}
+
+type WindowSize struct {
+	Cols int `json:"cols"`
+	Rows int `json:"rows"`
 }
 
 type Result struct {

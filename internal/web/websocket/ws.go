@@ -3,6 +3,7 @@ package websocket
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"oms/internal/ssh"
 	"oms/pkg/logger"
 	"sync"
 )
@@ -19,10 +20,11 @@ type WSConnect struct {
 	mu             sync.Mutex
 	engine         WebService
 	handlers       map[string]WsHandler
-	closer         chan bool
+	closer         chan struct{}
 	once           sync.Once
 	tmp            sync.Map
 	logger         *logger.Logger
+	size           ssh.WindowSize
 	existSubscribe map[string]chan struct{}
 }
 
@@ -37,12 +39,13 @@ func NewWSConnect(conn *websocket.Conn, engine WebService) *WSConnect {
 	c := &WSConnect{
 		Conn:           conn,
 		engine:         engine,
-		closer:         make(chan bool),
+		closer:         make(chan struct{}),
 		once:           sync.Once{},
 		tmp:            sync.Map{},
 		logger:         logger.NewLogger("websocket"),
 		existSubscribe: make(map[string]chan struct{}),
 		mu:             sync.Mutex{},
+		size:           ssh.WindowSize{Cols: 200, Rows: 40},
 	}
 	return c
 }

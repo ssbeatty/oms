@@ -151,7 +151,7 @@ func (j *Job) runPlayer(client *transport.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	player := ssh.NewPlayer(client, steps, true)
+	player := ssh.NewPlayer(client, steps, true, nil)
 
 	return player.Run(context.Background())
 

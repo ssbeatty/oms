@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"oms/internal/ssh"
 	"oms/pkg/logger"
 	"oms/pkg/transport"
 	"sync"
@@ -13,11 +14,6 @@ import (
 const (
 	minSizeOfResizeMsg = 12
 )
-
-type wsResize struct {
-	Cols int `json:"cols"`
-	Rows int `json:"rows"`
-}
 
 type wsBufferWriter struct {
 	buffer bytes.Buffer
@@ -94,7 +90,7 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan bool) {
 			// 每次传输一个或多个char
 			if len(wsData) > minSizeOfResizeMsg {
 				// resize 或者 粘贴
-				resize := wsResize{}
+				resize := ssh.WindowSize{}
 				err := json.Unmarshal(wsData, &resize)
 				if err != nil {
 					s.logger.Errorf("unmarshal resize error: %v", err)

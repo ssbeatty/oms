@@ -278,7 +278,7 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 	return client.MkdirAll(realPath)
 }
 
-func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch chan *ssh.Result, ctx context.Context) {
+func (s *Service) runCmdWithContext(host *models.Host, cmd ssh.Command, ch chan *ssh.Result, ctx context.Context) {
 	var msg []byte
 	var errMsg string
 	var result *ssh.Result
@@ -292,7 +292,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 		ch <- result
 		return
 	}
-	session, err := client.NewPty()
+	session, err := client.NewSessionWithPty(cmd.WindowSize.Cols, cmd.WindowSize.Rows)
 	if err != nil {
 		s.Logger.Errorf("RunCmdWithContext error when create new session failed, err: %v", err)
 		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error(), Addr: host.Addr}
@@ -311,10 +311,10 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 		}
 	}()
 
-	if sudo && client.GetTargetMachineOs() != transport.GOOSWindows {
-		msg, err = client.SudoInteractively(session, cmd, host.PassWord)
+	if cmd.Sudo && client.GetTargetMachineOs() != transport.GOOSWindows {
+		msg, err = client.SudoInteractively(session, cmd.Params, host.PassWord)
 	} else {
-		msg, err = session.Output(cmd)
+		msg, err = session.Output(cmd.Params)
 	}
 
 	if err != nil {
@@ -329,7 +329,7 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd string, sudo bool, ch
 	ch <- result
 }
 
-func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bool, ch chan *ssh.Result, ctx context.Context) {
+func (s *Service) runPlayerWithContext(host *models.Host, cmd ssh.Command, ch chan *ssh.Result, ctx context.Context) {
 	var (
 		msg    []byte
 		result *ssh.Result
@@ -342,14 +342,14 @@ func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bo
 		return
 	}
 
-	steps, err := s.sshManager.ParseSteps(params)
+	steps, err := s.sshManager.ParseSteps(cmd.Params)
 	if err != nil {
 		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: err.Error(), Addr: host.Addr}
 		ch <- result
 		return
 	}
 
-	player := ssh.NewPlayer(client, steps, sudo)
+	player := ssh.NewPlayer(client, steps, cmd.Sudo, &cmd.WindowSize)
 
 	msg, err = player.Run(ctx)
 
@@ -363,13 +363,13 @@ func (s *Service) runPlayerWithContext(host *models.Host, params string, sudo bo
 }
 
 // RunCmdWithContext 使用在websocket接口上
-func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, sudo bool, ch chan *ssh.Result) {
+func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, ch chan *ssh.Result) {
 	ctx, cancel := context.WithTimeout(context.Background(), websocket.SSHTimeDeadline)
 	defer cancel()
 	switch cmd.Type {
 	case ssh.CMDTypeShell:
-		s.runCmdWithContext(host, cmd.Params, sudo, ch, ctx)
+		s.runCmdWithContext(host, cmd, ch, ctx)
 	case ssh.CMDTypePlayer:
-		s.runPlayerWithContext(host, cmd.Params, sudo, ch, ctx)
+		s.runPlayerWithContext(host, cmd, ch, ctx)
 	}
 }

@@ -81,7 +81,7 @@ func TestPlayerRun(t *testing.T) {
 		Shell: "ls -l",
 	})
 
-	player := NewPlayer(client, steps, true)
+	player := NewPlayer(client, steps, true, nil)
 
 	output, err := player.Run(context.Background())
 	if err != nil {

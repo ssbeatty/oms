@@ -45,7 +45,7 @@ var (
 
 // RunCmd
 // @Summary 执行一条命令
-// @Description 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+// @Description 执行一条命令
 // @Param id query integer true "执行者 ID"
 // @Param type query string true "执行者类型" example(host,group,tag)
 // @Param cmd query string true "命令"
@@ -361,7 +361,7 @@ func (s *Service) FileUploadUnBlock(c *Context) {
 
 // FileUploadV2
 // @Summary 上传文件到主机
-// @Description 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+// @Description 上传文件到主机
 // @Param X-Files header string true "预处理文件列表" example({"filename base64": "file.size"})
 // @Param id formData integer true "执行者 ID"
 // @Param type formData string true "执行者类型" example(host,group,tag)
