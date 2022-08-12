@@ -32,6 +32,9 @@ const (
 	ArchI386    = "386"
 	ArchArm     = "arm"
 	ArchUnknown = "unknown"
+
+	DefaultPtyCols = 200
+	DefaultPtyRows = 40
 )
 
 var gauge Gauge
@@ -169,7 +172,7 @@ func (c *Client) NewSessionWithPty(cols, rows int) (*Session, error) {
 }
 
 func (c *Client) NewPty() (*Session, error) {
-	return c.NewSessionWithPty(200, 40)
+	return c.NewSessionWithPty(DefaultPtyCols, DefaultPtyRows)
 }
 
 func (c *Client) NewSession() (*Session, error) {

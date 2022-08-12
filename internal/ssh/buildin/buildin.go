@@ -18,12 +18,13 @@ const (
 	StepNameZipFile   = "zip"
 	StepNameYamlJson  = "json_yaml"
 
-	GUIDLength = 36
-	CMDName    = "--name"
-	CMDDesc    = "--desc"
-	CMDScheme  = "--scheme"
-	CMDClient  = "--client"
-	CMDParams  = "--params"
+	GUIDLength  = 36
+	CMDName     = "name"
+	CMDDesc     = "desc"
+	CMDScheme   = "scheme"
+	CMDCommand  = "exec"
+	ParamClient = "--client"
+	ParamParams = "--params"
 
 	GOOSWindows   = "windows"
 	DefaultFileFs = fs.FileMode(0644)
@@ -217,7 +218,8 @@ func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
 	configJson, _ := json.Marshal(session.Client.Conf)
 	params, _ := json.Marshal(bs.Data)
-	return exec.Command(bs.ScriptPath, CMDClient, string(configJson), CMDParams, string(params)).CombinedOutput()
+	return exec.Command(
+		bs.ScriptPath, CMDCommand, ParamClient, string(configJson), ParamParams, string(params)).CombinedOutput()
 }
 
 func (bs *PluginStep) Desc() string {

@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"oms/internal/ssh"
 	"oms/pkg/logger"
+	"oms/pkg/transport"
 	"sync"
 )
 
@@ -45,7 +46,7 @@ func NewWSConnect(conn *websocket.Conn, engine WebService) *WSConnect {
 		logger:         logger.NewLogger("websocket"),
 		existSubscribe: make(map[string]chan struct{}),
 		mu:             sync.Mutex{},
-		size:           ssh.WindowSize{Cols: 200, Rows: 40},
+		size:           ssh.WindowSize{Cols: transport.DefaultPtyCols, Rows: transport.DefaultPtyRows},
 	}
 	return c
 }
