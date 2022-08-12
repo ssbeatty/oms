@@ -1,15 +1,40 @@
-## 项目简介
+<h1 align="center">项目简介</h1>
+
+<p align="center">
 本项目使用gin、gorm和ssh、sftp开发。旨在编写一个轻量，易用，多平台的运维项目。
-
 现阶段目的是做一个阉割版的xshell并简单的实现ansible或者saltstack的部分功能。
+</p>
 
-**API文档**
+<p align="center">
+  <a href="https://github.com/ssbeatty/oms/blob/dev/LICENSE">
+    <img src="https://img.shields.io/github/license/ssbeatty/oms" alt="license">
+  </a>
+  <a href="https://github.com/ssbeatty/oms/releases">
+    <img src="https://img.shields.io/github/v/release/ssbeatty/oms?color=blueviolet&include_prereleases" alt="release">
+  </a>
+  <a href="https://github.com/ssbeatty/oms/actions">
+    <img src="https://github.com/ssbeatty/oms/workflows/BUILD Linux/badge.svg" alt="action">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/ssbeatty/oms">
+  <img src="https://goreportcard.com/badge/github.com/ssbeatty/oms" alt="GoReportCard">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://wang918562230.gitbook.io/ssbeattyoms-wen-dang/">文档</a>
+  ·
+  <a href="https://github.com/ssbeatty/oms/releases">下载</a>
+  ·
+  <a href="https://wang918562230.gitbook.io/ssbeattyoms-wen-dang/">开始使用</a>
+</p>
+
+### API文档
 
 运行后访问 http://127.0.0.1:9090/swagger/index.html
 
 [swagger](./docs/swagger.json)
 
-#### 使用说明
+### 使用说明
 1. 安装编译
 ```shell script
 # 安装packr工具 需要go 1.16以上
@@ -49,9 +74,7 @@ db:
   db_name: oms
 ```
 
-3. 关于配置, 默认使用内嵌在二进制文件中的`configs/config.yaml.example`, 如果当前目录存在`config.yaml`则以此文件优先。
-
-#### 目前已经实现的功能
+### 目前已经实现的功能
 1. web界面[omsUI](https://github.com/lixin59/omsUI/blob/master/README.md)
 2. 隧道, 类似`ssh`的`-L`和`-R`
 3. cron任务和exec任务的管理
@@ -59,16 +82,17 @@ db:
 5. 文件批量的上传 流式传输支持大文件
 6. 基于`sftp`文件浏览器
 7. 基于novnc的vnc viewer
+8. 类似playbook的编排任务
 
 
-#### deploy
+### deploy
 > docker-compose.yaml
 ```yaml
 version: '2.3'
 
 services:
   oms:
-    image: ghcr.io/ssbeatty/oms/oms:v0.5.4
+    image: ghcr.io/ssbeatty/oms/oms:v0.6.1
     restart: always
     ports:
       - "9090:9090"
