@@ -164,6 +164,9 @@ type PluginStep struct {
 	BaseStep
 	Data       interface{}
 	ScriptPath string
+	name       string
+	desc       string
+	schema     interface{}
 }
 
 func (bs *PluginStep) Create() Step {
@@ -176,10 +179,15 @@ func (bs *PluginStep) Create() Step {
 }
 
 func (bs *PluginStep) Name() string {
+	if bs.name != "" {
+		return bs.name
+	}
 	name, err := exec.Command(bs.ScriptPath, CMDName).CombinedOutput()
 	if err != nil {
 		return ""
 	}
+
+	bs.name = string(name)
 	return string(name)
 }
 
@@ -196,6 +204,9 @@ func (bs *PluginStep) MarshalJSON() ([]byte, error) {
 }
 
 func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
+	if bs.schema != nil {
+		return bs.schema, nil
+	}
 	ret := make(map[string]interface{})
 
 	_, err := exec.LookPath(bs.ScriptPath)
@@ -212,6 +223,8 @@ func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	bs.schema = ret
 
 	return ret, nil
 }
@@ -231,9 +244,13 @@ func (bs *PluginStep) Exec(session *transport.Session, sudo bool) ([]byte, error
 }
 
 func (bs *PluginStep) Desc() string {
+	if bs.desc != "" {
+		return bs.desc
+	}
 	desc, err := exec.Command(bs.ScriptPath, CMDDesc).CombinedOutput()
 	if err != nil {
 		return ""
 	}
+	bs.desc = string(desc)
 	return string(desc)
 }
