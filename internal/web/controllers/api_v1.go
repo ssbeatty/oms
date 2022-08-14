@@ -46,14 +46,18 @@ func (s *Service) GetHosts(c *Context) {
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
-		_, err := models.GetPaginateQuery[*[]*models.Host](
+		total, err := models.GetPaginateQuery[*[]*models.Host](
 			&hosts, param.PageSize, param.PageNum, nil, true)
 		if err != nil {
 			s.Logger.Errorf("get all host error: %v", err)
 			c.ResponseError(err.Error())
 			return
 		}
-		c.ResponseOk(hosts)
+		c.ResponseOk(payload.PageData{
+			Data:    hosts,
+			Total:   total,
+			PageNum: param.PageNum,
+		})
 	}
 }
 
