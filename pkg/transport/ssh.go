@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
+	"oms/internal/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -19,8 +20,10 @@ import (
 */
 
 const (
-	DefaultTimeout = time.Minute
-	KillSignal     = "0x09"
+	DefaultTimeout      = 10 * time.Second
+	DefaultWriteTimeout = 10 * time.Second
+	KillSignal          = "0x09"
+	KeepAliveMessage    = "keepalive@golang.org"
 
 	GOOSLinux   = "linux"
 	GOOSFreeBSD = "freebsd"
@@ -52,6 +55,7 @@ type MachineInfo struct {
 }
 
 type ClientConfig struct {
+	ID         int    `json:"-"`
 	Host       string `json:"host"`
 	User       string `json:"user"`
 	Password   string `json:"password"`
@@ -60,10 +64,15 @@ type ClientConfig struct {
 	Port       int    `json:"port"`
 }
 
+func (h *ClientConfig) Serialize() int64 {
+	return utils.InetAtoN(h.Host, h.Port)
+}
+
 type Client struct {
 	conn       net.Conn
 	sshClient  *ssh.Client
 	sftpClient *sftp.Client
+	closer     chan struct{}
 	Info       *MachineInfo
 	Conf       *ClientConfig
 }
@@ -136,7 +145,7 @@ func (c *Client) CollectTargetMachineInfo() error {
 }
 
 func (c *Client) newSession() (*ssh.Session, error) {
-	err := c.conn.SetDeadline(time.Now().Add(DefaultTimeout))
+	err := c.conn.SetWriteDeadline(time.Now().Add(DefaultWriteTimeout))
 	if err != nil {
 		return nil, err
 	}
@@ -198,6 +207,40 @@ func (c *Client) GetSSHClient() *ssh.Client {
 	return c.sshClient
 }
 
+func (c *Client) Ping(deadline time.Duration) error {
+	err := c.conn.SetWriteDeadline(time.Now().Add(deadline))
+	if err != nil {
+		return err
+	}
+	_, _, err = c.SendRequest(KeepAliveMessage, true, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) KeepAlive(ch chan *Client) {
+	defer func() {
+		ch <- c
+	}()
+
+	const keepAliveInterval = 15 * time.Second
+	t := time.NewTicker(keepAliveInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			err := c.Ping(DefaultWriteTimeout)
+			if err != nil {
+				return
+			}
+		case <-c.closer:
+			return
+		}
+	}
+}
+
 // OutputInteractively run done and return output interactively
 func (c *Client) OutputInteractively(session *Session, cmd string) ([]byte, error) {
 	command := "bash -ic \"%s\""
@@ -205,6 +248,16 @@ func (c *Client) OutputInteractively(session *Session, cmd string) ([]byte, erro
 		return session.sshSession.CombinedOutput(cmd)
 	}
 	return session.sshSession.CombinedOutput(fmt.Sprintf(command, cmd))
+}
+
+func (c *Client) SendRequest(name string, wantReply bool, payload []byte) (bool, []byte, error) {
+	return c.sshClient.SendRequest(name, wantReply, payload)
+}
+
+func (c *Client) Close() error {
+	c.closer <- struct{}{}
+
+	return c.conn.Close()
 }
 
 func (s *Session) Kill() error {
@@ -307,33 +360,33 @@ func Dial(network, addr string, config *ssh.ClientConfig) (net.Conn, *ssh.Client
 }
 
 // New 创建SSH client
-func New(host, user, password, passphrase string, KeyBytes []byte, port int) (client *Client, err error) {
+func New(config *ClientConfig) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
-		User:            user,
+		User:            config.User,
 		Timeout:         DefaultTimeout,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略public key的安全验证
 	}
 
-	if port == 0 {
-		port = 22
+	if config.Port == 0 {
+		config.Port = 22
 	}
 
 	// 1. private key bytes
-	if KeyBytes != nil {
-		if auth, err := AuthWithPrivateKeyBytes(KeyBytes, passphrase); err == nil {
+	if config.KeyBytes != nil {
+		if auth, err := AuthWithPrivateKeyBytes(config.KeyBytes, config.Passphrase); err == nil {
 			clientConfig.Auth = append(clientConfig.Auth, auth)
 		}
 	}
 	// 2. 密码方式 放在key之后,这样密钥失败之后可以使用Password方式
-	if password != "" {
-		clientConfig.Auth = append(clientConfig.Auth, ssh.Password(password))
+	if config.Password != "" {
+		clientConfig.Auth = append(clientConfig.Auth, ssh.Password(config.Password))
 	}
 	// 3. agent 模式放在最后,这样当前两者都不能使用时可以采用Agent模式
 	if auth, err := AuthWithAgent(); err == nil {
 		clientConfig.Auth = append(clientConfig.Auth, auth)
 	}
 
-	conn, sshClient, err := Dial("tcp", net.JoinHostPort(host, strconv.Itoa(port)), clientConfig)
+	conn, sshClient, err := Dial("tcp", net.JoinHostPort(config.Host, strconv.Itoa(config.Port)), clientConfig)
 
 	if err != nil {
 		return client, errors.New("Failed to dial ssh: " + err.Error())
@@ -341,18 +394,12 @@ func New(host, user, password, passphrase string, KeyBytes []byte, port int) (cl
 	client = &Client{
 		conn:      conn,
 		sshClient: sshClient,
+		closer:    make(chan struct{}, 1),
 		Info: &MachineInfo{
 			Goos: GOOSUnknown,
 			Arch: ArchUnknown,
 		},
-		Conf: &ClientConfig{
-			Host:       host,
-			User:       user,
-			Password:   password,
-			Passphrase: passphrase,
-			KeyBytes:   KeyBytes,
-			Port:       port,
-		},
+		Conf: config,
 	}
 
 	err = client.CollectTargetMachineInfo()

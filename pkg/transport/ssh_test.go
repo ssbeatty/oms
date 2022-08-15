@@ -95,15 +95,6 @@ func TestLongTimeCmd(t *testing.T) {
 	ssh.RunTaskWithQuit(client, "sleep 60", quitCh, os.Stdout)
 }
 
-func TestConnectionPing(t *testing.T) {
-	session, err := client.NewSession()
-	defer session.Close()
-	assert.Nil(t, err)
-
-	err = session.Run("cd /")
-	assert.Nil(t, err)
-}
-
 func TestConnCache(t *testing.T) {
 	host1 := Host{Addr: "127.0.0.1", Port: 22}
 	host2 := Host{Addr: "127.0.0.2", Port: 22}
@@ -180,4 +171,13 @@ func TestChmod(t *testing.T) {
 
 	assert.Nil(t, err)
 
+}
+
+func TestConnectionPing(t *testing.T) {
+	ok, msg, err := client.SendRequest("keepalive@golang.org", true, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(ok, msg)
 }

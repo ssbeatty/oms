@@ -73,7 +73,7 @@ func (m *Manager) Init() *Manager {
 	m.taskService.Start()
 
 	// init all build in cron
-	if err := m.taskService.AddByFunc("build-in-loop-status", "0 * * * * *", m.CronStatusJob, true); err != nil {
+	if err := m.taskService.AddByFunc("build-in-loop-status", "0 */10 * * * *", m.CronStatusJob, true); err != nil {
 		m.logger.Errorf("init build-in-loop-status error: %v", err)
 	}
 	if err := m.taskService.AddByFunc("build-in-loop-clear-instance", "0 0 0 * * *", m.CronClearInstanceCache, true); err != nil {

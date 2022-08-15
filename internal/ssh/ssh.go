@@ -22,16 +22,9 @@ const (
 	PluginPath    = "plugin"
 	CMDTypeShell  = "cmd"
 	CMDTypePlayer = "player"
-)
 
-type Config struct {
-	User       string
-	Host       string
-	Port       int
-	Password   string
-	KeyBytes   []byte
-	Passphrase string
-}
+	PollSize = 2000
+)
 
 type Schema struct {
 	Type   string      `json:"type"`
@@ -60,11 +53,6 @@ type Result struct {
 	Addr     string `json:"addr"`
 }
 
-// 对host和port进行hash
-func (h *Config) serialize() int64 {
-	return utils.InetAtoN(h.Host, h.Port)
-}
-
 type Manager struct {
 	fileList       *utils.SafeMap
 	sshPoll        *cache.Cache
@@ -73,6 +61,7 @@ type Manager struct {
 	subClients     sync.Map
 	supportPlugins map[string]buildin.Step // 注册所有的插件类型通过接口返回 表单渲染的格式
 	cfg            *config.Conf
+	statusChan     chan *transport.Client
 }
 
 func NewManager(cfg *config.Conf) *Manager {
@@ -80,14 +69,35 @@ func NewManager(cfg *config.Conf) *Manager {
 		notify:     make(chan bool, 10),
 		subClients: sync.Map{},
 		fileList:   utils.NewSafeMap(),
-		sshPoll:    cache.NewCache(1000),
+		sshPoll:    cache.NewCache(PollSize),
 		logger:     logger.NewLogger("sshManager"),
 		cfg:        cfg,
+		statusChan: make(chan *transport.Client),
+	}
+}
+
+// 从ssh manager poll删除死掉的客户端
+func (m *Manager) doResolveStatus() {
+	for {
+		select {
+		case c := <-m.statusChan:
+			m.logger.Debugf("get client close status: addr: %s", c.Conf.Host)
+			m.removeCache(c.Conf.Serialize())
+			c.Close()
+
+			if c.Conf.ID > 0 {
+				_ = models.UpdateHostStatus(&models.Host{Id: c.Conf.ID, Status: false})
+			}
+
+			c = nil
+		}
 	}
 }
 
 func (m *Manager) Init() *Manager {
 	go m.doNotifyFileTaskList()
+	go m.doResolveStatus()
+
 	m.initAllPlugins()
 
 	return m
@@ -135,7 +145,11 @@ func (m *Manager) GetFileList() *utils.SafeMap {
 }
 
 func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
-	var c = &Config{
+	host.Status = false
+	defer models.UpdateHostStatus(host)
+
+	var c = &transport.ClientConfig{
+		ID:       host.Id,
 		Host:     host.Addr,
 		Port:     host.Port,
 		User:     host.User,
@@ -150,22 +164,25 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 		c.KeyBytes = []byte(privateKey.KeyFile)
 		c.Passphrase = privateKey.Passphrase
 	}
-	if cli, ok := m.sshPoll.Get(c.serialize()); ok {
-		ss, err := cli.(*transport.Client).NewSession()
+	if cli, ok := m.sshPoll.Get(c.Serialize()); ok {
+		err := cli.(*transport.Client).Ping(transport.DefaultWriteTimeout)
 
 		if err != nil {
-			m.sshPoll.Remove(c.serialize())
+			m.sshPoll.Remove(c.Serialize())
 		} else {
-			defer ss.Close()
 			return cli.(*transport.Client), nil
 		}
 	}
 
-	cli, err := transport.New(c.Host, c.User, c.Password, c.Passphrase, c.KeyBytes, c.Port)
+	cli, err := transport.New(c)
 	if err != nil {
 		return nil, err
 	}
-	m.sshPoll.Add(c.serialize(), cli)
+	m.sshPoll.Add(c.Serialize(), cli)
+	go cli.KeepAlive(m.statusChan)
+
+	host.Status = true
+
 	return cli, nil
 }
 
@@ -189,7 +206,11 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 }
 
 func (m *Manager) RemoveCache(host *models.Host) {
-	m.sshPoll.Remove(utils.InetAtoN(host.Addr, host.Port))
+	m.removeCache(utils.InetAtoN(host.Addr, host.Port))
+}
+
+func (m *Manager) removeCache(inet int64) {
+	m.sshPoll.Remove(inet)
 }
 
 func (m *Manager) GetAllPluginSchema() []Schema {
