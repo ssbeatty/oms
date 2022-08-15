@@ -245,7 +245,7 @@ func (c *Client) KeepAlive(ch chan *Client) {
 		ch <- c
 	}()
 
-	const keepAliveInterval = 30 * time.Second
+	const keepAliveInterval = 15 * time.Second
 	t := time.NewTicker(keepAliveInterval)
 	defer t.Stop()
 	for {
