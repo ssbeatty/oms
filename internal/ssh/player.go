@@ -31,7 +31,6 @@ func NewPlayer(client *transport.Client, steps []buildin.Step, sudo bool, size *
 
 func (p *Player) Run(ctx context.Context) ([]byte, error) {
 	var (
-		err     error
 		buf     bytes.Buffer
 		session *transport.Session
 		quit    = make(chan struct{}, 1)
@@ -51,12 +50,17 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 	}()
 
 	for _, step := range p.Steps {
+		var (
+			err error
+		)
+
 		if p.size != nil {
 			session, err = p.client.NewSessionWithPty(p.size.Cols, p.size.Rows)
 		} else {
 			session, err = p.client.NewPty()
 		}
 		if err != nil {
+			buf.Write([]byte(err.Error()))
 			return buf.Bytes(), err
 		}
 
@@ -67,7 +71,6 @@ func (p *Player) Run(ctx context.Context) ([]byte, error) {
 
 		if err != nil {
 			buf.Write([]byte(err.Error()))
-			return buf.Bytes(), err
 		}
 
 		session.Close()

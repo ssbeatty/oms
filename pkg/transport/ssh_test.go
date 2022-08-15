@@ -40,7 +40,14 @@ func init() {
 		return
 	}
 
-	client, err = transport.New(host.Addr, host.User, host.PassWord, "", nil, host.Port)
+	conf := transport.ClientConfig{
+		Host:     host.Addr,
+		User:     host.User,
+		Password: host.PassWord,
+		Port:     host.Port,
+	}
+
+	client, err = transport.New(&conf)
 	if err != nil {
 		return
 	}
@@ -78,7 +85,14 @@ func TestSudoCmd(t *testing.T) {
 	session, err := client.NewPty()
 	assert.Nil(t, err)
 
-	result, err := session.Sudo("ls -l /root", host.PassWord)
+	result, err := session.Sudo("sleep 60", host.PassWord)
+	assert.Nil(t, err)
+	t.Log(string(result))
+
+	session, err = client.NewPty()
+	assert.Nil(t, err)
+
+	result, err = session.Sudo("ls -l", host.PassWord)
 	assert.Nil(t, err)
 
 	t.Log(string(result))

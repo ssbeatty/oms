@@ -20,10 +20,10 @@ import (
 */
 
 const (
-	DefaultTimeout      = 10 * time.Second
-	DefaultWriteTimeout = 10 * time.Second
-	KillSignal          = "0x09"
-	KeepAliveMessage    = "keepalive@golang.org"
+	DefaultTimeout   = 120 * time.Second
+	DefaultRWTimeout = 20 * time.Second
+	KillSignal       = "0x09"
+	KeepAliveMessage = "keepalive@golang.org"
 
 	GOOSLinux   = "linux"
 	GOOSFreeBSD = "freebsd"
@@ -66,6 +66,34 @@ type ClientConfig struct {
 
 func (h *ClientConfig) Serialize() int64 {
 	return utils.InetAtoN(h.Host, h.Port)
+}
+
+type conn struct {
+	net.Conn
+}
+
+func (c *conn) Write(b []byte) (n int, err error) {
+	err = c.Conn.SetWriteDeadline(time.Now().Add(DefaultRWTimeout))
+	if err != nil {
+		return 0, err
+	}
+
+	return c.Conn.Write(b)
+}
+
+func (c *conn) Read(b []byte) (n int, err error) {
+	err = c.Conn.SetReadDeadline(time.Now().Add(DefaultRWTimeout))
+	if err != nil {
+		return 0, err
+	}
+
+	return c.Conn.Read(b)
+}
+
+func newConn(c net.Conn) *conn {
+	return &conn{
+		c,
+	}
 }
 
 type Client struct {
@@ -145,10 +173,6 @@ func (c *Client) CollectTargetMachineInfo() error {
 }
 
 func (c *Client) newSession() (*ssh.Session, error) {
-	err := c.conn.SetWriteDeadline(time.Now().Add(DefaultWriteTimeout))
-	if err != nil {
-		return nil, err
-	}
 	return c.sshClient.NewSession()
 }
 
@@ -207,12 +231,8 @@ func (c *Client) GetSSHClient() *ssh.Client {
 	return c.sshClient
 }
 
-func (c *Client) Ping(deadline time.Duration) error {
-	err := c.conn.SetWriteDeadline(time.Now().Add(deadline))
-	if err != nil {
-		return err
-	}
-	_, _, err = c.SendRequest(KeepAliveMessage, true, nil)
+func (c *Client) Ping() error {
+	_, _, err := c.SendRequest(KeepAliveMessage, true, nil)
 	if err != nil {
 		return err
 	}
@@ -225,13 +245,13 @@ func (c *Client) KeepAlive(ch chan *Client) {
 		ch <- c
 	}()
 
-	const keepAliveInterval = 15 * time.Second
+	const keepAliveInterval = 30 * time.Second
 	t := time.NewTicker(keepAliveInterval)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C:
-			err := c.Ping(DefaultWriteTimeout)
+			err := c.Ping()
 			if err != nil {
 				return
 			}
@@ -351,6 +371,8 @@ func Dial(network, addr string, config *ssh.ClientConfig) (net.Conn, *ssh.Client
 	if err != nil {
 		return nil, nil, err
 	}
+
+	conn = newConn(conn)
 
 	c, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
 	if err != nil {

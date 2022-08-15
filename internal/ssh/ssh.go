@@ -165,7 +165,7 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 		c.Passphrase = privateKey.Passphrase
 	}
 	if cli, ok := m.sshPoll.Get(c.Serialize()); ok {
-		err := cli.(*transport.Client).Ping(transport.DefaultWriteTimeout)
+		err := cli.(*transport.Client).Ping()
 
 		if err != nil {
 			m.sshPoll.Remove(c.Serialize())

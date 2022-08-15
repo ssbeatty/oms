@@ -4,7 +4,8 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
-	"errors"
+	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"oms/internal/utils"
 	"oms/pkg/transport"
@@ -33,18 +34,31 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 	switch bs.Options {
 	case "upload":
 		if exists, err := utils.PathExists(bs.File); !exists {
-			return nil, err
+			return nil, errors.Wrap(err, "本地缓存不存在")
 		}
 		fName := filepath.Base(bs.File)
 		if fName != "" && len(fName) > GUIDLength {
 			fName = fName[GUIDLength:]
 		}
-		return nil, session.Client.UploadFile(bs.File, bs.Remote, fName)
+		err := session.Client.UploadFile(bs.File, bs.Remote, fName)
+		if err != nil {
+			return nil, err
+		}
+		return []byte(fmt.Sprintf("上传成功, 远端路径: %s/%s\r\n", bs.Remote, fName)), nil
+
 	case "remove":
 		if session.Client.IsDir(bs.Remote) {
-			return nil, session.Client.RemoveDir(bs.Remote)
+			err := session.Client.RemoveDir(bs.Remote)
+			if err != nil {
+				return nil, err
+			}
+			return []byte("删除成功!"), nil
 		}
-		return nil, session.Client.Remove(bs.Remote)
+		err := session.Client.Remove(bs.Remote)
+		if err != nil {
+			return nil, err
+		}
+		return []byte("删除成功!"), nil
 	default:
 		return nil, errors.New("do not support options")
 	}
@@ -75,6 +89,10 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 		return nil, err
 	}
 
+	var (
+		total int
+	)
+
 	for _, f := range bs.Files {
 		fName := filepath.Base(f)
 		if fName != "" && len(fName) > GUIDLength {
@@ -84,9 +102,11 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 				return nil, err
 			}
 		}
+
+		total++
 	}
 
-	return nil, nil
+	return []byte(fmt.Sprintf("上传成功, 远端路径: %s, 共上传文件%d个\r\n", bs.RemoteDir, total)), nil
 }
 
 func (bs *MultiFileUploadStep) Create() Step {
@@ -144,7 +164,7 @@ func (bs *ZipFileStep) Exec(session *transport.Session, sudo bool) ([]byte, erro
 		}
 	}
 
-	return nil, nil
+	return []byte(fmt.Sprintf("解压成功, 远端路径: %s\r\n", bs.Remote)), nil
 }
 
 func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
