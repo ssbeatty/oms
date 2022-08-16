@@ -145,8 +145,21 @@ func (m *Manager) GetFileList() *utils.SafeMap {
 }
 
 func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
-	host.Status = false
-	defer models.UpdateHostStatus(host)
+	var (
+		err       error
+		cli       *transport.Client
+		newStatus = host.Status
+	)
+
+	defer func() {
+		if cli == nil && err != nil {
+			newStatus = false
+		}
+		if host.Status != newStatus {
+			host.Status = newStatus
+			_ = models.UpdateHostStatus(host)
+		}
+	}()
 
 	var c = &transport.ClientConfig{
 		ID:       host.Id,
@@ -170,19 +183,19 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 		if err != nil {
 			m.sshPoll.Remove(c.Serialize())
 		} else {
-			host.Status = true
+			newStatus = true
 			return cli.(*transport.Client), nil
 		}
 	}
 
-	cli, err := transport.New(c)
+	cli, err = transport.New(c)
 	if err != nil {
 		return nil, err
 	}
 	m.sshPoll.Add(c.Serialize(), cli)
 	go cli.KeepAlive(m.statusChan)
 
-	host.Status = true
+	newStatus = true
 
 	return cli, nil
 }
@@ -194,13 +207,12 @@ func (m *Manager) GetStatus(host *models.Host) bool {
 		_ = models.UpdateHostStatus(host)
 		return false
 	}
-	session, err := client.NewSession()
+	err = client.Ping()
 	if err != nil {
 		host.Status = false
 		_ = models.UpdateHostStatus(host)
 		return false
 	}
-	defer session.Close()
 	host.Status = true
 	_ = models.UpdateHostStatus(host)
 	return true
