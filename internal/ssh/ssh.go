@@ -170,6 +170,7 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 		if err != nil {
 			m.sshPoll.Remove(c.Serialize())
 		} else {
+			host.Status = true
 			return cli.(*transport.Client), nil
 		}
 	}
