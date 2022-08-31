@@ -20,7 +20,7 @@ import (
 */
 
 const (
-	DefaultTimeout   = 120 * time.Second
+	DefaultTimeout   = 30 * time.Second
 	DefaultRWTimeout = 20 * time.Second
 	KillSignal       = "0x09"
 	KeepAliveMessage = "keepalive@golang.org"
