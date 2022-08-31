@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
-	"oms/internal/utils"
+	"oms/pkg/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	DefaultTimeoutSec   = getEnvInt("ENV_SSH_DIAL_TIMEOUT", defaultTimeout)
-	DefaultRWTimeoutSec = getEnvInt("ENV_SSH_RW_TIMEOUT", defaultRWTimeout)
+	DefaultTimeoutSec   = utils.GetEnvInt("ENV_SSH_DIAL_TIMEOUT", defaultTimeout)
+	DefaultRWTimeoutSec = utils.GetEnvInt("ENV_SSH_RW_TIMEOUT", defaultRWTimeout)
 
 	SSHDialTimeout = time.Duration(DefaultTimeoutSec) * time.Second
 	SSHRWTimeout   = time.Duration(DefaultRWTimeoutSec) * time.Second
@@ -45,20 +45,6 @@ const (
 )
 
 var gauge Gauge
-
-func getEnvInt(key string, fallback int) int {
-	ret := fallback
-	value, exists := os.LookupEnv(key)
-	if !exists {
-		return ret
-	}
-	if t, err := strconv.Atoi(value); err != nil {
-		return ret
-	} else {
-		ret = t
-	}
-	return ret
-}
 
 type Gauge interface {
 	Set(float64)

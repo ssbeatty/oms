@@ -3,9 +3,9 @@ package tunnel
 import (
 	"oms/internal/models"
 	"oms/internal/ssh"
-	"oms/internal/utils"
 	"oms/pkg/logger"
 	"oms/pkg/tunnel"
+	"oms/pkg/utils"
 	"sync"
 	"time"
 )

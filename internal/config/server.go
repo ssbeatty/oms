@@ -5,7 +5,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/fs"
 	"io/ioutil"
-	"oms/internal/utils"
+	"oms/pkg/utils"
 	"time"
 )
 

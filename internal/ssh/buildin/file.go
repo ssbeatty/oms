@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
-	"oms/internal/utils"
 	"oms/pkg/transport"
+	"oms/pkg/utils"
 	"os"
 	"path/filepath"
 )

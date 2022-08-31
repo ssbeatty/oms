@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ssbeatty/jsonschema"
 	"io/ioutil"
-	"oms/internal/utils"
 	"oms/pkg/transport"
+	"oms/pkg/utils"
 	"os"
 	"strings"
 )
