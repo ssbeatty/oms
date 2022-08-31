@@ -15,13 +15,17 @@ import (
 	"time"
 )
 
-/*
-变量声明
-*/
+var (
+	DefaultTimeoutSec   = getEnvInt("ENV_SSH_DIAL_TIMEOUT", defaultTimeout)
+	DefaultRWTimeoutSec = getEnvInt("ENV_SSH_RW_TIMEOUT", defaultRWTimeout)
+
+	SSHDialTimeout = time.Duration(DefaultTimeoutSec) * time.Second
+	SSHRWTimeout   = time.Duration(DefaultRWTimeoutSec) * time.Second
+)
 
 const (
-	DefaultTimeout   = 30 * time.Second
-	DefaultRWTimeout = 20 * time.Second
+	defaultTimeout   = 30
+	defaultRWTimeout = 20
 	KillSignal       = "0x09"
 	KeepAliveMessage = "keepalive@golang.org"
 
@@ -41,6 +45,20 @@ const (
 )
 
 var gauge Gauge
+
+func getEnvInt(key string, fallback int) int {
+	ret := fallback
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		return ret
+	}
+	if t, err := strconv.Atoi(value); err != nil {
+		return ret
+	} else {
+		ret = t
+	}
+	return ret
+}
 
 type Gauge interface {
 	Set(float64)
@@ -73,7 +91,7 @@ type conn struct {
 }
 
 func (c *conn) Write(b []byte) (n int, err error) {
-	err = c.Conn.SetWriteDeadline(time.Now().Add(DefaultRWTimeout))
+	err = c.Conn.SetWriteDeadline(time.Now().Add(SSHRWTimeout))
 	if err != nil {
 		return 0, err
 	}
@@ -82,7 +100,7 @@ func (c *conn) Write(b []byte) (n int, err error) {
 }
 
 func (c *conn) Read(b []byte) (n int, err error) {
-	err = c.Conn.SetReadDeadline(time.Now().Add(DefaultRWTimeout))
+	err = c.Conn.SetReadDeadline(time.Now().Add(SSHRWTimeout))
 	if err != nil {
 		return 0, err
 	}
@@ -385,7 +403,7 @@ func Dial(network, addr string, config *ssh.ClientConfig) (net.Conn, *ssh.Client
 func New(config *ClientConfig) (client *Client, err error) {
 	clientConfig := &ssh.ClientConfig{
 		User:            config.User,
-		Timeout:         DefaultTimeout,
+		Timeout:         SSHDialTimeout,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 忽略public key的安全验证
 	}
 

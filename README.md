@@ -85,6 +85,13 @@ db:
 8. 类似playbook的编排任务
 
 
+### 环境变量
+```shell
+ENV_SSH_DIAL_TIMEOUT = 30  # ssh连接超时时间
+ENV_SSH_RW_TIMEOUT = 20    # ssh读写超时时间
+```
+
+
 ### deploy
 > docker-compose.yaml
 ```yaml
