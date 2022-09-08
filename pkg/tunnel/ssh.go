@@ -6,12 +6,13 @@ package tunnel
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
 	"oms/pkg/logger"
+	"oms/pkg/transport"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
@@ -24,14 +25,15 @@ type SSHTunnel struct {
 	Source      string
 	Destination string
 	errorMsg    atomic.Value
-	closer      chan bool
-	isOpen      bool
-	client      *ssh.Client
+	closer      chan struct{}
+	isOpen      atomic.Value
 	listener    net.Listener
 	logger      *logger.Logger
+	conf        *transport.ClientConfig
+	client      *transport.Client
 }
 
-func NewSSHTunnel(client *ssh.Client, destination, source, mode string) *SSHTunnel {
+func NewSSHTunnel(conf *transport.ClientConfig, destination, source, mode string) *SSHTunnel {
 	var realMode string
 	switch mode {
 	case RemoteMode:
@@ -43,33 +45,29 @@ func NewSSHTunnel(client *ssh.Client, destination, source, mode string) *SSHTunn
 		Mode:        realMode,
 		Source:      source,
 		Destination: destination,
-		client:      client,
-		isOpen:      true,
-		closer:      make(chan bool),
+		conf:        conf,
+		closer:      make(chan struct{}),
 		logger:      logger.NewLogger("tunnel"),
 	}
-	sshTunnel.errorMsg.Store("success")
+
+	sshTunnel.errorMsg.Store("")
+	sshTunnel.isOpen.Store(false)
 
 	return sshTunnel
 }
 
-func (s *SSHTunnel) newConnectionWaiter(c chan net.Conn) {
-	conn, err := s.listener.Accept()
-	if err != nil {
-		s.logger.Errorf("error when tunnel accept, err: %v", err)
-		s.SetErrorMsg("listening error", err)
-		s.isOpen = false
-		return
-	}
-	c <- conn
+func (s *SSHTunnel) setOpened(status bool) {
+	s.isOpen.Store(status)
 }
 
 func (s *SSHTunnel) Close() {
+	s.setOpened(false)
+
 	close(s.closer)
 }
 
 func (s *SSHTunnel) Status() bool {
-	return s.isOpen
+	return s.isOpen.Load().(bool)
 }
 
 func (s *SSHTunnel) GetErrorMsg() string {
@@ -80,15 +78,72 @@ func (s *SSHTunnel) SetErrorMsg(msg string, err error) {
 	s.errorMsg.Store(fmt.Sprintf("%s, err: %v", msg, err))
 }
 
-func (s *SSHTunnel) Start() {
-	var err error
-	var localListener net.Listener
-	var once sync.Once
+// 重置start方法
+func (s *SSHTunnel) reset() {
+	s.setOpened(false)
+	if s.listener != nil {
+		_ = s.listener.Close()
+	}
+}
+
+func (s *SSHTunnel) manage() {
+	beatTicker := time.NewTicker(10 * time.Second)
+	manageTicker := time.NewTicker(5 * time.Second)
+
+	for {
+		select {
+		case <-manageTicker.C:
+			if !s.Status() && s.listener == nil {
+				go s.start()
+			}
+		case <-beatTicker.C:
+			if s.client != nil {
+				err := s.client.Ping()
+				if err != nil {
+					s.reset()
+				}
+			}
+		case <-s.closer:
+			return
+		}
+	}
+}
+
+func (s *SSHTunnel) start() {
+	var (
+		err           error
+		once          sync.Once
+		localListener net.Listener
+	)
+
+	s.setOpened(true)
+
+	defer func() {
+		s.setOpened(false)
+
+		if s.listener != nil {
+			_ = s.listener.Close()
+			s.listener = nil
+		}
+
+		if s.client != nil {
+			_ = s.client.Close()
+			s.client = nil
+		}
+	}()
+
+	if s.client == nil {
+		s.client, err = transport.New(s.conf)
+		if err != nil {
+			s.logger.Errorf("error when tunnel create ssh client: %v", err)
+			return
+		}
+	}
 
 	if s.Mode == LocalMode {
 		localListener, err = net.Listen("tcp", s.Destination)
 	} else {
-		localListener, err = s.client.Listen("tcp", s.Destination)
+		localListener, err = s.client.GetSSHClient().Listen("tcp", s.Destination)
 	}
 	if err != nil {
 		s.logger.Errorf("error when tunnel listen: %s, err: %v", s.Destination, err)
@@ -96,41 +151,49 @@ func (s *SSHTunnel) Start() {
 		return
 	}
 
+	s.errorMsg.Store("success")
+
 	s.listener = localListener
 
 	for {
-		if !s.isOpen {
+		if !s.Status() {
 			break
 		}
-		c := make(chan net.Conn)
-		go s.newConnectionWaiter(c)
 
 		once.Do(func() {
 			s.logger.Infof("tunnel src: '%s', dest: '%s' connect success.", s.Source, s.Destination)
 		})
 
-		select {
-		case <-s.closer:
-			s.isOpen = false
-		case localConn := <-c:
-			go s.forward(localConn)
+		conn, err := s.listener.Accept()
+		if err != nil {
+			s.logger.Errorf("error when tunnel accept, err: %v", err)
+			s.SetErrorMsg("listening error", err)
+			return
 		}
+		go s.forward(conn)
 	}
-	_ = s.listener.Close()
+
 	s.logger.Infof("tunnel src: '%s', dest: '%s' closed.", s.Source, s.Destination)
+}
+
+func (s *SSHTunnel) Start() {
+	go s.start()
+
+	s.manage()
 }
 
 func (s *SSHTunnel) forward(localConn net.Conn) {
 	var err error
 	var remoteConn net.Conn
 	if s.Mode == LocalMode {
-		remoteConn, err = s.client.Dial("tcp", s.Source)
+		remoteConn, err = s.client.GetSSHClient().Dial("tcp", s.Source)
 	} else {
 		remoteConn, err = net.Dial("tcp", s.Source)
 	}
 	if err != nil {
 		s.logger.Errorf("error when dial local source, err: %v", err)
 		s.SetErrorMsg("dial error", err)
+		s.reset()
 		return
 	}
 

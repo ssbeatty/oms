@@ -17,9 +17,8 @@ type Host struct {
 }
 
 var (
-	host   Host
-	client *transport.Client
-	status = make(chan *transport.Client)
+	host Host
+	conf *transport.ClientConfig
 )
 
 func init() {
@@ -31,34 +30,28 @@ func init() {
 	if err != nil {
 		return
 	}
-	conf := transport.ClientConfig{
+	conf = &transport.ClientConfig{
 		Host:     host.Addr,
 		User:     host.User,
 		Password: host.PassWord,
 		Port:     host.Port,
 	}
-	client, err = transport.New(&conf)
-	if err != nil {
-		return
-	}
-
-	client.Notify(status)
 }
 
 func TestLocalTunnel(t *testing.T) {
 	tunnel := NewSSHTunnel(
-		client.GetSSHClient(), ":38080", "127.0.0.1:9000", LocalMode)
+		conf, ":38080", "127.0.0.1:9000", LocalMode)
 
 	go tunnel.Start()
 	time.Sleep(time.Second)
 	t.Log(tunnel.GetErrorMsg())
 
-	<-status
+	select {}
 }
 
 func TestRemoteTunnel(t *testing.T) {
 	tunnel := NewSSHTunnel(
-		client.GetSSHClient(), "127.0.0.1:8082", ":8082", RemoteMode)
+		conf, "127.0.0.1:8082", ":8082", RemoteMode)
 
 	go tunnel.Start()
 }
