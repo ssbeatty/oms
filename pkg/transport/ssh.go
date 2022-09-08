@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -107,6 +108,8 @@ type Client struct {
 	closer     chan struct{}
 	Info       *MachineInfo
 	Conf       *ClientConfig
+	notify     []chan *Client
+	mu         sync.Mutex
 }
 
 type Session struct {
@@ -244,9 +247,15 @@ func (c *Client) Ping() error {
 	return nil
 }
 
-func (c *Client) KeepAlive(ch chan *Client) {
+func (c *Client) keepAlive() {
 	defer func() {
-		ch <- c
+		c.mu.Lock()
+		if c.notify != nil && len(c.notify) > 0 {
+			for idx, _ := range c.notify {
+				c.notify[idx] <- c
+			}
+		}
+		c.mu.Unlock()
 	}()
 
 	const keepAliveInterval = 15 * time.Second
@@ -263,6 +272,18 @@ func (c *Client) KeepAlive(ch chan *Client) {
 			return
 		}
 	}
+}
+
+func (c *Client) Notify(ch chan *Client) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for idx, _ := range c.notify {
+		if c.notify[idx] == ch {
+			return
+		}
+	}
+	c.notify = append(c.notify, ch)
 }
 
 // OutputInteractively run done and return output interactively
@@ -421,16 +442,19 @@ func New(config *ClientConfig) (client *Client, err error) {
 		conn:      conn,
 		sshClient: sshClient,
 		closer:    make(chan struct{}, 1),
+		Conf:      config,
+		mu:        sync.Mutex{},
 		Info: &MachineInfo{
 			Goos: GOOSUnknown,
 			Arch: ArchUnknown,
 		},
-		Conf: config,
 	}
 
 	err = client.CollectTargetMachineInfo()
 	if err != nil {
 		return nil, err
 	}
+
+	go client.keepAlive()
 	return client, nil
 }

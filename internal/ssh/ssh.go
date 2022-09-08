@@ -193,7 +193,9 @@ func (m *Manager) NewClient(host *models.Host) (*transport.Client, error) {
 		return nil, err
 	}
 	m.sshPoll.Add(c.Serialize(), cli)
-	go cli.KeepAlive(m.statusChan)
+
+	// notify when client close
+	cli.Notify(m.statusChan)
 
 	newStatus = true
 

@@ -16,8 +16,11 @@ type Host struct {
 	KeyBytes []byte `json:"key_bytes"`
 }
 
-var host Host
-var client *transport.Client
+var (
+	host   Host
+	client *transport.Client
+	status = make(chan *transport.Client)
+)
 
 func init() {
 	data, err := ioutil.ReadFile("../transport/hosts")
@@ -28,29 +31,34 @@ func init() {
 	if err != nil {
 		return
 	}
-
-	client, err = transport.New(host.Addr, host.User, host.PassWord, "", nil, host.Port)
+	conf := transport.ClientConfig{
+		Host:     host.Addr,
+		User:     host.User,
+		Password: host.PassWord,
+		Port:     host.Port,
+	}
+	client, err = transport.New(&conf)
 	if err != nil {
 		return
 	}
+
+	client.Notify(status)
 }
 
 func TestLocalTunnel(t *testing.T) {
-	tunnel := NewSSHTunnel(client.GetSSHClient(), ":8085", "127.0.0.1:15672", LocalMode)
+	tunnel := NewSSHTunnel(
+		client.GetSSHClient(), ":38080", "127.0.0.1:9000", LocalMode)
 
 	go tunnel.Start()
-
 	time.Sleep(time.Second)
 	t.Log(tunnel.GetErrorMsg())
 
-	time.Sleep(5 * time.Second)
-	tunnel.Close()
-
-	time.Sleep(50 * time.Second)
+	<-status
 }
 
 func TestRemoteTunnel(t *testing.T) {
-	tunnel := NewSSHTunnel(client.GetSSHClient(), "127.0.0.1:8082", ":8082", RemoteMode)
+	tunnel := NewSSHTunnel(
+		client.GetSSHClient(), "127.0.0.1:8082", ":8082", RemoteMode)
 
 	go tunnel.Start()
 }
