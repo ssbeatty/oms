@@ -1251,3 +1251,65 @@ func (s *Service) DeletePlayBook(c *Context) {
 		c.ResponseOk(nil)
 	}
 }
+
+// GetCommandHistory
+// @Summary 模糊查询历史命令
+// @Description 模糊查询历史命令
+// @Param keyword query string true "关键词"
+// @Param limit query integer false "limit"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]string}
+// @Failure 400 {object} payload.Response
+// @Router /command/history [get]
+func (s *Service) GetCommandHistory(c *Context) {
+	var (
+		param payload.SearchCmdHistoryParams
+	)
+	err := c.ShouldBind(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		var (
+			ret     []string
+			records []*models.CommandHistory
+		)
+		records, err = models.SearchCommandHistory(param.KeyWord, param.Limit)
+		if err != nil {
+			s.Logger.Errorf("search cmd history error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		for _, v := range records {
+			ret = append(ret, v.Cmd)
+		}
+		c.ResponseOk(ret)
+	}
+}
+
+// DeleteCommandHistory
+// @Summary 删除命令历史
+// @Description 删除命令历史
+// @Param id path int true  "命令历史 ID"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /command/history/{id} [delete]
+func (s *Service) DeleteCommandHistory(c *Context) {
+	var param payload.DeleteCmdHistoryParam
+	err := c.ShouldBindUri(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		err := models.DeleteCommandHistoryById(param.Id)
+		if err != nil {
+			s.Logger.Errorf("delete cmd history error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(nil)
+	}
+}

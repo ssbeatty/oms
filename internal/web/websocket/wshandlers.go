@@ -77,7 +77,14 @@ func (w *WSConnect) HandlerSSHShell(conn *websocket.Conn, msg *WsMsg) {
 		w.WriteMsg(payload.GenerateErrorResponse(WSStatusError, "host empty"))
 		return
 	}
-	defer w.logger.Infof("cmd exec success, total: %d, exec: %d", len(hosts), execNum)
+	defer func() {
+		w.logger.Infof("cmd exec success, total: %d, exec: %d", len(hosts), execNum)
+		// insert command history to database
+		err := models.InsertOrUpdateCommandHistory(req.Cmd)
+		if err != nil {
+			w.logger.Errorf("create command history error: %v", err)
+		}
+	}()
 
 	for _, host := range hosts {
 		// TODO sudo 由host本身管理

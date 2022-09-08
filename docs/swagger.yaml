@@ -275,6 +275,67 @@ paths:
       summary: 上传临时文件
       tags:
       - player
+  /command/history:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 模糊查询历史命令
+      parameters:
+      - description: 关键词
+        in: query
+        name: keyword
+        required: true
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 模糊查询历史命令
+      tags:
+      - command
+  /command/history/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除命令历史
+      parameters:
+      - description: 命令历史 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除命令历史
+      tags:
+      - command
   /group:
     get:
       consumes:

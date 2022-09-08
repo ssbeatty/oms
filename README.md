@@ -21,6 +21,8 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/lixin59/omsUI">UI</a>
+  ·
   <a href="https://wang918562230.gitbook.io/ssbeattyoms-wen-dang/">文档</a>
   ·
   <a href="https://github.com/ssbeatty/oms/releases">下载</a>

@@ -154,6 +154,9 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.GET("/task/instance/log/download", Handle(s.DownloadInstanceLog))
 		apiV1.GET("/task/instance/log/get", Handle(s.GetInstanceLog))
 
+		apiV1.GET("/command/history", Handle(s.GetCommandHistory))
+		apiV1.DELETE("/command/history/:id", Handle(s.DeleteCommandHistory))
+
 		// tools
 		apiV1.GET("/tools/cmd", Handle(s.RunCmd))
 		apiV1.GET("/tools/preview", Handle(s.FilePreview))

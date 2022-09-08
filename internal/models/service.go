@@ -82,6 +82,7 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	}
 	if err = db.AutoMigrate(
 		new(Tag), new(Group), new(Host), new(Tunnel), new(Job), new(PrivateKey), new(TaskInstance), new(PlayBook),
+		new(CommandHistory),
 	); err != nil {
 		log.Errorf("Migrate error! err: %v", err)
 		return err
