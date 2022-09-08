@@ -13,7 +13,7 @@ type GetHostParam struct {
 type PostHostForm struct {
 	HostName     string `form:"hostname" binding:"required"`
 	User         string `form:"user" binding:"required"`
-	Addr         string `form:"addr" binding:"required,ip_addr"`
+	Addr         string `form:"addr" binding:"required,ip_addr|hostname"`
 	Port         int    `form:"port" binding:"required,min=0,max=65535"`
 	PassWord     string `form:"password"`
 	Group        int    `form:"group"`
@@ -26,7 +26,7 @@ type PutHostForm struct {
 	Id           int    `form:"id" binding:"required"`
 	HostName     string `form:"hostname"`
 	User         string `form:"user"`
-	Addr         string `form:"addr" binding:"len=0|ip_addr"`
+	Addr         string `form:"addr" binding:"len=0|ip_addr|hostname"`
 	Port         int    `form:"port" binding:"min=0,max=65535"`
 	PassWord     string `form:"password"`
 	Group        int    `form:"group"`
