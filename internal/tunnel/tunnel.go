@@ -4,6 +4,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/pkg/logger"
+	"oms/pkg/transport"
 	"oms/pkg/tunnel"
 	"oms/pkg/utils"
 	"sync"
@@ -113,14 +114,18 @@ func (m *Manager) Close() {
 
 // AddTunnel create new tunnel
 func (m *Manager) AddTunnel(modelTunnel *models.Tunnel, host *models.Host) error {
-	client, err := m.sshManager.NewClient(host)
-	if err != nil {
-		return err
+	var c = &transport.ClientConfig{
+		ID:       host.Id,
+		Host:     host.Addr,
+		Port:     host.Port,
+		User:     host.User,
+		Password: host.PassWord,
 	}
-	realTunnel := tunnel.NewSSHTunnel(client.GetSSHClient(), modelTunnel.Destination, modelTunnel.Source, modelTunnel.Mode)
+
+	realTunnel := tunnel.NewSSHTunnel(c, modelTunnel.Destination, modelTunnel.Source, modelTunnel.Mode)
 	go realTunnel.Start()
 
-	_, err = models.UpdateTunnelStatus(modelTunnel.Id, realTunnel.Status(), realTunnel.GetErrorMsg())
+	_, err := models.UpdateTunnelStatus(modelTunnel.Id, realTunnel.Status(), realTunnel.GetErrorMsg())
 	if err != nil {
 		m.logger.Errorf("error when update model tunnel status, err: %v", err)
 	}
