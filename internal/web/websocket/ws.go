@@ -124,8 +124,12 @@ func (w *WSConnect) WriteMsg(msg interface{}) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	marshal, _ := json.Marshal(msg)
-	err := w.WriteMessage(websocket.TextMessage, marshal)
+	marshal, err := json.Marshal(msg)
+	if err != nil {
+		w.logger.Errorf("error when marshal websocket msg payload: %v", err)
+		return
+	}
+	err = w.WriteMessage(websocket.TextMessage, marshal)
 	if err != nil {
 		w.logger.Errorf("error when write msg, err: %v", err)
 	}

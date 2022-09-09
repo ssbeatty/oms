@@ -37,6 +37,9 @@ func (w *sudoWriter) Write(p []byte) (int, error) {
 }
 
 func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
+	if cmd == "" {
+		return s.Output(cmd)
+	}
 	cmd = "sudo -p " + sudoPwPrompt + " -S " + cmd
 
 	// Use the sudoRW struct to handle the interaction with sudo and capture the

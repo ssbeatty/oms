@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,6 +81,14 @@ type Stats struct {
 	NetIntf      map[string]NetIntfInfo `json:"-"`
 	CPU          CPUInfo                `json:"cpu"`
 	PreCPU       *cpuRaw                `json:"-"`
+}
+
+func preprocessNumber(target float32) float32 {
+	if math.IsNaN(float64(target)) || math.IsInf(float64(target), 0) {
+		return 0.0
+	}
+
+	return target
 }
 
 func NewStatus() *Stats {
@@ -327,8 +336,8 @@ func getMemInfo(client *Client, stats *Stats) error {
 		}
 	}
 
-	stats.MemUsage = float32(stats.MemTotal-stats.MemFree) / float32(stats.MemTotal) * 100
-	stats.SwapUsage = float32(stats.SwapTotal-stats.SwapFree) / float32(stats.SwapTotal) * 100
+	stats.MemUsage = preprocessNumber(float32(stats.MemTotal-stats.MemFree)/float32(stats.MemTotal)) * 100
+	stats.SwapUsage = preprocessNumber(float32(stats.SwapTotal-stats.SwapFree)/float32(stats.SwapTotal)) * 100
 
 	return nil
 }
@@ -537,15 +546,15 @@ func getCPU(client *Client, stats *Stats) error {
 			goto END
 		}
 
-		total = float32(nowCPU.Total - stats.PreCPU.Total)
-		stats.CPU.User = float32(nowCPU.User-stats.PreCPU.User) / total * 100
-		stats.CPU.Nice = float32(nowCPU.Nice-stats.PreCPU.Nice) / total * 100
-		stats.CPU.System = float32(nowCPU.System-stats.PreCPU.System) / total * 100
-		stats.CPU.Idle = float32(nowCPU.Idle-stats.PreCPU.Idle) / total * 100
-		stats.CPU.Iowait = float32(nowCPU.Iowait-stats.PreCPU.Iowait) / total * 100
-		stats.CPU.Irq = float32(nowCPU.Irq-stats.PreCPU.Irq) / total * 100
-		stats.CPU.SoftIrq = float32(nowCPU.SoftIrq-stats.PreCPU.SoftIrq) / total * 100
-		stats.CPU.Guest = float32(nowCPU.Guest-stats.PreCPU.Guest) / total * 100
+		total = preprocessNumber(float32(nowCPU.Total - stats.PreCPU.Total))
+		stats.CPU.User = preprocessNumber(float32(nowCPU.User-stats.PreCPU.User)/total) * 100
+		stats.CPU.Nice = preprocessNumber(float32(nowCPU.Nice-stats.PreCPU.Nice)/total) * 100
+		stats.CPU.System = preprocessNumber(float32(nowCPU.System-stats.PreCPU.System)/total) * 100
+		stats.CPU.Idle = preprocessNumber(float32(nowCPU.Idle-stats.PreCPU.Idle)/total) * 100
+		stats.CPU.Iowait = preprocessNumber(float32(nowCPU.Iowait-stats.PreCPU.Iowait)/total) * 100
+		stats.CPU.Irq = preprocessNumber(float32(nowCPU.Irq-stats.PreCPU.Irq)/total) * 100
+		stats.CPU.SoftIrq = preprocessNumber(float32(nowCPU.SoftIrq-stats.PreCPU.SoftIrq)/total) * 100
+		stats.CPU.Guest = preprocessNumber(float32(nowCPU.Guest-stats.PreCPU.Guest)/total) * 100
 		PrevIdle = stats.PreCPU.Idle + stats.PreCPU.Iowait
 		Idle = nowCPU.Idle + nowCPU.Iowait
 		PrevNonIdle = stats.PreCPU.User + stats.PreCPU.Nice + stats.PreCPU.System + stats.PreCPU.Irq + stats.PreCPU.SoftIrq + stats.PreCPU.Steal
@@ -555,7 +564,7 @@ func getCPU(client *Client, stats *Stats) error {
 		Total = Idle + NonIdle
 		totald = Total - PrevTotal
 		idled = Idle - PrevIdle
-		stats.CPU.Usage = float32(totald-idled) / float32(totald) * 100
+		stats.CPU.Usage = preprocessNumber(float32(totald-idled)/float32(totald)) * 100
 
 	END:
 		stats.PreCPU = &nowCPU
