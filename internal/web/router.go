@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gobuffalo/packd"
 	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerfiles "github.com/swaggo/files"
@@ -69,8 +70,9 @@ func Handle(h HandlerFunc) gin.HandlerFunc {
 }
 
 func InitRouter(s *controllers.Service) *controllers.Service {
-	r := gin.Default()
-	r.Use(CORS).Use(exportHeaders)
+	r := gin.New()
+
+	r.Use(gin.Recovery()).Use(CORS).Use(exportHeaders)
 
 	// swagger docs
 	docs.SwaggerInfo.BasePath = "/api/v1"
@@ -79,6 +81,16 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 	// static files
 	box := packr.NewBox(assetsFilepath)
 	r.StaticFS("/assets", box)
+
+	var skipPaths []string
+	_ = box.Walk(func(s string, file packd.File) error {
+		skipPaths = append(skipPaths, fmt.Sprintf("/assets/%s", s))
+		return nil
+	})
+
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: skipPaths,
+	}))
 
 	err := mime.AddExtensionType(".js", "application/javascript")
 	if err != nil {
