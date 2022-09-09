@@ -336,9 +336,9 @@ func getMemInfo(client *Client, stats *Stats) error {
 		}
 	}
 
-	stats.MemUsage = preprocessNumber(float32(stats.MemTotal-stats.MemFree)/float32(stats.MemTotal)) * 100
+	stats.MemUsage = preprocessNumber(float32(stats.MemTotal-stats.MemFree-stats.MemCached)/float32(stats.MemTotal)) * 100
 	stats.SwapUsage = preprocessNumber(float32(stats.SwapTotal-stats.SwapFree)/float32(stats.SwapTotal)) * 100
-
+	stats.MemFree = stats.MemFree + stats.MemCached
 	return nil
 }
 
