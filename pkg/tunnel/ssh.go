@@ -61,7 +61,7 @@ func (s *SSHTunnel) setOpened(status bool) {
 }
 
 func (s *SSHTunnel) Close() {
-	s.setOpened(false)
+	s.reset()
 
 	close(s.closer)
 }
