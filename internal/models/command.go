@@ -65,10 +65,10 @@ func SearchCommandHistory(keyword string, limit int) ([]*CommandHistory, error) 
 	keyword = strings.TrimRight(keyword, " ")
 
 	if keyword == "" {
-		err = db.Debug().Order("times DESC").Limit(limit).Find(&records).Error
+		err = db.Order("times DESC").Limit(limit).Find(&records).Error
 	} else {
 		arg := keyword + "%"
-		err = db.Debug().Where("cmd LIKE ?", arg).Order("times DESC").Limit(limit).Find(&records).Error
+		err = db.Where("cmd LIKE ?", arg).Order("times DESC").Limit(limit).Find(&records).Error
 	}
 
 	if err != nil {
