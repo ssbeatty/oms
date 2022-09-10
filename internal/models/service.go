@@ -51,9 +51,11 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	dataPath = _dataPath
 	log = logger.NewLogger("db")
 
+	dfConfig := &gorm.Config{}
+
 	if driver == "mysql" {
 		dataSource = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", user, pass, dsn, dbName)
-		d, err = gorm.Open(mysql.Open(dataSource), &gorm.Config{})
+		d, err = gorm.Open(mysql.Open(dataSource), dfConfig)
 		db = &DataBase{d, nil}
 	} else if driver == "postgres" {
 		dsnArgs := strings.Split(dsn, ":")
@@ -63,7 +65,7 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 		dataSource = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 			dsnArgs[0], user, pass, dbName, dsnArgs[1],
 		)
-		d, err = gorm.Open(postgres.Open(dataSource), &gorm.Config{})
+		d, err = gorm.Open(postgres.Open(dataSource), dfConfig)
 		db = &DataBase{d, nil}
 	} else {
 		if exist, _ := utils.PathExists(dataPath); !exist {
@@ -71,7 +73,7 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 		}
 
 		dataSource = path.Join(dataPath, "oms.db")
-		d, err = gorm.Open(sqlite.Open(dataSource), &gorm.Config{})
+		d, err = gorm.Open(sqlite.Open(dataSource), dfConfig)
 		// 防止database locked
 		db = &DataBase{d, &sync.Mutex{}}
 	}

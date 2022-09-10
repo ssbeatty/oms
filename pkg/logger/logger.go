@@ -72,3 +72,7 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.entry.Errorf(format, args...)
 }
+
+func (l *Logger) Printf(format string, args ...interface{}) {
+	l.entry.Printf(format, args...)
+}
