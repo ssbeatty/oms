@@ -11,12 +11,7 @@ import (
 )
 
 //go:embed omsUI/dist
-var EmbededFiles embed.FS
-
-//func init() {
-//	data, _ := EmbededFiles.ReadFile("omsUI/dist/index.html")
-//	fmt.Println(string(data))
-//}
+var EmbeddedFiles embed.FS
 
 type ServeFileSystem struct {
 	E    embed.FS
@@ -37,7 +32,7 @@ func (f *File) Readdir(count int) ([]fs.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	rspList := []fs.FileInfo{}
+	var rspList []fs.FileInfo
 	for _, v := range fileList {
 		temp, err := v.Info()
 		if err != nil {

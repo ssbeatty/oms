@@ -15,7 +15,7 @@ import (
 const IndexPage = "omsUI/dist/index.html"
 
 func (s *Service) GetIndexPage(c *gin.Context) {
-	bytes, err := web.EmbededFiles.ReadFile(IndexPage)
+	bytes, err := web.EmbeddedFiles.ReadFile(IndexPage)
 	if err != nil {
 		fmt.Println("err", err)
 	}

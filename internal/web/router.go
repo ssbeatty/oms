@@ -81,12 +81,12 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 	// metrics
 	r.GET("/metrics", prometheusHandler())
 
-	static1 := &web.ServeFileSystem{
-		web.EmbededFiles,
-		"omsUI/dist/assets",
+	static := &web.ServeFileSystem{
+		E:    web.EmbeddedFiles,
+		Path: "omsUI/dist/assets",
 	}
 
-	r.Use(staticF.Serve("/assets", static1))
+	r.Use(staticF.Serve("/assets", static))
 
 	r.Use(gin.Logger())
 	// common api

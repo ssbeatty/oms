@@ -1,13 +1,16 @@
 package config
 
 import (
-	"github.com/gobuffalo/packr"
+	_ "embed"
 	"gopkg.in/yaml.v2"
 	"io/fs"
 	"io/ioutil"
 	"oms/pkg/utils"
 	"time"
 )
+
+//go:embed config.yaml.example
+var embedConfig []byte
 
 const (
 	defaultDataPath    = "data"
@@ -55,14 +58,8 @@ func NewServerConfig(path string) (*Conf, error) {
 			return nil, err
 		}
 	} else {
-		box := packr.NewBox("../../configs")
-		data, err = box.Find("config.yaml.example")
-		if err != nil {
-			return nil, err
-		}
-
 		// config 写入当前目录
-		_ = ioutil.WriteFile(path, data, fs.FileMode(0644))
+		_ = ioutil.WriteFile(path, embedConfig, fs.FileMode(0755))
 	}
 
 	err = yaml.Unmarshal(data, ret)

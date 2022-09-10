@@ -106,3 +106,9 @@ services:
       - ./data:/opt/oms/data
       - ./config:/etc/oms
 ```
+
+### 如何开发
+1. 修改依赖之后执行
+```shell
+go mod vendor
+```
