@@ -1,14 +1,14 @@
 package web
 
 import (
+	_ "embed"
 	"fmt"
+	staticF "github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/gobuffalo/packd"
-	"github.com/gobuffalo/packr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"html/template"
+
 	"mime"
 	"net/http"
 	"oms/docs"
@@ -17,13 +17,9 @@ import (
 	"oms/internal/task"
 	"oms/internal/tunnel"
 	"oms/internal/web/controllers"
+	"oms/web"
 	"os/exec"
 	"runtime"
-)
-
-const (
-	assetsFilepath       = "../../web/omsUI/dist/assets"
-	frontendDistFilePath = "../../web/omsUI/dist"
 )
 
 func CORS(ctx *gin.Context) {
@@ -77,40 +73,26 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 	// swagger docs
 	docs.SwaggerInfo.BasePath = "/api/v1"
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-
-	// static files
-	box := packr.NewBox(assetsFilepath)
-	r.StaticFS("/assets", box)
-
-	var skipPaths []string
-	_ = box.Walk(func(s string, file packd.File) error {
-		skipPaths = append(skipPaths, fmt.Sprintf("/assets/%s", s))
-		return nil
-	})
-
-	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: skipPaths,
-	}))
-
 	err := mime.AddExtensionType(".js", "application/javascript")
 	if err != nil {
 		s.Logger.Errorf("error when add extension type, err: %v", err)
 	}
 
-	// load template
-	t, err := loadTemplate()
-	if err != nil {
-		panic("error when load template.")
-	}
-	r.SetHTMLTemplate(t)
-
 	// metrics
 	r.GET("/metrics", prometheusHandler())
 
+	static1 := &web.ServeFileSystem{
+		web.EmbededFiles,
+		"omsUI/dist/assets",
+	}
+
+	r.Use(staticF.Serve("/assets", static1))
+
+	r.Use(gin.Logger())
 	// common api
 	r.GET("/", s.GetIndexPage)
 
-	// if not route (route from frontend) redirect to index
+	//if not route (route from frontend) redirect to index
 	r.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
@@ -222,19 +204,4 @@ func Serve(conf config.App, sshManager *ssh.Manager, taskManager *task.Manager, 
 			return
 		}
 	}
-}
-
-func loadTemplate() (*template.Template, error) {
-	const indexFile = "index.html"
-	box := packr.NewBox(frontendDistFilePath)
-	t := template.New("")
-	data, err := box.Find(indexFile)
-	if err != nil {
-		return nil, err
-	}
-	t, err = t.New(indexFile).Parse(string(data))
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
 }

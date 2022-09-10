@@ -8,11 +8,18 @@ import (
 	"net/http"
 	"oms/internal/models"
 	"oms/internal/web/websocket"
+	"oms/web"
 	"strconv"
 )
 
+const IndexPage = "omsUI/dist/index.html"
+
 func (s *Service) GetIndexPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", nil)
+	bytes, err := web.EmbededFiles.ReadFile(IndexPage)
+	if err != nil {
+		fmt.Println("err", err)
+	}
+	c.Data(http.StatusOK, "", bytes)
 }
 
 var upGrader = wsl.Upgrader{
