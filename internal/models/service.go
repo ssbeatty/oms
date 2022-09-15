@@ -1,8 +1,11 @@
 package models
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v4"
 	"github.com/ssbeatty/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -17,7 +20,10 @@ import (
 )
 
 const (
-	defaultSort = "id DESC"
+	defaultSort      = "id DESC"
+	DBDriverMysql    = "mysql"
+	DBDriverPostgres = "postgres"
+	DBDriverSqlite   = "sqlite"
 )
 
 var (
@@ -43,6 +49,46 @@ func (d *DataBase) Unlock() {
 	}
 }
 
+func createDB(driver, user, pass, dsn, dbName string) error {
+
+	switch driver {
+	case DBDriverSqlite:
+		return nil
+	case DBDriverMysql:
+		dataSource := fmt.Sprintf("%s:%s@tcp(%s)/?charset=utf8", user, pass, dsn)
+		d, err := sql.Open(driver, dataSource)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+
+		_, err = d.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8 COLLATE utf8_general_ci;", dbName))
+		if err != nil {
+			return err
+		}
+	case DBDriverPostgres:
+		dsnArgs := strings.Split(dsn, ":")
+		if len(dsnArgs) < 2 {
+			return errors.New("dsn parse error")
+		}
+		dataSource := fmt.Sprintf("host=%s user=%s password=%s dbname=postgres port=%s sslmode=disable",
+			dsnArgs[0], user, pass, dsnArgs[1],
+		)
+		d, err := sql.Open("pgx", dataSource)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+
+		_, err = d.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	var d *gorm.DB
 	var err error
@@ -51,13 +97,14 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	dataPath = _dataPath
 	log = logger.NewLogger("db")
 
+	_ = createDB(driver, user, pass, dsn, dbName)
 	dfConfig := &gorm.Config{}
 
-	if driver == "mysql" {
+	if driver == DBDriverMysql {
 		dataSource = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", user, pass, dsn, dbName)
 		d, err = gorm.Open(mysql.Open(dataSource), dfConfig)
 		db = &DataBase{d, nil}
-	} else if driver == "postgres" {
+	} else if driver == DBDriverPostgres {
 		dsnArgs := strings.Split(dsn, ":")
 		if len(dsnArgs) < 2 {
 			return errors.New("dsn parse error")
@@ -82,6 +129,7 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 		log.Errorf("dataSource load error! exit! err: %v", err)
 		return err
 	}
+
 	if err = db.AutoMigrate(
 		new(Tag), new(Group), new(Host), new(Tunnel), new(Job), new(PrivateKey), new(TaskInstance), new(PlayBook),
 		new(CommandHistory),
