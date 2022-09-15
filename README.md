@@ -98,8 +98,10 @@ version: '2.3'
 
 services:
   oms:
-    image: ghcr.io/ssbeatty/oms/oms:v0.6.1
+    image: ghcr.io/ssbeatty/oms/oms:v0.6.7
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "9090:9090"
     volumes:

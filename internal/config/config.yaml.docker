@@ -11,5 +11,5 @@ db:
   driver: postgres
   user: admin
   password: admin
-  dsn: host-gateway:5432
+  dsn: host.docker.internal:5432
   db_name: oms
