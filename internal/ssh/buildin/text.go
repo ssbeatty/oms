@@ -2,7 +2,6 @@ package buildin
 
 import (
 	"encoding/json"
-	"fmt"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/goccy/go-yaml/parser"
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ import (
 type JsonYamlReplaceStep struct {
 	BaseStep
 	Path   string      `json:"path" jsonschema:"required=true" jsonschema_description:"例如: $.path1.path2[0].item"`
-	Value  interface{} `json:"value" jsonschema:"required=true,oneof_type=string;array" jsonschema_description:"替换的节点值"`
+	Value  interface{} `json:"value" jsonschema:"required=true,oneof_type=string;array" jsonschema_description:"替换的节点值, 输入字符串类型需要: \"{value}\""`
 	Remote string      `json:"remote" jsonschema:"required=true" jsonschema_description:"远程Yaml/Json路径(不支持大文件)"`
 }
 
@@ -43,7 +42,7 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 
 	switch bs.Value.(type) {
 	case string:
-		value = fmt.Sprintf("\"%s\"", bs.Value.(string))
+		value = bs.Value.(string)
 	case []string, []interface{}:
 		switch ext {
 		case "json":
