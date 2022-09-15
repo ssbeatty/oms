@@ -95,10 +95,16 @@ func (bs *JsonYamlReplaceStep) GetSchema(instance Step) (interface{}, error) {
 	value, ok := schema.(*jsonschema.Schema).Properties.Get("value")
 	if ok {
 		for idx, _ := range value.(*jsonschema.Schema).OneOf {
-			if value.(*jsonschema.Schema).OneOf[idx].Type == "array" {
-				value.(*jsonschema.Schema).OneOf[idx].Items = &jsonschema.Schema{
+			item := value.(*jsonschema.Schema).OneOf[idx]
+			if item.Type == "array" {
+				item.Title = "列表"
+				item.Description = ""
+				item.Items = &jsonschema.Schema{
 					Type: "string",
 				}
+			} else if item.Type == "string" {
+				item.Title = "文本"
+				item.Description = ""
 			}
 		}
 	}
