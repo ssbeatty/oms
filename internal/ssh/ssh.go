@@ -231,7 +231,14 @@ func (m *Manager) removeCache(inet int64) {
 func (m *Manager) GetAllPluginSchema() []Schema {
 	var ret []Schema
 
-	for _, plugin := range m.supportPlugins {
+	var keys []string
+	for k := range m.supportPlugins {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		plugin := m.supportPlugins[k]
 		sc, err := plugin.GetSchema(plugin)
 		if err != nil {
 			m.logger.Errorf("error when get plugin: %s scheme, err: %v", plugin.Name(), err)
