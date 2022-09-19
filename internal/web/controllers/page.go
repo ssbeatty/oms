@@ -72,7 +72,7 @@ func (s *Service) GetWebsocketSSH(c *gin.Context) {
 	ws := websocket.NewWSConnect(wsConn, nil)
 	defer ssConn.Close()
 
-	quitChan := make(chan bool, 3)
+	quitChan := make(chan struct{}, 3)
 	go ssConn.SendComboOutput(ws.Conn, quitChan)
 	go ssConn.ReceiveWsMsg(wsConn, quitChan)
 	go ssConn.SessionWait(quitChan)
@@ -107,7 +107,7 @@ func (s *Service) GetWebsocketVNC(c *gin.Context) {
 		return
 	}
 
-	quitChan := make(chan bool, 2)
+	quitChan := make(chan struct{})
 	forward := websocket.NewVNCForward(wsConn, vnc, s.Logger, quitChan)
 	defer forward.Close()
 

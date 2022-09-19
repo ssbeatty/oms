@@ -4,17 +4,20 @@ import (
 	"github.com/gorilla/websocket"
 	"net"
 	"oms/pkg/logger"
+	"sync"
 )
 
 type VNCForward struct {
+	once     sync.Once
 	logger   *logger.Logger
-	quitChan chan bool
+	quitChan chan struct{}
 	wsConn   *websocket.Conn
 	tcpConn  net.Conn
 }
 
-func NewVNCForward(wsConn *websocket.Conn, tcpConn net.Conn, logger *logger.Logger, quitChan chan bool) *VNCForward {
+func NewVNCForward(wsConn *websocket.Conn, tcpConn net.Conn, logger *logger.Logger, quitChan chan struct{}) *VNCForward {
 	return &VNCForward{
+		once:     sync.Once{},
 		logger:   logger,
 		quitChan: quitChan,
 		wsConn:   wsConn,
@@ -41,7 +44,7 @@ func (vf *VNCForward) Close() {
 func (vf *VNCForward) forwardTcp() {
 	var tcpBuffer [1024]byte
 	defer func() {
-		setQuit(vf.quitChan)
+		vf.setQuit()
 		vf.logger.Debug("vnc forward tcp exit.")
 	}()
 	for {
@@ -59,6 +62,7 @@ func (vf *VNCForward) forwardTcp() {
 			} else {
 				if err := vf.wsConn.WriteMessage(websocket.BinaryMessage, tcpBuffer[0:n]); err != nil {
 					vf.logger.Errorf("writing to WS failed: %s", err)
+					return
 				}
 			}
 		}
@@ -70,7 +74,7 @@ func (vf *VNCForward) forwardWeb() {
 		if err := recover(); err != nil {
 			vf.logger.Errorf("reading from WS failed: %s", err)
 		}
-		setQuit(vf.quitChan)
+		vf.setQuit()
 		vf.logger.Debug("vnc forward web exit.")
 	}()
 	for {
@@ -86,8 +90,18 @@ func (vf *VNCForward) forwardWeb() {
 			if err == nil {
 				if _, err := vf.tcpConn.Write(buffer); err != nil {
 					vf.logger.Errorf("writing to TCP failed: %s", err)
+					return
 				}
+			} else {
+				vf.logger.Errorf("read message from websocket failed: %s", err)
+				return
 			}
 		}
 	}
+}
+
+func (vf *VNCForward) setQuit() {
+	vf.once.Do(func() {
+		close(vf.quitChan)
+	})
 }
