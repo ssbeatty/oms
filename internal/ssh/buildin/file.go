@@ -44,7 +44,7 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf("上传成功, 远端路径: %s/%s\r\n", bs.Remote, fName)), nil
+		return []byte(fmt.Sprintf("上传成功, 远端路径: %s\r\n", bs.Remote)), nil
 
 	case "remove":
 		if session.Client.IsDir(bs.Remote) {
