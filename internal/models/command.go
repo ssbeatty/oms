@@ -76,3 +76,76 @@ func SearchCommandHistory(keyword string, limit int) ([]*CommandHistory, error) 
 	}
 	return records, nil
 }
+
+type QuicklyCommand struct {
+	Id       int    `json:"id"`
+	Name     string `gorm:"not null;unique" json:"name"`
+	Cmd      string `gorm:"not null;" json:"cmd"`
+	AppendCR bool   `json:"append_cr"` // 是否追加CR
+}
+
+func GetAllQuicklyCommand() ([]*QuicklyCommand, error) {
+	var records []*QuicklyCommand
+	err := db.Find(&records).Error
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func GetQuicklyCommandById(id int) (*QuicklyCommand, error) {
+	record := QuicklyCommand{}
+	err := db.Where("id = ?", id).First(&record).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
+func InsertQuicklyCommand(name, cmd string, appendCR bool) (*QuicklyCommand, error) {
+	record := QuicklyCommand{
+		Name:     name,
+		Cmd:      cmd,
+		AppendCR: appendCR,
+	}
+	err := db.Create(&record).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
+func UpdateQuicklyCommand(id int, name, cmd string, appendCR bool) (*QuicklyCommand, error) {
+	record := QuicklyCommand{Id: id}
+	err := db.Where("id = ?", id).First(&record).Error
+	if err != nil {
+		return nil, err
+	}
+	if name != "" {
+		record.Name = name
+	}
+	if cmd != "" {
+		record.Cmd = cmd
+	}
+	if record.AppendCR != appendCR {
+		record.AppendCR = appendCR
+	}
+	err = db.Save(&record).Error
+	if err != nil {
+		return nil, err
+	}
+	return &record, nil
+}
+
+func DeleteQuicklyCommandById(id int) error {
+	record := QuicklyCommand{}
+	err := db.Where("id = ?", id).First(&record).Error
+	if err != nil {
+		return err
+	}
+	err = db.Delete(&record).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

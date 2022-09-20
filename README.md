@@ -114,3 +114,9 @@ services:
 ```shell
 go mod vendor
 ```
+2. 修改了swagger文档后执行
+```shell
+# docs/gen.go
+swag init -d ../internal/web/controllers --parseDependency -g api_v1.go -o ./
+swag init -d ../internal/web/controllers --parseDependency -g api_tool.go -o ./
+```

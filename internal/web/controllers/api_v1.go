@@ -1313,3 +1313,131 @@ func (s *Service) DeleteCommandHistory(c *Context) {
 		c.ResponseOk(nil)
 	}
 }
+
+// GetQuicklyCommand
+// @Summary 获取所有快捷命令
+// @Description 获取所有快捷命令
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=[]models.QuicklyCommand}
+// @Failure 400 {object} payload.Response
+// @Router /quick_command [get]
+func (s *Service) GetQuicklyCommand(c *Context) {
+	records, err := models.GetAllQuicklyCommand()
+	if err != nil {
+		s.Logger.Errorf("get all quickly command error: %v", err)
+		c.ResponseError(err.Error())
+		return
+	}
+	c.ResponseOk(records)
+}
+
+// GetOneQuicklyCommand
+// @Summary 获取单个快捷命令
+// @Description 获取单个快捷命令
+// @Param id path int true  "快捷命令 ID"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.QuicklyCommand}
+// @Failure 400 {object} payload.Response
+// @Router /quick_command/{id} [get]
+func (s *Service) GetOneQuicklyCommand(c *Context) {
+	var param payload.GetQuicklyCommandParam
+	err := c.ShouldBindUri(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		record, err := models.GetQuicklyCommandById(param.Id)
+		if err != nil {
+			s.Logger.Errorf("get one quickly command error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(record)
+	}
+}
+
+// PostQuicklyCommand
+// @Summary 创建快捷命令
+// @Description 创建快捷命令
+// @Param name formData string true "快捷命令名称"
+// @Param cmd formData string true "快捷命令文本"
+// @Param append_cr formData bool false "是否追加CR"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.QuicklyCommand}
+// @Failure 400 {object} payload.Response
+// @Router /quick_command [post]
+func (s *Service) PostQuicklyCommand(c *Context) {
+	var form payload.PostQuicklyCommandForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		record, err := models.InsertQuicklyCommand(form.Name, form.Cmd, form.AppendCR)
+		if err != nil {
+			s.Logger.Errorf("insert quickly command error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(record)
+	}
+}
+
+// PutQuicklyCommand
+// @Summary 更新快捷命令
+// @Description 更新快捷命令
+// @Param id formData integer true "快捷命令 ID"
+// @Param name formData string false "快捷命令名称"
+// @Param cmd formData string false "快捷命令文本"
+// @Param append_cr formData bool false "是否追加CR"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.QuicklyCommand}
+// @Failure 400 {object} payload.Response
+// @Router /quick_command [put]
+func (s *Service) PutQuicklyCommand(c *Context) {
+	var form payload.PutQuicklyCommandForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		record, err := models.UpdateQuicklyCommand(form.Id, form.Name, form.Cmd, form.AppendCR)
+		if err != nil {
+			s.Logger.Errorf("update quickly command error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(record)
+	}
+}
+
+// DeleteQuicklyCommand
+// @Summary 删除快捷命令
+// @Description 删除快捷命令
+// @Param id path int true  "快捷命令 ID"
+// @Tags command
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /quick_command/{id} [delete]
+func (s *Service) DeleteQuicklyCommand(c *Context) {
+	var param payload.DeleteQuicklyCommandParam
+	err := c.ShouldBindUri(&param)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		err := models.DeleteQuicklyCommandById(param.Id)
+		if err != nil {
+			s.Logger.Errorf("delete quickly command error: %v", err)
+			c.ResponseError(err.Error())
+			return
+		}
+		c.ResponseOk(nil)
+	}
+}

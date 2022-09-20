@@ -148,8 +148,15 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.GET("/task/instance/log/download", Handle(s.DownloadInstanceLog))
 		apiV1.GET("/task/instance/log/get", Handle(s.GetInstanceLog))
 
+		// command
 		apiV1.GET("/command/history", Handle(s.GetCommandHistory))
 		apiV1.DELETE("/command/history/:id", Handle(s.DeleteCommandHistory))
+
+		apiV1.GET("/quick_command", Handle(s.GetQuicklyCommand))
+		apiV1.GET("/quick_command/:id", Handle(s.GetOneQuicklyCommand))
+		apiV1.POST("/quick_command", Handle(s.PostQuicklyCommand))
+		apiV1.PUT("/quick_command", Handle(s.PutQuicklyCommand))
+		apiV1.DELETE("/quick_command/:id", Handle(s.DeleteQuicklyCommand))
 
 		// tools
 		apiV1.GET("/tools/cmd", Handle(s.RunCmd))

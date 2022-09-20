@@ -157,6 +157,18 @@ definitions:
       name:
         type: string
     type: object
+  models.QuicklyCommand:
+    properties:
+      append_cr:
+        description: 是否追加CR
+        type: boolean
+      cmd:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   models.Step:
     properties:
       caches:
@@ -1285,6 +1297,165 @@ paths:
       summary: 获取单个密钥
       tags:
       - private_key
+  /quick_command:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取所有快捷命令
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.QuicklyCommand'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取所有快捷命令
+      tags:
+      - command
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 创建快捷命令
+      parameters:
+      - description: 快捷命令名称
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: 快捷命令文本
+        in: formData
+        name: cmd
+        required: true
+        type: string
+      - description: 是否追加CR
+        in: formData
+        name: append_cr
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.QuicklyCommand'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 创建快捷命令
+      tags:
+      - command
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 更新快捷命令
+      parameters:
+      - description: 快捷命令 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 快捷命令名称
+        in: formData
+        name: name
+        type: string
+      - description: 快捷命令文本
+        in: formData
+        name: cmd
+        type: string
+      - description: 是否追加CR
+        in: formData
+        name: append_cr
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.QuicklyCommand'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 更新快捷命令
+      tags:
+      - command
+  /quick_command/{id}:
+    delete:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 删除快捷命令
+      parameters:
+      - description: 快捷命令 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 删除快捷命令
+      tags:
+      - command
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取单个快捷命令
+      parameters:
+      - description: 快捷命令 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/payload.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.QuicklyCommand'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 获取单个快捷命令
+      tags:
+      - command
   /schema:
     get:
       consumes:
