@@ -212,6 +212,11 @@ func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
 				}
 			}
 		case tar.TypeReg:
+			if b := session.Client.PathExists(filepath.Dir(dstFileDir)); !b {
+				if err := session.Client.MkdirAll(dstFileDir); err != nil {
+					return err
+				}
+			}
 			file, err := session.Client.GetSftpClient().OpenFile(dstFileDir, os.O_CREATE|os.O_RDWR)
 			if err != nil {
 				return err

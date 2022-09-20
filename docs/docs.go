@@ -1414,6 +1414,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/plugin/upload": {
+            "post": {
+                "description": "上传插件",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "player"
+                ],
+                "summary": "上传插件",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "插件文件(zip or tar.gz)",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/payload.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/payload.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/private_key": {
             "get": {
                 "description": "获取所有密钥",

@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"io"
 	"io/fs"
@@ -11,8 +15,10 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/web/payload"
+	"oms/pkg/utils"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -1025,7 +1031,7 @@ func (s *Service) CacheUpload(c *Context) {
 	files := form.File["files"]
 
 	if len(files) == 0 {
-		c.ResponseError(err.Error())
+		c.ResponseError(errors.New("empty files").Error())
 		return
 	}
 
@@ -1250,6 +1256,165 @@ func (s *Service) DeletePlayBook(c *Context) {
 		}
 		c.ResponseOk(nil)
 	}
+}
+
+// PluginUpload
+// @Summary 上传插件
+// @Description 上传插件
+// @Param files formData file true "插件文件(zip or tar.gz)"
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /plugin/upload [post]
+func (s *Service) PluginUpload(c *Context) {
+	var (
+		isRoot     bool
+		pluginPath = filepath.Join(s.conf.DataPath, config.PluginPath)
+	)
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	files := form.File["files"]
+
+	if len(files) == 0 {
+		c.ResponseError(errors.New("empty files").Error())
+		return
+	}
+
+	for _, file := range files {
+		fh, err := file.Open()
+		if err != nil {
+			s.Logger.Errorf("error when open file %s, err: %v", file.Filename, err)
+			continue
+		}
+
+		switch utils.GetFileExt(file.Filename) {
+		case "zip":
+			var (
+				zipRootDir string
+			)
+
+			reader, err := zip.NewReader(fh, file.Size)
+			if err != nil {
+				s.Logger.Errorf("error when create zip reader %s, err: %v", file.Filename, err)
+				continue
+			}
+			if len(reader.File) == 1 && reader.File[0].FileInfo().IsDir() {
+				isRoot = true
+			}
+
+			if isRoot {
+				zipRootDir = reader.File[0].Name
+			} else {
+				zipRootDir = strings.TrimRight(file.Filename, "zip")
+			}
+
+			zipRootPath := filepath.Join(pluginPath, zipRootDir)
+
+			err = os.MkdirAll(zipRootPath, fs.ModePerm)
+			if err != nil {
+				s.Logger.Errorf("error when create tmp dir %s, err: %v", file.Filename, err)
+				continue
+			}
+
+			for _, f := range reader.File {
+				rc, err := f.Open()
+				if err != nil {
+					continue
+				}
+				filename := filepath.Join(zipRootPath, f.Name)
+				err = os.MkdirAll(filepath.Dir(filename), fs.ModePerm)
+				if err != nil {
+					continue
+				}
+				w, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, fs.ModePerm)
+				if err != nil {
+					continue
+				}
+				_, err = io.Copy(w, rc)
+				if err != nil {
+					continue
+				}
+				w.Close()
+				rc.Close()
+			}
+		case "tar.gz":
+			var (
+				tarFiles   []*tar.Header
+				zipRootDir string
+			)
+
+			gr, err := gzip.NewReader(fh)
+			if err != nil {
+				s.Logger.Errorf("error when create gzip reader %s, err: %v", file.Filename, err)
+				continue
+			}
+
+			tr := tar.NewReader(gr)
+			for {
+				hdr, err := tr.Next()
+				if err != nil || err == io.EOF {
+					break
+				}
+				if hdr == nil {
+					continue
+				}
+
+				tarFiles = append(tarFiles, hdr)
+			}
+			if len(tarFiles) == 1 && tarFiles[0].FileInfo().IsDir() {
+				zipRootDir = tarFiles[0].Name
+			} else {
+				zipRootDir = strings.TrimRight(file.Filename, "tar.gz")
+			}
+
+			zipRootPath := filepath.Join(pluginPath, zipRootDir)
+
+			for _, f := range tarFiles {
+				dstFileDir := filepath.Join(zipRootPath, f.Name)
+
+				switch f.Typeflag {
+				case tar.TypeDir:
+					if ok, _ := utils.PathExists(dstFileDir); !ok {
+						if err := os.MkdirAll(dstFileDir, fs.ModePerm); err != nil {
+							continue
+						}
+					}
+				case tar.TypeReg:
+					if ok, _ := utils.PathExists(filepath.Dir(dstFileDir)); !ok {
+						if err := os.MkdirAll(dstFileDir, fs.ModePerm); err != nil {
+							continue
+						}
+					}
+					_file, err := os.OpenFile(dstFileDir, os.O_CREATE|os.O_RDWR, fs.ModePerm)
+					if err != nil {
+						continue
+					}
+					_, err = io.Copy(_file, tr)
+					if err != nil {
+						continue
+					}
+					_file.Close()
+				}
+			}
+
+			gr.Close()
+		default:
+			c.ResponseError(errors.New("unsupported file format").Error())
+			return
+		}
+
+		fh.Close()
+
+		s.sshManager.ReloadAllFilePlugins(pluginPath)
+	}
+
+	c.ResponseOk(nil)
 }
 
 // GetCommandHistory

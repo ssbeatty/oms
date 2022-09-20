@@ -1138,6 +1138,31 @@ paths:
       summary: 获取单个剧本
       tags:
       - player
+  /plugin/upload:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 上传插件
+      parameters:
+      - description: 插件文件(zip or tar.gz)
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 上传插件
+      tags:
+      - player
   /private_key:
     get:
       consumes:

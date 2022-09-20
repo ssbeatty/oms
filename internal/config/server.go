@@ -17,6 +17,7 @@ const (
 	DefaultTmpPath     = "tmp"
 	DefaultTaskTmpPath = "tasks"
 	UploadPath         = "upload"
+	PluginPath         = "plugin"
 )
 
 type Conf struct {

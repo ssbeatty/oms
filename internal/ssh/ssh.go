@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	PluginPath    = "plugin"
 	CMDTypeShell  = "cmd"
 	CMDTypePlayer = "player"
 
@@ -103,22 +102,7 @@ func (m *Manager) Init() *Manager {
 	return m
 }
 
-// initAllPlugins 启动时加载所有插件
-func (m *Manager) initAllPlugins() {
-	pluginPath := filepath.Join(m.cfg.App.DataPath, PluginPath)
-	if exists, _ := utils.PathExists(pluginPath); !exists {
-		_ = os.MkdirAll(pluginPath, fs.ModePerm)
-	}
-
-	m.supportPlugins = map[string]buildin.Step{
-		buildin.StepNameCMD:       &buildin.RunCmdStep{},
-		buildin.StepNameShell:     &buildin.RunShellStep{},
-		buildin.StepNameFile:      &buildin.FileUploadStep{},
-		buildin.StepMultiNameFile: &buildin.MultiFileUploadStep{},
-		buildin.StepNameZipFile:   &buildin.ZipFileStep{},
-		buildin.StepNameYamlJson:  &buildin.JsonYamlReplaceStep{},
-	}
-
+func (m *Manager) ReloadAllFilePlugins(pluginPath string) {
 	_ = filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -133,7 +117,25 @@ func (m *Manager) initAllPlugins() {
 		}
 		return nil
 	})
+}
 
+// initAllPlugins 启动时加载所有插件
+func (m *Manager) initAllPlugins() {
+	pluginPath := filepath.Join(m.cfg.App.DataPath, config.PluginPath)
+	if exists, _ := utils.PathExists(pluginPath); !exists {
+		_ = os.MkdirAll(pluginPath, fs.ModePerm)
+	}
+
+	m.supportPlugins = map[string]buildin.Step{
+		buildin.StepNameCMD:       &buildin.RunCmdStep{},
+		buildin.StepNameShell:     &buildin.RunShellStep{},
+		buildin.StepNameFile:      &buildin.FileUploadStep{},
+		buildin.StepMultiNameFile: &buildin.MultiFileUploadStep{},
+		buildin.StepNameZipFile:   &buildin.ZipFileStep{},
+		buildin.StepNameYamlJson:  &buildin.JsonYamlReplaceStep{},
+	}
+
+	m.ReloadAllFilePlugins(pluginPath)
 }
 
 func (m *Manager) GetSSHList() *cache.Cache {
