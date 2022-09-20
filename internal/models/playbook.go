@@ -87,6 +87,18 @@ func InsertPlayBook(name, steps string) (*PlayBook, error) {
 	return &record, nil
 }
 
+func ExistedPlayBook(name string, steps string) bool {
+	var records []*PlayBook
+	err := db.Where("name = ? and steps = ?", name, steps).Find(&records).Error
+	if err != nil {
+		return false
+	}
+	if len(records) == 0 {
+		return false
+	}
+	return true
+}
+
 func UpdatePlayBook(id int, name string, steps string) (*PlayBook, error) {
 	record := PlayBook{Id: id}
 	err := db.Where("id = ?", id).First(&record).Error

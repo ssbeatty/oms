@@ -5,11 +5,13 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/robfig/cron/v3"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
@@ -1270,7 +1272,6 @@ func (s *Service) DeletePlayBook(c *Context) {
 // @Router /plugin/upload [post]
 func (s *Service) PluginUpload(c *Context) {
 	var (
-		isRoot     bool
 		pluginPath = filepath.Join(s.conf.DataPath, config.PluginPath)
 	)
 
@@ -1282,7 +1283,7 @@ func (s *Service) PluginUpload(c *Context) {
 	files := form.File["files"]
 
 	if len(files) == 0 {
-		c.ResponseError(errors.New("empty files").Error())
+		c.ResponseError("empty files")
 		return
 	}
 
@@ -1305,10 +1306,6 @@ func (s *Service) PluginUpload(c *Context) {
 				continue
 			}
 			if len(reader.File) == 1 && reader.File[0].FileInfo().IsDir() {
-				isRoot = true
-			}
-
-			if isRoot {
 				zipRootDir = reader.File[0].Name
 			} else {
 				zipRootDir = strings.TrimRight(file.Filename, "zip")
@@ -1405,7 +1402,7 @@ func (s *Service) PluginUpload(c *Context) {
 
 			gr.Close()
 		default:
-			c.ResponseError(errors.New("unsupported file format").Error())
+			c.ResponseError("unsupported file format")
 			return
 		}
 
@@ -1415,6 +1412,186 @@ func (s *Service) PluginUpload(c *Context) {
 	}
 
 	c.ResponseOk(nil)
+}
+
+// PlayerImport
+// @Summary 导入剧本
+// @Description 导入剧本
+// @Param files formData file true "剧本导出文件(zip)"
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /player/import [post]
+func (s *Service) PlayerImport(c *Context) {
+	var (
+		uploadPath = filepath.Join(s.conf.DataPath, config.UploadPath)
+	)
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	files := form.File["files"]
+
+	if len(files) == 0 {
+		c.ResponseError("empty files")
+		return
+	}
+
+	for _, file := range files {
+		if utils.GetFileExt(file.Filename) != "zip" {
+			c.ResponseError("unsupported file")
+			return
+		}
+		fh, err := file.Open()
+		if err != nil {
+			s.Logger.Errorf("error when open file %s, err: %v", file.Filename, err)
+			continue
+		}
+
+		reader, err := zip.NewReader(fh, file.Size)
+		if err != nil {
+			s.Logger.Errorf("error when create zip reader %s, err: %v", file.Filename, err)
+			continue
+		}
+		for _, f := range reader.File {
+			fn, err := f.Open()
+			if err != nil {
+				continue
+			}
+
+			switch f.Name {
+			case "metadata.json":
+				playerMap := make(map[string]string)
+				data, err := ioutil.ReadAll(fn)
+				if err != nil {
+					continue
+				}
+
+				err = json.Unmarshal(data, &playerMap)
+				if err != nil {
+					c.ResponseError(err.Error())
+					return
+				}
+
+				for k, val := range playerMap {
+					if models.ExistedPlayBook(k, val) {
+						continue
+					}
+					_, err := models.InsertPlayBook(k, val)
+					if err != nil {
+						continue
+					}
+				}
+			default:
+				baseName := filepath.Base(f.Name)
+
+				dstFile, err := os.OpenFile(filepath.Join(uploadPath, baseName), os.O_CREATE|os.O_TRUNC|os.O_RDWR, fs.ModePerm)
+				if err != nil {
+					continue
+				}
+
+				_, _ = io.Copy(dstFile, fn)
+
+				dstFile.Close()
+			}
+
+			fn.Close()
+		}
+
+		fh.Close()
+	}
+
+	c.ResponseOk(nil)
+}
+
+// PlayerExport
+// @Summary 导出剧本
+// @Description 导出剧本
+// @Tags player
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200
+// @Failure 400 {object} payload.Response
+// @Router /player/export [get]
+func (s *Service) PlayerExport(c *Context) {
+	const (
+		subPath = "upload"
+	)
+
+	var (
+		metaPlayer = make(map[string]string)
+		pluginPath = filepath.Join(s.conf.DataPath, config.DefaultTmpPath)
+	)
+
+	tmpName := fmt.Sprintf("%d-players.zip", time.Now().Unix())
+	tmpPath := filepath.Join(pluginPath, tmpName)
+	tmpFile, err := os.OpenFile(tmpPath, os.O_RDWR|os.O_CREATE, fs.ModePerm)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+	defer os.Remove(tmpPath)
+
+	players, err := models.GetAllPlayBook()
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	writer := zip.NewWriter(tmpFile)
+
+	for _, player := range players {
+		metaPlayer[player.Name] = player.Steps
+		for _, step := range player.StepsObj {
+			if len(step.GetCaches()) == 0 {
+				continue
+			}
+			for _, cache := range step.GetCaches() {
+				zipFile, err := writer.Create(filepath.ToSlash(filepath.Join(subPath, filepath.Base(cache))))
+				if err != nil {
+					continue
+				}
+				osFile, err := os.OpenFile(cache, os.O_RDONLY, fs.ModePerm)
+				if err != nil {
+					continue
+				}
+
+				_, err = io.Copy(zipFile, osFile)
+				if err != nil {
+					return
+				}
+
+				osFile.Close()
+			}
+		}
+	}
+	metaFile, err := writer.Create("metadata.json")
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	data, err := json.Marshal(metaPlayer)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	_, err = metaFile.Write(data)
+	if err != nil {
+		c.ResponseError(err.Error())
+		return
+	}
+
+	writer.Close()
+	tmpFile.Close()
+
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=%s", tmpName))
+	c.File(tmpPath)
 }
 
 // GetCommandHistory

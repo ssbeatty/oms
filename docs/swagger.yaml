@@ -1138,6 +1138,48 @@ paths:
       summary: 获取单个剧本
       tags:
       - player
+  /player/export:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 导出剧本
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 导出剧本
+      tags:
+      - player
+  /player/import:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 导入剧本
+      parameters:
+      - description: 剧本导出文件(zip)
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 导入剧本
+      tags:
+      - player
   /plugin/upload:
     post:
       consumes:

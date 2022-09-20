@@ -181,6 +181,9 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.PUT("/player", Handle(s.PutPlayBook))
 		apiV1.DELETE("/player/:id", Handle(s.DeletePlayBook))
 		apiV1.POST("/plugin/upload", Handle(s.PluginUpload))
+
+		apiV1.POST("/player/import", Handle(s.PlayerImport))
+		apiV1.GET("/player/export", Handle(s.PlayerExport))
 	}
 	s.Engine = r
 
