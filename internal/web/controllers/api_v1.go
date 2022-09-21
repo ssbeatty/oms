@@ -833,7 +833,7 @@ func (s *Service) PostJob(c *Context) {
 		c.ResponseError(err.Error())
 	} else {
 		_, err := parser.Parse(form.Spec)
-		if err != nil && form.Type == string(task.JobTypeCron) {
+		if err != nil {
 			c.ResponseError(err.Error())
 			return
 		}
@@ -848,10 +848,15 @@ func (s *Service) PostJob(c *Context) {
 			c.ResponseError(err.Error())
 			return
 		}
-		_, err = s.taskManager.NewJobWithRegister(job, string(task.JobStatusReady))
+		realJob, err := s.taskManager.NewRealJobWithRegister(job, string(task.JobStatusSchedule))
 		if err != nil {
 			c.ResponseError(err.Error())
 			return
+		}
+
+		err = s.taskManager.ScheduleJob(realJob)
+		if err != nil {
+			s.Logger.Errorf("error when start job: %s, err: %v", realJob.Name(), err)
 		}
 
 		c.ResponseOk(job)
@@ -881,7 +886,7 @@ func (s *Service) PutJob(c *Context) {
 		c.ResponseError(err.Error())
 	} else {
 		_, err := parser.Parse(form.Spec)
-		if err != nil && form.Spec != "" && form.Type == string(task.JobTypeCron) {
+		if err != nil && form.Spec != "" {
 			c.ResponseError(err.Error())
 			return
 		}
@@ -895,10 +900,16 @@ func (s *Service) PutJob(c *Context) {
 		// 这个错误忽略是为了修改时候只要确认停止即可
 		_ = s.taskManager.UnRegister(form.Id, false)
 
-		_, err = s.taskManager.NewJobWithRegister(job, job.Status)
+		realJob, err := s.taskManager.NewRealJobWithRegister(job, job.Status)
 		if err != nil {
 			c.ResponseError(err.Error())
 			return
+		}
+		if task.JobStatus(job.Status) != task.JobStatusStopped {
+			err = s.taskManager.ScheduleJob(realJob)
+			if err != nil {
+				s.Logger.Errorf("error when start job: %s, err: %v", realJob.Name(), err)
+			}
 		}
 		c.ResponseOk(job)
 	}

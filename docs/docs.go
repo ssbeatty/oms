@@ -981,9 +981,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/job/start": {
+        "/job/exec": {
             "post": {
-                "description": "启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度",
+                "description": "单次执行任务",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -993,7 +993,57 @@ const docTemplate = `{
                 "tags": [
                     "job"
                 ],
-                "summary": "启动任务",
+                "summary": "单次执行任务",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "任务 ID",
+                        "name": "id",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/payload.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.Job"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/payload.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/job/start": {
+            "post": {
+                "description": "启动任务调度",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job"
+                ],
+                "summary": "启动任务调度",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1033,7 +1083,7 @@ const docTemplate = `{
         },
         "/job/stop": {
             "post": {
-                "description": "停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度",
+                "description": "停止任务调度",
                 "consumes": [
                     "application/x-www-form-urlencoded"
                 ],
@@ -1043,7 +1093,7 @@ const docTemplate = `{
                 "tags": [
                     "job"
                 ],
-                "summary": "停止任务",
+                "summary": "停止任务调度",
                 "parameters": [
                     {
                         "type": "integer",

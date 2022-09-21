@@ -1,7 +1,6 @@
 package task
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
@@ -19,18 +18,11 @@ import (
 	"time"
 )
 
-type JobType string
 type JobStatus string
 
 const (
-	JobTypeCron     JobType = "cron"
-	JobTypeTask     JobType = "task"      // run once
-	JobTypeLongTask JobType = "long_task" // run daemon
-
-	JobStatusReady   JobStatus = "ready"
-	JobStatusRunning JobStatus = "running"
-	JobStatusStop    JobStatus = "stop"
-	JobStatusDone    JobStatus = "done"
+	JobStatusSchedule JobStatus = "schedule"
+	JobStatusStopped  JobStatus = "stopped"
 
 	MarkText     = "###mark###"
 	ErrorText    = "[error]"
@@ -41,7 +33,6 @@ const (
 type Job struct {
 	ID      int
 	name    string
-	Type    JobType
 	hosts   []*models.Host
 	cmd     string
 	cmdType string
@@ -52,73 +43,7 @@ type Job struct {
 	cmdId   int
 }
 
-func NewSyncBuffer(fd *os.File) *syncBuffer {
-
-	buf := &syncBuffer{
-		fd:   fd,
-		quit: make(chan struct{}, 1),
-	}
-
-	go buf.flushComboOutput()
-
-	return buf
-}
-
-type syncBuffer struct {
-	bytes.Buffer
-	fd   *os.File
-	quit chan struct{}
-	mu   sync.Mutex
-}
-
-func (w *syncBuffer) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	return w.Buffer.Write(p)
-}
-
-func (w *syncBuffer) WriteWithMsg(output []byte, msg string) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	_, _ = fmt.Fprintf(&w.Buffer, msg)
-
-	return w.Buffer.Write(output)
-}
-
-func (w *syncBuffer) flush() {
-	if w.Buffer.Len() != 0 {
-		_, err := w.fd.Write(w.Buffer.Bytes())
-		if err != nil {
-			return
-		}
-		w.Buffer.Reset()
-	}
-}
-
-func (w *syncBuffer) Close() {
-	w.flush()
-
-	w.quit <- struct{}{}
-	defer w.fd.Close()
-}
-
-func (w *syncBuffer) flushComboOutput() {
-	tick := time.NewTicker(time.Millisecond * time.Duration(120))
-
-	defer tick.Stop()
-	for {
-		select {
-		case <-tick.C:
-			w.flush()
-		case <-w.quit:
-			return
-		}
-	}
-}
-
-func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t JobType, host []*models.Host) *Job {
+func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, host []*models.Host) *Job {
 
 	if name == "" {
 		name = strconv.Itoa(id)
@@ -128,7 +53,6 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t J
 	job := &Job{
 		ID:      id,
 		name:    name,
-		Type:    t,
 		hosts:   host,
 		cmd:     cmd,
 		cmdType: cmdType,
@@ -137,7 +61,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, t J
 		log:     log,
 		cmdId:   cmdId,
 	}
-	job.UpdateStatus(JobStatusReady)
+	job.UpdateStatus(JobStatusSchedule)
 
 	return job
 }
@@ -195,19 +119,9 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 
 }
 
-func (j *Job) Run() {
-	if j.Status() == JobStatusStop {
-		return
-	}
+func (j *Job) exec() {
 	j.engine.logger.Debugf("job, name: %s, cmd: %s, running.", j.name, j.cmd)
-	defer func() {
-		if j.Status() == JobStatusRunning {
-			j.UpdateStatus(JobStatusDone)
-		}
-		j.engine.logger.Debugf("job, name: %s, cmd: %s, done.", j.name, j.cmd)
-	}()
-
-	j.UpdateStatus(JobStatusRunning)
+	defer j.engine.logger.Debugf("job, name: %s, cmd: %s, done.", j.name, j.cmd)
 
 	var wg sync.WaitGroup
 	wg.Add(len(j.hosts))
@@ -249,6 +163,16 @@ func (j *Job) Run() {
 	_ = instance.Done()
 }
 
+func (j *Job) Run() {
+	defer func() {
+		if j.Status() != JobStatusStopped {
+			j.UpdateStatus(JobStatusSchedule)
+		}
+	}()
+
+	j.exec()
+}
+
 func (j *Job) createInstance() (*models.TaskInstance, error) {
 	now := time.Now().Local()
 	instance, err := models.InsertTaskInstance(j.ID, now)
@@ -282,11 +206,9 @@ func (j *Job) UpdateStatus(status JobStatus) {
 }
 
 func (j *Job) Close() {
-	switch j.Type {
-	case JobTypeCron:
-		j.engine.taskService.Remove(strconv.Itoa(j.ID))
-	}
-	j.UpdateStatus(JobStatusStop)
+	j.engine.taskService.Remove(strconv.Itoa(j.ID))
+
+	j.UpdateStatus(JobStatusStopped)
 }
 
 func (j *Job) Name() string {

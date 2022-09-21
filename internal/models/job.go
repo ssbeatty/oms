@@ -45,7 +45,7 @@ type TaskInstance struct {
 
 func GetAllJob() ([]*Job, error) {
 	var jobs []*Job
-	err := db.Find(&jobs).Error
+	err := db.Order("id DESC").Find(&jobs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func DeleteJobById(id int) error {
 
 // RefreshJob 刷新job的状态
 func RefreshJob(job *Job) error {
-	err := db.First(&job).Error
+	err := db.Where("id = ?", job.Id).First(&job).Error
 	if err != nil {
 		return err
 	}

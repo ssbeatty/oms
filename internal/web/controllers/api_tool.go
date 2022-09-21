@@ -211,9 +211,40 @@ func (s *Service) MakeDirRemote(c *Context) {
 	}
 }
 
+// ExecJob
+// @Summary 单次执行任务
+// @Description 单次执行任务
+// @Param id formData integer true "任务 ID"
+// @Tags job
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response{data=models.Job}
+// @Failure 400 {object} payload.Response
+// @Router /job/exec [post]
+func (s *Service) ExecJob(c *Context) {
+	var form payload.OptionsJobForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		job, err := models.GetJobById(form.Id)
+		if err != nil {
+			s.Logger.Errorf("error when get job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+		err = s.taskManager.ExecJob(job)
+		if err != nil {
+			s.Logger.Errorf("error when start job, err: %v", err)
+			c.ResponseError(err.Error())
+		}
+
+		c.ResponseOk(job)
+	}
+}
+
 // StartJob
-// @Summary 启动任务
-// @Description 启动任务, 对于task任务类型来说执行一次, 对于cron类型来说开始调度
+// @Summary 启动任务调度
+// @Description 启动任务调度
 // @Param id formData integer true "任务 ID"
 // @Tags job
 // @Accept x-www-form-urlencoded
@@ -245,9 +276,8 @@ func (s *Service) StartJob(c *Context) {
 }
 
 // StopJob
-// @Summary 停止任务
-// todo 修改任务调度
-// @Description 停止任务, 对于task任务类型来无作用, 对于cron类型来说停止调度
+// @Summary 停止任务调度
+// @Description 停止任务调度
 // @Param id formData integer true "任务 ID"
 // @Tags job
 // @Accept x-www-form-urlencoded

@@ -141,6 +141,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.PUT("/job", Handle(s.PutJob))
 		apiV1.DELETE("/job/:id", Handle(s.DeleteJob))
 		//apiV1.GET("/job/tail", Handle(s.GetLogStream))
+		apiV1.POST("/job/exec", Handle(s.ExecJob))
 		apiV1.POST("/job/start", Handle(s.StartJob))
 		apiV1.POST("/job/stop", Handle(s.StopJob))
 		apiV1.GET("/task/instance", Handle(s.GetInstances))
