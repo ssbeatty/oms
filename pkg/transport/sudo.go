@@ -2,7 +2,7 @@ package transport
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"io"
 	"sync"
 )
@@ -57,10 +57,36 @@ func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
 	return w.b.Bytes(), err
 }
 
-func (c *Client) SudoInteractively(session *Session, cmd, passwd string) ([]byte, error) {
-	command := "bash -ic \"%s\""
-	if !c.PathExists("/bin/bash") {
-		return session.Sudo(cmd, passwd)
+func (s *Session) SudoContext(ctx context.Context, cmd, passwd string) ([]byte, error) {
+	quit := make(chan struct{}, 1)
+	defer close(quit)
+
+	go func() {
+		defer s.Close()
+		select {
+		case <-ctx.Done():
+			return
+		case <-quit:
+			return
+		}
+	}()
+
+	if cmd == "" {
+		return s.Output(cmd)
 	}
-	return session.Sudo(fmt.Sprintf(command, cmd), passwd)
+	cmd = "sudo -p " + sudoPwPrompt + " -S " + cmd
+
+	// Use the sudoRW struct to handle the interaction with sudo and capture the
+	// output of the command
+	w := &sudoWriter{
+		pw: passwd,
+	}
+	w.stdin = s.stdin
+
+	s.SetStderr(w)
+	s.SetStdout(w)
+
+	err := s.Run(cmd)
+
+	return w.b.Bytes(), err
 }

@@ -9,14 +9,19 @@ import (
 	"oms/internal/ssh"
 	"oms/internal/web/payload"
 	"oms/pkg/transport"
+	"oms/pkg/utils"
 	"time"
 )
 
 const (
 	WSStatusSuccess       = "0"
 	WSStatusError         = "-1"
-	SSHTimeDeadline       = 120 * time.Second
+	defaultSSHCMDTimeout  = 120
 	DefaultStatusInterval = 2 * time.Second
+)
+
+var (
+	DefaultSSHCMDTimeout = time.Duration(utils.GetEnvInt("ENV_SSH_CMD_TIMEOUT", defaultSSHCMDTimeout)) * time.Second
 )
 
 type Request struct {

@@ -279,12 +279,10 @@ func (s *Service) MakeDir(hostId int, p, dir string) error {
 }
 
 func (s *Service) runCmdWithContext(host *models.Host, cmd ssh.Command, ch chan *ssh.Result, ctx context.Context) {
-	var msg []byte
-	var errMsg string
-	var result *ssh.Result
-
-	quit := make(chan bool, 1)
-	defer close(quit)
+	var (
+		msg    []byte
+		result *ssh.Result
+	)
 
 	client, err := s.sshManager.NewClientWithSftp(host)
 	if err != nil {
@@ -300,32 +298,23 @@ func (s *Service) runCmdWithContext(host *models.Host, cmd ssh.Command, ch chan 
 		return
 	}
 
-	go func() {
-		defer session.Close()
-		select {
-		case <-ctx.Done():
-			errMsg = "cmd timeout"
-			return
-		case <-quit:
-			return
-		}
-	}()
-
 	if cmd.Sudo && client.GetTargetMachineOs() != transport.GOOSWindows {
-		msg, err = session.Sudo(cmd.Params, host.PassWord)
+		msg, err = session.SudoContext(ctx, cmd.Params, host.PassWord)
 	} else {
-		msg, err = session.Output(cmd.Params)
+		msg, err = session.OutputContext(ctx, cmd.Params)
 	}
 
 	if err != nil {
-		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg), Addr: host.Addr}
+		// ctx 超时返回ctx.Err
+		if ctx.Err() != nil {
+			result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: ctx.Err().Error(), Addr: host.Addr}
+		} else {
+			result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: false, Msg: string(msg), Addr: host.Addr}
+		}
 	} else {
 		result = &ssh.Result{HostId: host.Id, HostName: host.Name, Status: true, Msg: string(msg), Addr: host.Addr}
 	}
 
-	if errMsg != "" {
-		result.Msg = errMsg
-	}
 	ch <- result
 }
 
@@ -364,7 +353,7 @@ func (s *Service) runPlayerWithContext(host *models.Host, cmd ssh.Command, ch ch
 
 // RunCmdWithContext 使用在websocket接口上
 func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, ch chan *ssh.Result) {
-	ctx, cancel := context.WithTimeout(context.Background(), websocket.SSHTimeDeadline)
+	ctx, cancel := context.WithTimeout(context.Background(), websocket.DefaultSSHCMDTimeout)
 	defer cancel()
 	switch cmd.Type {
 	case ssh.CMDTypeShell:

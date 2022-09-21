@@ -1,8 +1,8 @@
 package transport
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -286,15 +286,6 @@ func (c *Client) Notify(ch chan *Client) {
 	c.notify = append(c.notify, ch)
 }
 
-// OutputInteractively run done and return output interactively
-func (c *Client) OutputInteractively(session *Session, cmd string) ([]byte, error) {
-	command := "bash -ic \"%s\""
-	if !c.PathExists("/bin/bash") {
-		return session.sshSession.CombinedOutput(cmd)
-	}
-	return session.sshSession.CombinedOutput(fmt.Sprintf(command, cmd))
-}
-
 func (c *Client) SendRequest(name string, wantReply bool, payload []byte) (bool, []byte, error) {
 	return c.sshClient.SendRequest(name, wantReply, payload)
 }
@@ -354,6 +345,23 @@ func (s *Session) Write(b []byte) (int, error) {
 
 // Output run done and return output
 func (s *Session) Output(cmd string) ([]byte, error) {
+	return s.sshSession.CombinedOutput(cmd)
+}
+
+// OutputContext run done and return output with context
+func (s *Session) OutputContext(ctx context.Context, cmd string) ([]byte, error) {
+	quit := make(chan struct{}, 1)
+	defer close(quit)
+
+	go func() {
+		defer s.Close()
+		select {
+		case <-ctx.Done():
+			return
+		case <-quit:
+			return
+		}
+	}()
 	return s.sshSession.CombinedOutput(cmd)
 }
 

@@ -86,8 +86,9 @@ db:
 
 ### 环境变量
 ```shell
-ENV_SSH_DIAL_TIMEOUT = 30  # ssh连接超时时间
-ENV_SSH_RW_TIMEOUT = 20    # ssh读写超时时间
+ENV_SSH_DIAL_TIMEOUT = 30  # ssh连接超时时间 单位秒
+ENV_SSH_RW_TIMEOUT = 20    # ssh读写超时时间 单位秒
+ENV_SSH_CMD_TIMEOUT = 120  # 执行命令时命令最长的超时时间 单位秒
 ```
 
 

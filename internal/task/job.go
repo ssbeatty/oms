@@ -66,7 +66,7 @@ func (m *Manager) NewJob(id int, name, cmd, spec, cmdType string, cmdId int, hos
 	return job
 }
 
-func (j *Job) runPlayer(client *transport.Client) ([]byte, error) {
+func (j *Job) runPlayer(ctx context.Context, client *transport.Client) ([]byte, error) {
 	modPlayer, err := models.GetPlayBookById(j.cmdId)
 	if err != nil {
 		return nil, err
@@ -77,18 +77,18 @@ func (j *Job) runPlayer(client *transport.Client) ([]byte, error) {
 	}
 	player := ssh.NewPlayer(client, steps, true, nil)
 
-	return player.Run(context.Background())
+	return player.Run(ctx)
 
 }
 
-func (j *Job) runCmd(client *transport.Client) ([]byte, error) {
+func (j *Job) runCmd(ctx context.Context, client *transport.Client) ([]byte, error) {
 	session, err := client.NewPty()
 	if err != nil {
 		j.engine.logger.Errorf("create new session failed, host name: %s, err: %v", err)
 	}
 	defer session.Close()
 
-	return session.Sudo(j.cmd, client.Conf.Password)
+	return session.SudoContext(ctx, j.cmd, client.Conf.Password)
 }
 
 func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGroup, std *syncBuffer) {
@@ -101,9 +101,9 @@ func (j *Job) run(client *transport.Client, host *models.Host, wg *sync.WaitGrou
 
 	switch j.cmdType {
 	case ssh.CMDTypePlayer:
-		output, err = j.runPlayer(client)
+		output, err = j.runPlayer(context.Background(), client)
 	default:
-		output, err = j.runCmd(client)
+		output, err = j.runCmd(context.Background(), client)
 	}
 
 	if err != nil {
