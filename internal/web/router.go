@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"strings"
 
 	"mime"
 	"net/http"
@@ -94,7 +95,9 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 	//if not route (route from frontend) redirect to index
 	r.NoRoute(func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/")
+		if !strings.HasPrefix(c.Request.RequestURI, "/api") {
+			s.GetIndexPage(c)
+		}
 	})
 
 	// websocket
