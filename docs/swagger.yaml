@@ -2278,4 +2278,17 @@ paths:
       summary: 获取单个隧道
       tags:
       - tunnel
+  /version:
+    get:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 获取当前版本
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: 获取当前版本
+      tags:
+      - system
 swagger: "2.0"

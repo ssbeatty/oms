@@ -8,6 +8,7 @@ import (
 	"oms/internal/models"
 	"oms/internal/server"
 	"oms/pkg/logger"
+	"oms/version"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,6 +24,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	log.Infof("当前版本: %s", version.Version)
 
 	// init db
 	db := conf.Db

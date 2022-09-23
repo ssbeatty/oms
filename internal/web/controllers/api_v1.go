@@ -12,12 +12,14 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"net/http"
 	"oms/internal/config"
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/task"
 	"oms/internal/web/payload"
 	"oms/pkg/utils"
+	"oms/version"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +35,17 @@ const (
 var parser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 
 // @BasePath /api/v1
+
+// GetVersion
+// @Summary 获取当前版本
+// @Description 获取当前版本
+// @Tags system
+// @Accept x-www-form-urlencoded
+// @Success 200 {object} string
+// @Router /version [get]
+func (s *Service) GetVersion(c *Context) {
+	c.String(http.StatusOK, version.Version)
+}
 
 // GetHosts
 // @Summary 获取所有主机
