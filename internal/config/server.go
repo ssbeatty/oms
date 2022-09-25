@@ -61,6 +61,7 @@ func NewServerConfig(path string) (*Conf, error) {
 	} else {
 		// config 写入当前目录
 		_ = ioutil.WriteFile(path, embedConfig, fs.FileMode(0755))
+		data = embedConfig
 	}
 
 	err = yaml.Unmarshal(data, ret)
