@@ -46,7 +46,7 @@ jobs:
         run: |
           make all
         env:
-          release_name: ${{ github.ref }}
+          release_name: ${{ github.ref_name }}
 
       - name: Draft release
         uses: softprops/action-gh-release@v1
