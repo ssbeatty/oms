@@ -8,7 +8,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"math"
+	"oms/pkg/logger"
+	"os"
 	"strings"
+	"time"
 
 	"mime"
 	"net/http"
@@ -22,6 +26,58 @@ import (
 	"os/exec"
 	"runtime"
 )
+
+// Logger is the logrus logger handler
+func Logger(logger *logger.Logger, notLogged ...string) gin.HandlerFunc {
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknow"
+	}
+
+	var skip map[string]struct{}
+
+	if length := len(notLogged); length > 0 {
+		skip = make(map[string]struct{}, length)
+
+		for _, p := range notLogged {
+			skip[p] = struct{}{}
+		}
+	}
+
+	return func(c *gin.Context) {
+		// other handler can change c.Path so:
+		path := c.Request.URL.Path
+		start := time.Now()
+		c.Next()
+		stop := time.Since(start)
+		latency := int(math.Ceil(float64(stop.Nanoseconds()) / 1000000.0))
+		statusCode := c.Writer.Status()
+		clientIP := c.ClientIP()
+		//clientUserAgent := c.Request.UserAgent()
+		//referer := c.Request.Referer()
+		dataLength := c.Writer.Size()
+		if dataLength < 0 {
+			dataLength = 0
+		}
+
+		if _, ok := skip[path]; ok {
+			return
+		}
+
+		if len(c.Errors) > 0 {
+			logger.Error(c.Errors.ByType(gin.ErrorTypePrivate).String())
+		} else {
+			msg := fmt.Sprintf("[%d] %s %s %s [%s] %d (%dms)", statusCode, c.Request.Method, path, clientIP, hostname, dataLength, latency)
+			if statusCode >= http.StatusInternalServerError {
+				logger.Error(msg)
+			} else if statusCode >= http.StatusBadRequest {
+				logger.Warn(msg)
+			} else {
+				logger.Info(msg)
+			}
+		}
+	}
+}
 
 func CORS(ctx *gin.Context) {
 	method := ctx.Request.Method
@@ -89,7 +145,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 	r.Use(staticF.Serve("/assets", static))
 
-	r.Use(gin.Logger())
+	r.Use(Logger(s.Logger))
 	// common api
 	r.GET("/", s.GetIndexPage)
 

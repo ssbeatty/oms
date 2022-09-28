@@ -11,12 +11,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	gormLogger "gorm.io/gorm/logger"
 	"oms/pkg/logger"
 	"oms/pkg/utils"
 	"os"
 	"path"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -97,8 +99,20 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 	dataPath = _dataPath
 	log = logger.NewLogger("db")
 
+	newLogger := gormLogger.New(
+		log,
+		gormLogger.Config{
+			SlowThreshold:             time.Second,      // 慢 SQL 阈值
+			LogLevel:                  gormLogger.Error, // 日志级别
+			IgnoreRecordNotFoundError: true,             // 忽略ErrRecordNotFound（记录未找到）错误
+			Colorful:                  false,            // 禁用彩色打印
+		},
+	)
+
 	_ = createDB(driver, user, pass, dsn, dbName)
-	dfConfig := &gorm.Config{}
+	dfConfig := &gorm.Config{
+		Logger: newLogger,
+	}
 
 	if driver == DBDriverMysql {
 		dataSource = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", user, pass, dsn, dbName)
