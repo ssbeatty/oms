@@ -133,9 +133,17 @@ func InitModels(dsn, dbName, user, pass, driver, _dataPath string) error {
 			_ = os.MkdirAll(dataPath, os.ModePerm)
 		}
 
-		dataSource = path.Join(dataPath, "oms.db")
+		// https://github.com/applikatoni/applikatoni/issues/35
+		dataSource = path.Join(dataPath, "oms.db?cache=shared&mode=rwc&_busy_timeout=30000")
 		d, err = gorm.Open(sqlite.Open(dataSource), dfConfig)
 		// 防止database locked
+		sqlDB, err := d.DB()
+		if err != nil {
+			return err
+		}
+		// 设置最大开启连接数
+		sqlDB.SetMaxOpenConns(1)
+		sqlDB.SetMaxIdleConns(1)
 		db = &DataBase{d, &sync.Mutex{}}
 	}
 
