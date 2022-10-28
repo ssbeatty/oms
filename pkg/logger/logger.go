@@ -3,6 +3,7 @@ package logger
 import (
 	log "github.com/sirupsen/logrus"
 	"io"
+	"os"
 )
 
 type Level uint32
@@ -19,6 +20,7 @@ const (
 
 var (
 	logLevel  Level         = DebugLevel
+	logWriter io.Writer     = os.Stdout
 	logFormat log.Formatter = &log.TextFormatter{}
 )
 
@@ -31,9 +33,15 @@ func SetLevelAndFormat(l Level, formatter log.Formatter) {
 	logFormat = formatter
 }
 
+func SetOutput(writer io.Writer) {
+	log.SetOutput(writer)
+	logWriter = writer
+}
+
 func NewLogger(service string) *Logger {
 	l := log.New()
 	l.SetFormatter(logFormat)
+	l.SetOutput(logWriter)
 	logger := &Logger{
 		entry: l.WithField("service", service),
 	}

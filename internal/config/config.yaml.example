@@ -6,6 +6,7 @@ app:
   run_start: true
   data_path: data
   temp_date: 336h
+  logger: stdout
 
 db:
   driver: sqlite

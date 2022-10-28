@@ -41,6 +41,7 @@ type App struct {
 	RunStart bool          `yaml:"run_start"`
 	DataPath string        `yaml:"data_path"` // db file and tmp path
 	TempDate time.Duration `yaml:"temp_date"`
+	Logger   string        `yaml:"logger"`
 }
 
 // NewServerConfig 加载优先级路径 > 当前目录的config.yaml > 打包在可执行文件里的config.yaml.example
