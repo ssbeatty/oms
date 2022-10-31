@@ -75,7 +75,7 @@ func main() {
 	appCfg := &service.Config{
 		Name:         "omsd",
 		DisplayName:  "omsd",
-		Description:  "nat forward service",
+		Description:  "ssh & sftp manager service",
 		UserName:     *user,
 		Dependencies: depends,
 		Option:       opt,
