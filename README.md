@@ -73,6 +73,19 @@ db:
   db_name: oms
 ```
 
+3. 注册为服务
+```shell script
+# 支持windows/linux/macos
+
+oms --action install --config config.yaml
+
+# 取消注册
+oms --action uninstall 
+```
+
+> 注意注册为服务程序的运行目录会改变比如windows为C:/System32, 因此要修改配置中data_path为绝对路径。
+> logger为相对路径时放在data_path下, 为绝对路径时在指定的路径。
+
 ### 目前已经实现的功能
 1. web界面[omsUI](https://github.com/lixin59/omsUI/blob/master/README.md)
 2. 隧道, 类似`ssh`的`-L`和`-R`
