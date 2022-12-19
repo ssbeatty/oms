@@ -368,7 +368,7 @@ func (s *Service) FilePreview(c *Context) {
 //	@Produce		json
 //	@Success		200	{object}	payload.Response
 //	@Failure		400	{object}	payload.Response
-//	@Router			/tools/save [post]
+//	@Router			/tools/modify [post]
 func (s *Service) ModifyFile(c *Context) {
 	var params payload.ModifyFileParams
 	err := c.ShouldBind(&params)
