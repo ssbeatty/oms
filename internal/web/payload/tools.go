@@ -12,6 +12,13 @@ type OptionsFileParams struct {
 	HostId int    `form:"host_id" binding:"required"`
 }
 
+// ModifyFileParams 解析修改文件接口使用
+type ModifyFileParams struct {
+	Id            string `json:"id"`
+	HostId        int    `json:"host_id" binding:"required"`
+	ModifyContent string `json:"modify_content"`
+}
+
 type MkdirParams struct {
 	OptionsFileParams
 	Dir string `form:"dir" binding:"required"`
