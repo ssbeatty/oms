@@ -376,22 +376,19 @@ func (s *Service) ModifyFile(c *Context) {
 		c.ResponseError(err.Error())
 	} else {
 		file := s.GetRWFile(params.HostId, params.Id)
-
-		defer file.Close()
-		ModifyContentByte, err1 := base64.StdEncoding.DecodeString(params.ModifyContent)
-		if err1 != nil {
-			s.Logger.Errorf("修改内容解码失败")
-			c.ResponseError("修改内容解码失败")
-			return
-		}
-		_, err2 := file.Write(ModifyContentByte)
-		if err2 == nil {
-			s.Logger.Info("文件修改成功")
-			c.ResponseOk("文件修改成功")
-		} else {
-			s.Logger.Errorf("文件修改失败！", err) //nolint:govet
-			c.ResponseError("文件修改失败")
-			return
+		if file != nil {
+			defer file.Close()
+			ModifyContentByte, err := base64.StdEncoding.DecodeString(params.ModifyContent)
+			if err != nil {
+				c.ResponseError(fmt.Sprintf("修改内容解码失败%v", err))
+				return
+			}
+			_, err = file.Write(ModifyContentByte)
+			if err == nil {
+				c.ResponseOk("文件修改成功")
+			} else {
+				c.ResponseError(fmt.Sprintf("文件修改失败%v", err))
+			}
 		}
 	}
 }
