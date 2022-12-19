@@ -2835,6 +2835,51 @@
                 }
             }
         },
+        "/tools/modify": {
+            "post": {
+                "description": "文件修改",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tool"
+                ],
+                "summary": "文件修改",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "远端文件路径",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "host_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/payload.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/payload.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/tools/preview": {
             "get": {
                 "description": "文件预览",

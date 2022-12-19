@@ -145,6 +145,15 @@ func (c *Client) GetFile(path string) (*sftp.File, error) {
 	return file, err
 }
 
+// GetRWFile 获取可读写的sftp.File 可添加参数控制 write 方式（追加/清空后再追加等等）
+func (c *Client) GetRWFile(path string) (*sftp.File, error) {
+	file, err := c.sftpClient.OpenFile(path, os.O_RDWR|os.O_TRUNC|os.O_CREATE|os.O_SYNC)
+	if err != nil {
+		return nil, err
+	}
+	return file, err
+}
+
 func (c *Client) IsDir(path string) bool {
 	// 检查远程是文件还是目录
 	info, err := c.sftpClient.Stat(path)

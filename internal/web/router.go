@@ -223,6 +223,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.GET("/tools/preview", Handle(s.FilePreview))
 		apiV1.GET("/tools/browse", Handle(s.GetPathInfo))
 		apiV1.POST("/tools/mkdir", Handle(s.MakeDirRemote))
+		apiV1.POST("/tools/modify", Handle(s.ModifyFile))
 		apiV1.GET("/tools/download", Handle(s.DownLoadFile))
 		apiV1.POST("/tools/delete", Handle(s.DeleteFile))
 		apiV1.POST("/tools/upload_file", Handle(s.FileUploadUnBlock))

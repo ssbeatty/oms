@@ -358,6 +358,41 @@ func (s *Service) FilePreview(c *Context) {
 	}
 }
 
+// ModifyFile
+//	@Summary		文件修改
+//	@Description	文件修改
+//	@Param			id		query	string	true	"远端文件路径"
+//	@Param			host_id	query	integer	true	"主机 ID"
+//	@Tags			tool
+//	@Accept			x-www-form-urlencoded
+//	@Produce		json
+//	@Success		200	{object}	payload.Response
+//	@Failure		400	{object}	payload.Response
+//	@Router			/tools/modify [post]
+func (s *Service) ModifyFile(c *Context) {
+	var params payload.ModifyFileParams
+	err := c.ShouldBind(&params)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		file := s.GetRWFile(params.HostId, params.Id)
+		if file != nil {
+			defer file.Close()
+			ModifyContentByte, err := base64.StdEncoding.DecodeString(params.ModifyContent)
+			if err != nil {
+				c.ResponseError(fmt.Sprintf("修改内容解码失败%v", err))
+				return
+			}
+			_, err = file.Write(ModifyContentByte)
+			if err == nil {
+				c.ResponseOk("文件修改成功")
+			} else {
+				c.ResponseError(fmt.Sprintf("文件修改失败%v", err))
+			}
+		}
+	}
+}
+
 // 这些方法暂时不重构
 
 func (s *Service) FileUploadUnBlock(c *Context) {

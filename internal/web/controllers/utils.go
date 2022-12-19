@@ -362,3 +362,20 @@ func (s *Service) RunCmdWithContext(host *models.Host, cmd ssh.Command, ch chan 
 		s.runPlayerWithContext(host, cmd, ch, ctx)
 	}
 }
+
+// GetRWFile 获取可读写的 sftp.File
+func (s *Service) GetRWFile(hostId int, path string) *sftp.File {
+	host, err := models.GetHostById(hostId)
+	if err != nil {
+		return nil
+	}
+	client, err := s.sshManager.NewClientWithSftp(host)
+	if err != nil {
+		return nil
+	}
+	file, err := client.GetRWFile(path)
+	if err != nil {
+		return nil
+	}
+	return file
+}
