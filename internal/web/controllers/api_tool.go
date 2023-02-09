@@ -393,37 +393,6 @@ func (s *Service) ModifyFile(c *Context) {
 	}
 }
 
-// 这些方法暂时不重构
-
-func (s *Service) FileUploadUnBlock(c *Context) {
-	var remoteFile string
-	id, err := strconv.Atoi(c.PostForm("id"))
-	if err != nil {
-		data := payload.GenerateErrorResponse(HttpStatusError, "can not parse param id")
-		c.JSON(http.StatusOK, data)
-		return
-	}
-	form, _ := c.MultipartForm()
-	files := form.File["files"]
-	remote := c.PostForm("remote")
-	if remote == "" {
-		remoteFile = remote
-	} else {
-		if remote[len(remote)-1] == '/' {
-			remoteFile = remote
-		} else {
-			remoteFile = remote + "/"
-		}
-	}
-	pType := c.PostForm("type")
-	hosts, _ := models.ParseHostList(pType, id)
-
-	s.UploadFileUnBlock(hosts, files, remoteFile)
-	data := payload.GenerateMsgResponse(HttpStatusOk, HttpResponseSuccess)
-	c.JSON(http.StatusOK, data)
-
-}
-
 // FileUploadV2
 // @Summary 上传文件到主机
 // @Description 上传文件到主机
@@ -557,6 +526,40 @@ func (s *Service) FileUploadV2(c *Context) {
 	}
 	data := payload.GenerateMsgResponse(HttpStatusOk, HttpResponseSuccess)
 	c.JSON(http.StatusOK, data)
+}
+
+// FileUploadCancel
+// @Summary 取消文件上传任务
+// @Description 取消文件上传任务
+// @Param id formData integer true "执行者 ID"
+// @Param type formData string true "执行者类型" example(host,group,tag)
+// @Param file formData string true "文件名"
+// @Tags tool
+// @Accept x-www-form-urlencoded
+// @Produce json
+// @Success 200 {object} payload.Response
+// @Failure 400 {object} payload.Response
+// @Router /tools/upload/cancel [post]
+func (s *Service) FileUploadCancel(c *Context) {
+	var form payload.FileTaskCancelForm
+	err := c.ShouldBind(&form)
+	if err != nil {
+		c.ResponseError(err.Error())
+	} else {
+		hosts, err := models.ParseHostList(form.Type, form.Id)
+		if err != nil || len(hosts) == 0 {
+			data := payload.GenerateErrorResponse(HttpStatusError, payload.ErrHostParseEmpty)
+			c.JSON(http.StatusOK, data)
+			c.ResponseError("")
+			return
+		}
+		for idx, _ := range hosts {
+			key := fmt.Sprintf("%s:%d/%s", hosts[idx].Addr, hosts[idx].Port, form.File)
+			s.sshManager.CancelTask(key)
+		}
+
+		c.ResponseOk(nil)
+	}
 }
 
 // deprecated

@@ -30,3 +30,9 @@ type ImportResponse struct {
 	CreateHost       []string `json:"create_host"`
 	CreatePrivateKey []string `json:"create_private_key"`
 }
+
+type FileTaskCancelForm struct {
+	Id   int    `form:"id" binding:"required"`
+	Type string `form:"type" binding:"required"`
+	File string `form:"file" binding:"required"`
+}

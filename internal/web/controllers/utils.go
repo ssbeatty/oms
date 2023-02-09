@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/pkg/sftp"
 	"io/fs"
-	"mime/multipart"
 	"oms/internal/models"
 	"oms/internal/ssh"
 	"oms/internal/web/websocket"
@@ -92,15 +91,6 @@ func (s *Service) RunCmdExec(hosts []*models.Host, cmd string, sudo bool) []*ssh
 	return results
 }
 
-func (s *Service) UploadFileUnBlock(hosts []*models.Host, files []*multipart.FileHeader, remotePath string) {
-	wg := sync.WaitGroup{}
-	for _, host := range hosts {
-		wg.Add(1)
-		go s.UploadFileOneAsync(host, remotePath, files, &wg)
-	}
-	wg.Wait()
-}
-
 func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remotePath string, ctx context.Context) {
 	// 引用计数
 	atomic.AddInt32(&tmp.Num, int32(len(hosts)))
@@ -115,19 +105,6 @@ func (s *Service) UploadFileStream(hosts []*models.Host, tmp *ssh.TempFile, remo
 			s.sshManager.UploadFileStream(client, remotePath, addr, tmp, ctx)
 		}(host)
 	}
-}
-
-func (s *Service) UploadFileOneAsync(host *models.Host, remote string, files []*multipart.FileHeader, wg *sync.WaitGroup) {
-	client, err := s.sshManager.NewClientWithSftp(host)
-	if err != nil {
-		return
-	}
-	// do upload
-	for i := 0; i < len(files); i++ {
-		addr := fmt.Sprintf("%s:%d", host.Addr, host.Port)
-		go s.sshManager.UploadFileOneAsync(client, files[i], remote, addr, files[i].Filename)
-	}
-	wg.Done()
 }
 
 func (s *Service) GetPathInfoExec(hostId int, p string) (*FilePath, error) {

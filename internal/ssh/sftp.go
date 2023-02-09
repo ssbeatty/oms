@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"oms/internal/models"
 	"oms/pkg/transport"
 	"oms/pkg/utils"
@@ -20,10 +19,12 @@ const (
 	FileTaskRunning    = "running"
 	FileTaskDone       = "done"
 	FileTaskFailed     = "failed"
+	FileTaskCancel     = "cancel"
 )
 
 type TaskItem struct {
 	Status   string
+	Cancel   context.CancelFunc
 	Total    int64 // 文件总字节
 	RSize    int64 // 已传输字节
 	CSize    int64 // 当前字节
@@ -54,6 +55,14 @@ func (m *Manager) UpdateTaskStatus(task *TaskItem, status string) {
 	m.notify <- true
 }
 
+func (m *Manager) CancelTask(key string) {
+	if val, ok := m.fileList.Load(key); ok {
+		if task, is := val.(*TaskItem); is {
+			task.Cancel()
+		}
+	}
+}
+
 func (m *Manager) doNotifyFileTaskList() {
 	ticker := time.NewTicker(TaskTickerInterval * time.Second)
 
@@ -81,7 +90,7 @@ func (m *Manager) doNotifyFileTaskList() {
 				Id:      utils.HashSha1(fmt.Sprintf("%s/%s", task.Host, task.FileName)),
 			})
 			task.CSize = task.RSize
-			if task.Status == FileTaskDone || task.Status == FileTaskFailed {
+			if task.Status == FileTaskDone || task.Status == FileTaskFailed || task.Status == FileTaskCancel {
 				m.fileList.Delete(key)
 			}
 			return true
@@ -113,70 +122,7 @@ func (m *Manager) RemoveFileListSub(key string) {
 	}
 }
 
-// UploadFileOneAsync 上传文件并将addr/filename维护到file task pool
-func (m *Manager) UploadFileOneAsync(c *transport.Client, fileH *multipart.FileHeader, remote string, addr string, filename string) {
-	task := &TaskItem{
-		Total:    fileH.Size,
-		FileName: fileH.Filename,
-		Status:   FileTaskRunning,
-		Host:     addr,
-	}
-
-	file, err := fileH.Open()
-	if err != nil {
-		m.logger.Errorf("error when open multipart file, err: %v", err)
-		m.UpdateTaskStatus(task, FileTaskFailed)
-		return
-	}
-
-	remoteFile, remoteDir := utils.ParseUploadPath(remote, fileH.Filename)
-	if _, err := c.GetSftpClient().Stat(remoteDir); err != nil {
-		if err := c.MkdirAll(remoteDir); err != nil {
-			m.UpdateTaskStatus(task, FileTaskFailed)
-			m.logger.Errorf("error when sftp create dirs, err: %v", err)
-		}
-	}
-	r, err := c.GetSftpClient().Create(remoteFile)
-	if err != nil {
-		m.logger.Errorf("error when sftp create file, err: %v", err)
-		m.UpdateTaskStatus(task, FileTaskFailed)
-		return
-	}
-
-	defer func() {
-		m.logger.Debugf("upload file goroutine exit.")
-		_ = file.Close()
-		_ = r.Close()
-		// 遇到关闭连接的情况
-		if task.Status != FileTaskDone {
-			m.UpdateTaskStatus(task, FileTaskFailed)
-		}
-	}()
-
-	key := fmt.Sprintf("%s/%s", addr, filename)
-	if val, ok := m.fileList.Load(key); ok {
-		if val.(*TaskItem).Status == FileTaskRunning {
-			return
-		} else {
-			m.fileList.Store(key, task)
-		}
-	} else {
-		m.fileList.Store(key, task)
-	}
-
-	for {
-		n, err := io.CopyN(r, file, DefaultBlockSize)
-		if err != nil {
-			break
-		}
-		task.RSize += n
-	}
-	m.UpdateTaskStatus(task, FileTaskDone)
-
-	m.logger.Debugf("file: %s, size: %d, status: %s", task.FileName, task.RSize, task.Status)
-}
-
-func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr string, tmp *TempFile, ctx context.Context) {
+func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr string, tmp *TempFile, parentCtx context.Context) {
 	// 引用计数 -1
 	defer func() {
 		atomic.AddInt32(&tmp.Num, -1)
@@ -185,12 +131,18 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		}
 	}()
 
-	task := &TaskItem{
-		Total:    int64(tmp.Size),
-		FileName: tmp.Name,
-		Status:   FileTaskRunning,
-		Host:     addr,
-	}
+	ctx, cancel := context.WithCancel(parentCtx)
+
+	var (
+		task = &TaskItem{
+			Cancel:   cancel,
+			Total:    int64(tmp.Size),
+			FileName: tmp.Name,
+			Status:   FileTaskRunning,
+			Host:     addr,
+		}
+		doCancel bool
+	)
 
 	// 重复文件跳过
 	key := fmt.Sprintf("%s/%s", addr, tmp.Name)
@@ -231,6 +183,10 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		m.logger.Debugf("upload file goroutine exit.")
 		_ = file.Close()
 		_ = r.Close()
+		if doCancel {
+			m.UpdateTaskStatus(task, FileTaskCancel)
+			return
+		}
 		// 遇到关闭连接的情况
 		if task.Status != FileTaskDone {
 			m.UpdateTaskStatus(task, FileTaskFailed)
@@ -239,8 +195,13 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 
 	go func() {
 		select {
+		case <-parentCtx.Done():
+			_ = file.Close()
+			return
 		case <-ctx.Done():
 			_ = file.Close()
+			doCancel = true
+			return
 		}
 	}()
 
@@ -250,7 +211,6 @@ func (m *Manager) UploadFileStream(c *transport.Client, remote string, addr stri
 		n, err := file.Read(readBuf)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				//time.Sleep(20 * time.Millisecond)
 				continue
 			}
 			return

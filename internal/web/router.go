@@ -226,12 +226,12 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 		apiV1.POST("/tools/modify", Handle(s.ModifyFile))
 		apiV1.GET("/tools/download", Handle(s.DownLoadFile))
 		apiV1.POST("/tools/delete", Handle(s.DeleteFile))
-		apiV1.POST("/tools/upload_file", Handle(s.FileUploadUnBlock))
 		apiV1.GET("/tools/export", Handle(s.DataExport))
 		apiV1.POST("/tools/import", Handle(s.DataImport))
 
 		// steam version
 		apiV1.POST("/tools/upload", Handle(s.FileUploadV2))
+		apiV1.POST("/tools/upload/cancel", Handle(s.FileUploadCancel))
 
 		// player scheme
 		apiV1.GET("/schema", Handle(s.GetPluginSchema))

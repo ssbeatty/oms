@@ -2137,6 +2137,42 @@ paths:
       summary: 上传文件到主机
       tags:
       - tool
+  /tools/upload/cancel:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 取消文件上传任务
+      parameters:
+      - description: 执行者 ID
+        in: formData
+        name: id
+        required: true
+        type: integer
+      - description: 执行者类型
+        example: host,group,tag
+        in: formData
+        name: type
+        required: true
+        type: string
+      - description: 文件名
+        in: formData
+        name: file
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payload.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payload.Response'
+      summary: 取消文件上传任务
+      tags:
+      - tool
   /tunnel:
     get:
       consumes:
