@@ -2143,15 +2143,9 @@ paths:
       - application/x-www-form-urlencoded
       description: 取消文件上传任务
       parameters:
-      - description: 执行者 ID
+      - description: 地址和端口
         in: formData
-        name: id
-        required: true
-        type: integer
-      - description: 执行者类型
-        example: host,group,tag
-        in: formData
-        name: type
+        name: addr
         required: true
         type: string
       - description: 文件名

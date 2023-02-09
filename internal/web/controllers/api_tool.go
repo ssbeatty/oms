@@ -531,8 +531,7 @@ func (s *Service) FileUploadV2(c *Context) {
 // FileUploadCancel
 // @Summary 取消文件上传任务
 // @Description 取消文件上传任务
-// @Param id formData integer true "执行者 ID"
-// @Param type formData string true "执行者类型" example(host,group,tag)
+// @Param addr formData string true "地址和端口"
 // @Param file formData string true "文件名"
 // @Tags tool
 // @Accept x-www-form-urlencoded
@@ -546,17 +545,8 @@ func (s *Service) FileUploadCancel(c *Context) {
 	if err != nil {
 		c.ResponseError(err.Error())
 	} else {
-		hosts, err := models.ParseHostList(form.Type, form.Id)
-		if err != nil || len(hosts) == 0 {
-			data := payload.GenerateErrorResponse(HttpStatusError, payload.ErrHostParseEmpty)
-			c.JSON(http.StatusOK, data)
-			c.ResponseError("")
-			return
-		}
-		for idx, _ := range hosts {
-			key := fmt.Sprintf("%s:%d/%s", hosts[idx].Addr, hosts[idx].Port, form.File)
-			s.sshManager.CancelTask(key)
-		}
+		key := fmt.Sprintf("%s/%s", form.Addr, form.File)
+		s.sshManager.CancelTask(key)
 
 		c.ResponseOk(nil)
 	}

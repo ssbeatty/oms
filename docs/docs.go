@@ -3012,17 +3012,9 @@ const docTemplate = `{
                 "summary": "取消文件上传任务",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "执行者 ID",
-                        "name": "id",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
                         "type": "string",
-                        "example": "host,group,tag",
-                        "description": "执行者类型",
-                        "name": "type",
+                        "description": "地址和端口",
+                        "name": "addr",
                         "in": "formData",
                         "required": true
                     },

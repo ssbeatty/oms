@@ -32,7 +32,6 @@ type ImportResponse struct {
 }
 
 type FileTaskCancelForm struct {
-	Id   int    `form:"id" binding:"required"`
-	Type string `form:"type" binding:"required"`
+	Addr string `form:"addr" binding:"required"`
 	File string `form:"file" binding:"required"`
 }
