@@ -8,6 +8,7 @@ import (
 	"github.com/ssbeatty/oms/pkg/cache"
 	"github.com/ssbeatty/oms/pkg/logger"
 	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/types"
 	"github.com/ssbeatty/oms/pkg/utils"
 	"io"
 	"io/fs"
@@ -58,7 +59,7 @@ type Manager struct {
 	logger         *logger.Logger
 	notify         chan bool
 	subClients     sync.Map
-	supportPlugins map[string]buildin.Step // 注册所有的插件类型通过接口返回 表单渲染的格式
+	supportPlugins map[string]types.Step // 注册所有的插件类型通过接口返回 表单渲染的格式
 	cfg            *config.Conf
 	statusChan     chan *transport.Client
 }
@@ -126,7 +127,7 @@ func (m *Manager) initAllPlugins() {
 		_ = os.MkdirAll(pluginPath, fs.ModePerm)
 	}
 
-	m.supportPlugins = map[string]buildin.Step{
+	m.supportPlugins = map[string]types.Step{
 		buildin.StepNameCMD:       &buildin.RunCmdStep{},
 		buildin.StepNameShell:     &buildin.RunShellStep{},
 		buildin.StepNameFile:      &buildin.FileUploadStep{},
@@ -256,7 +257,7 @@ func (m *Manager) GetAllPluginSchema() []Schema {
 	return ret
 }
 
-func (m *Manager) NewStep(typ string) buildin.Step {
+func (m *Manager) NewStep(typ string) types.Step {
 	for _, plugin := range m.supportPlugins {
 		if plugin.Name() == typ {
 			return plugin.Create()
@@ -266,10 +267,10 @@ func (m *Manager) NewStep(typ string) buildin.Step {
 	return nil
 }
 
-func (m *Manager) ParseSteps(params string) ([]buildin.Step, error) {
+func (m *Manager) ParseSteps(params string) ([]types.Step, error) {
 	var (
 		modSteps []models.Step
-		steps    []buildin.Step
+		steps    []types.Step
 	)
 
 	err := json.Unmarshal([]byte(params), &modSteps)

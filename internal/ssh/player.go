@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/ssbeatty/oms/internal/ssh/buildin"
 	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/types"
 )
 
 var (
@@ -16,11 +16,11 @@ var (
 type Player struct {
 	sudo   bool
 	client *transport.Client
-	Steps  []buildin.Step `json:"steps"`
+	Steps  []types.Step `json:"steps"`
 	size   *WindowSize
 }
 
-func NewPlayer(client *transport.Client, steps []buildin.Step, sudo bool, size *WindowSize) *Player {
+func NewPlayer(client *transport.Client, steps []types.Step, sudo bool, size *WindowSize) *Player {
 	return &Player{
 		sudo:   sudo,
 		client: client,

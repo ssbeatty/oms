@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ssbeatty/jsonschema"
 	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/types"
 	"github.com/ssbeatty/oms/pkg/utils"
 	"io/ioutil"
 	"os"
@@ -15,7 +16,7 @@ import (
 
 // JsonYamlReplaceStep 上传多个文件
 type JsonYamlReplaceStep struct {
-	BaseStep
+	types.BaseStep
 	Path   string      `json:"path" jsonschema:"required=true" jsonschema_description:"例如: $.path1.path2[0].item"`
 	Value  interface{} `json:"value" jsonschema:"required=true,oneof_type=string;array" jsonschema_description:"替换的节点值, 输入字符串类型需要: \"{value}\""`
 	Remote string      `json:"remote" jsonschema:"required=true" jsonschema_description:"远程Yaml/Json路径(不支持大文件)"`
@@ -87,7 +88,7 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 	return nil, nil
 }
 
-func (bs *JsonYamlReplaceStep) GetSchema(instance Step) (interface{}, error) {
+func (bs *JsonYamlReplaceStep) GetSchema(instance types.Step) (interface{}, error) {
 	schema, err := bs.BaseStep.GetSchema(instance)
 	if err != nil {
 		return nil, err
@@ -111,7 +112,7 @@ func (bs *JsonYamlReplaceStep) GetSchema(instance Step) (interface{}, error) {
 	return schema, nil
 }
 
-func (bs *JsonYamlReplaceStep) Create() Step {
+func (bs *JsonYamlReplaceStep) Create() types.Step {
 	return &JsonYamlReplaceStep{}
 }
 

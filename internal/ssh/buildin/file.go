@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/types"
 	"github.com/ssbeatty/oms/pkg/utils"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ import (
 
 // FileUploadStep 上传文件
 type FileUploadStep struct {
-	BaseStep
+	types.BaseStep
 	File    string `json:"file" jsonschema:"format=data-url"`
 	Options string `json:"options" jsonschema:"enum=upload,enum=remove,required=true" jsonschema_description:"upload: 上传到远端 remove: 删除远端文件或者目录"`
 	Remote  string `json:"remote" jsonschema:"required=true" jsonschema_description:"远程文件路径"`
@@ -64,7 +65,7 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 	}
 }
 
-func (bs *FileUploadStep) Create() Step {
+func (bs *FileUploadStep) Create() types.Step {
 	return &FileUploadStep{}
 }
 
@@ -78,7 +79,7 @@ func (bs *FileUploadStep) Desc() string {
 
 // MultiFileUploadStep 上传多个文件
 type MultiFileUploadStep struct {
-	BaseStep
+	types.BaseStep
 	Files     []string `json:"files" jsonschema:"format=data-url,required=true"`
 	RemoteDir string   `json:"remote_dir" jsonschema:"required=true" jsonschema_description:"远程文件夹路径"`
 }
@@ -109,7 +110,7 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 	return []byte(fmt.Sprintf("上传成功, 远端路径: %s, 共上传文件%d个\r\n", bs.RemoteDir, total)), nil
 }
 
-func (bs *MultiFileUploadStep) Create() Step {
+func (bs *MultiFileUploadStep) Create() types.Step {
 	return &MultiFileUploadStep{}
 }
 
@@ -123,7 +124,7 @@ func (bs *MultiFileUploadStep) Desc() string {
 
 // ZipFileStep 上传多个文件
 type ZipFileStep struct {
-	BaseStep
+	types.BaseStep
 	File   string `json:"file" jsonschema:"format=data-url" jsonschema_description:"*.tar | *.tar.gz | *.zip"`
 	Remote string `json:"remote" jsonschema:"required=true" jsonschema_description:"解压到远端文件夹"`
 }
@@ -269,7 +270,7 @@ func (bs *ZipFileStep) unZip(session *transport.Session) error {
 	return nil
 }
 
-func (bs *ZipFileStep) Create() Step {
+func (bs *ZipFileStep) Create() types.Step {
 	return &ZipFileStep{}
 }
 

@@ -2,13 +2,11 @@ package buildin
 
 import (
 	"encoding/json"
-	"github.com/ssbeatty/jsonschema"
 	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/types"
 	"io/fs"
 	"os/exec"
 	"path/filepath"
-	"reflect"
-	"strings"
 )
 
 const (
@@ -31,86 +29,9 @@ const (
 	DefaultFileFs = fs.FileMode(0644)
 )
 
-type Step interface {
-	Exec(session *transport.Session, sudo bool) ([]byte, error)
-	GetSchema(instance Step) (interface{}, error)
-	Create() Step
-	Name() string
-	Desc() string
-	ID() string
-	SetID(id string)
-	ParseCaches(instance Step) []string
-}
-
-// build in
-
-type BaseStep struct {
-	id string // 任务步骤标识
-}
-
-func readStringArray(v reflect.Value) (vals []string) {
-	count := v.Len()
-
-	for i := 0; i < count; i++ {
-		child := v.Index(i)
-		s := child.String()
-		vals = append(vals, s)
-	}
-
-	return
-}
-
-func (bs *BaseStep) ParseCaches(instance Step) []string {
-	var ret []string
-	v := reflect.ValueOf(instance)
-
-	t := reflect.TypeOf(instance).Elem()
-	for i := 0; i < t.NumField(); i++ {
-		if strings.Contains(t.Field(i).Tag.Get("jsonschema"), "format=data-url") {
-			if t.Field(i).Type.Kind() == reflect.String {
-				ret = append(ret, v.Elem().Field(i).String())
-			} else if t.Field(i).Type.Kind() == reflect.Slice {
-				ret = readStringArray(v.Elem().Field(i))
-			}
-		}
-	}
-	return ret
-}
-
-func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
-
-	return nil, nil
-}
-
-func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
-	ref := jsonschema.Reflector{DoNotReference: true}
-
-	return ref.Reflect(instance), nil
-}
-
-func (bs *BaseStep) Create() Step {
-	return nil
-}
-
-func (bs *BaseStep) Name() string {
-	return ""
-}
-
-func (bs *BaseStep) ID() string {
-	return bs.id
-}
-
-func (bs *BaseStep) Desc() string {
-	return ""
-}
-
-func (bs *BaseStep) SetID(id string) {
-	bs.id = id
-}
-
 // RunCmdStep 执行cmd
 type RunCmdStep struct {
-	BaseStep
+	types.BaseStep
 	Cmd string `json:"cmd" jsonschema:"required=true"`
 }
 
@@ -122,7 +43,7 @@ func (bs *RunCmdStep) Exec(session *transport.Session, sudo bool) ([]byte, error
 	return session.Output(bs.Cmd)
 }
 
-func (bs *RunCmdStep) Create() Step {
+func (bs *RunCmdStep) Create() types.Step {
 	return &RunCmdStep{}
 }
 
@@ -136,7 +57,7 @@ func (bs *RunCmdStep) Desc() string {
 
 // RunShellStep 执行shell
 type RunShellStep struct {
-	BaseStep
+	types.BaseStep
 	Shell string `json:"shell" jsonschema:"required=true"`
 }
 
@@ -145,7 +66,7 @@ func (bs *RunShellStep) Exec(session *transport.Session, sudo bool) ([]byte, err
 	return session.RunScript(bs.Shell, sudo)
 }
 
-func (bs *RunShellStep) Create() Step {
+func (bs *RunShellStep) Create() types.Step {
 	return &RunShellStep{}
 }
 
@@ -161,7 +82,7 @@ func (bs *RunShellStep) Desc() string {
 // 参数为连接的信息和插件模块的参数
 // 插件需要提供Scheme 以供渲染表单
 type PluginStep struct {
-	BaseStep
+	types.BaseStep
 	Data       interface{}
 	ScriptPath string
 	name       string
@@ -169,7 +90,7 @@ type PluginStep struct {
 	schema     interface{}
 }
 
-func (bs *PluginStep) Create() Step {
+func (bs *PluginStep) Create() types.Step {
 	if bs.ScriptPath == "" {
 		return nil
 	}
@@ -203,7 +124,7 @@ func (bs *PluginStep) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&bs.Data)
 }
 
-func (bs *PluginStep) GetSchema(instance Step) (interface{}, error) {
+func (bs *PluginStep) GetSchema(instance types.Step) (interface{}, error) {
 	if bs.schema != nil {
 		return bs.schema, nil
 	}
