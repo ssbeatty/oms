@@ -1,8 +1,8 @@
 package cache_test
 
 import (
+	"github.com/ssbeatty/oms/pkg/cache"
 	"math/rand"
-	"oms/pkg/cache"
 	"testing"
 )
 

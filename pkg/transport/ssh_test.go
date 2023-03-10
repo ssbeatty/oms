@@ -3,13 +3,13 @@ package transport_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/pkg/cache"
+	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
 	"io/ioutil"
-	"oms/internal/ssh"
-	"oms/pkg/cache"
-	"oms/pkg/transport"
-	"oms/pkg/utils"
 	"os"
 	"testing"
 	"time"
@@ -64,17 +64,6 @@ func TestSampleCmd(t *testing.T) {
 	assert.Nil(t, err)
 
 	result, err := session.Output("ls")
-	assert.Nil(t, err)
-
-	fmt.Println(string(result))
-}
-
-func TestSampleInterCmd(t *testing.T) {
-
-	session, err := client.NewPty()
-	assert.Nil(t, err)
-
-	result, err := client.OutputInteractively(session, "ls")
 	assert.Nil(t, err)
 
 	fmt.Println(string(result))

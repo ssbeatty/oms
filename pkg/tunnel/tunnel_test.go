@@ -2,8 +2,8 @@ package tunnel
 
 import (
 	"encoding/json"
+	"github.com/ssbeatty/oms/pkg/transport"
 	"io/ioutil"
-	"oms/pkg/transport"
 	"testing"
 	"time"
 )
