@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/fatih/color"
-	"oms/internal/ssh/buildin"
-	"oms/pkg/transport"
+	"github.com/ssbeatty/oms/internal/ssh/buildin"
+	"github.com/ssbeatty/oms/pkg/transport"
 )
 
 var (

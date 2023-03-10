@@ -1,4 +1,4 @@
-module oms
+module github.com/ssbeatty/oms
 
 go 1.18
 

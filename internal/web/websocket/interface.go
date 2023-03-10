@@ -1,8 +1,8 @@
 package websocket
 
 import (
-	"oms/internal/models"
-	"oms/internal/ssh"
+	"github.com/ssbeatty/oms/internal/models"
+	"github.com/ssbeatty/oms/internal/ssh"
 )
 
 type WebService interface {

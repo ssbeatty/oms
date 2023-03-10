@@ -2,10 +2,10 @@ package config
 
 import (
 	_ "embed"
+	"github.com/ssbeatty/oms/pkg/utils"
 	"gopkg.in/yaml.v2"
 	"io/fs"
 	"io/ioutil"
-	"oms/pkg/utils"
 	"time"
 )
 

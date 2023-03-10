@@ -3,16 +3,16 @@ package controllers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/ssbeatty/oms/internal/config"
+	"github.com/ssbeatty/oms/internal/metrics"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/internal/task"
+	"github.com/ssbeatty/oms/internal/tunnel"
+	"github.com/ssbeatty/oms/internal/web/payload"
+	"github.com/ssbeatty/oms/pkg/logger"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"oms/internal/config"
-	"oms/internal/metrics"
-	"oms/internal/ssh"
-	"oms/internal/task"
-	"oms/internal/tunnel"
-	"oms/internal/web/payload"
-	"oms/pkg/logger"
 )
 
 type Service struct {

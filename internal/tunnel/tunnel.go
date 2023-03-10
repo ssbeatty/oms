@@ -1,12 +1,12 @@
 package tunnel
 
 import (
-	"oms/internal/models"
-	"oms/internal/ssh"
-	"oms/pkg/logger"
-	"oms/pkg/transport"
-	"oms/pkg/tunnel"
-	"oms/pkg/utils"
+	"github.com/ssbeatty/oms/internal/models"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/pkg/logger"
+	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/tunnel"
+	"github.com/ssbeatty/oms/pkg/utils"
 	"sync"
 	"time"
 )

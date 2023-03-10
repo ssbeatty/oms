@@ -2,10 +2,10 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"oms/internal/ssh"
-	"oms/internal/task"
-	"oms/internal/tunnel"
-	"oms/pkg/transport"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/internal/task"
+	"github.com/ssbeatty/oms/internal/tunnel"
+	"github.com/ssbeatty/oms/pkg/transport"
 	"time"
 )
 

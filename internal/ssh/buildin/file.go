@@ -6,9 +6,9 @@ import (
 	"compress/gzip"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/utils"
 	"io"
-	"oms/pkg/transport"
-	"oms/pkg/utils"
 	"os"
 	"path/filepath"
 )

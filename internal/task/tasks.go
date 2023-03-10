@@ -5,8 +5,8 @@ task job init
 package task
 
 import (
-	"oms/internal/config"
-	"oms/internal/models"
+	"github.com/ssbeatty/oms/internal/config"
+	"github.com/ssbeatty/oms/internal/models"
 	"os"
 	"path/filepath"
 	"time"

@@ -1,11 +1,11 @@
 package server
 
 import (
-	"oms/internal/config"
-	"oms/internal/ssh"
-	"oms/internal/task"
-	"oms/internal/tunnel"
-	"oms/internal/web"
+	"github.com/ssbeatty/oms/internal/config"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/internal/task"
+	"github.com/ssbeatty/oms/internal/tunnel"
+	"github.com/ssbeatty/oms/internal/web"
 )
 
 type Server struct {

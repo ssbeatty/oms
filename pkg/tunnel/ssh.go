@@ -6,10 +6,10 @@ package tunnel
 
 import (
 	"fmt"
+	"github.com/ssbeatty/oms/pkg/logger"
+	"github.com/ssbeatty/oms/pkg/transport"
 	"io"
 	"net"
-	"oms/pkg/logger"
-	"oms/pkg/transport"
 	"sync"
 	"sync/atomic"
 	"time"

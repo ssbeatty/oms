@@ -2,8 +2,8 @@ package websocket
 
 import (
 	"github.com/gorilla/websocket"
+	"github.com/ssbeatty/oms/pkg/logger"
 	"net"
-	"oms/pkg/logger"
 	"sync"
 )
 

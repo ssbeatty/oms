@@ -6,9 +6,9 @@ import (
 	"github.com/goccy/go-yaml/parser"
 	"github.com/pkg/errors"
 	"github.com/ssbeatty/jsonschema"
+	"github.com/ssbeatty/oms/pkg/transport"
+	"github.com/ssbeatty/oms/pkg/utils"
 	"io/ioutil"
-	"oms/pkg/transport"
-	"oms/pkg/utils"
 	"os"
 	"strings"
 )

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"oms/internal/ssh"
-	"oms/pkg/logger"
-	"oms/pkg/transport"
+	"github.com/ssbeatty/oms/internal/ssh"
+	"github.com/ssbeatty/oms/pkg/logger"
+	"github.com/ssbeatty/oms/pkg/transport"
 	"sync"
 	"time"
 )

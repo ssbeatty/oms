@@ -3,8 +3,8 @@ package buildin
 import (
 	"encoding/json"
 	"github.com/ssbeatty/jsonschema"
+	"github.com/ssbeatty/oms/pkg/transport"
 	"io/fs"
-	"oms/pkg/transport"
 	"os/exec"
 	"path/filepath"
 	"reflect"

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	wsl "github.com/gorilla/websocket"
+	"github.com/ssbeatty/oms/internal/models"
+	"github.com/ssbeatty/oms/internal/web/websocket"
+	"github.com/ssbeatty/oms/web"
 	"net"
 	"net/http"
-	"oms/internal/models"
-	"oms/internal/web/websocket"
-	"oms/web"
 	"strconv"
 )
 
