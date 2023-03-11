@@ -2,9 +2,9 @@ package buildin
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/ssbeatty/oms/pkg/transport"
 	"github.com/ssbeatty/oms/pkg/types"
-	"io/fs"
 	"os/exec"
 	"path/filepath"
 )
@@ -25,8 +25,8 @@ const (
 	ParamClient = "--client"
 	ParamParams = "--params"
 
-	GOOSWindows   = "windows"
-	DefaultFileFs = fs.FileMode(0644)
+	// ShellTmpPath default in ~/.oms
+	ShellTmpPath = ".oms"
 )
 
 // RunCmdStep 执行cmd
@@ -62,8 +62,9 @@ type RunShellStep struct {
 }
 
 func (bs *RunShellStep) Exec(session *transport.Session, sudo bool) ([]byte, error) {
+	tmpPath := filepath.ToSlash(filepath.Join(ShellTmpPath, uuid.NewString()))
 
-	return session.RunScript(bs.Shell, sudo)
+	return session.RunScript(bs.Shell, sudo, tmpPath)
 }
 
 func (bs *RunShellStep) Create() types.Step {

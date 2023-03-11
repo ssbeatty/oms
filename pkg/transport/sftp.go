@@ -2,7 +2,6 @@ package transport
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/pkg/sftp"
 	"io"
 	"io/fs"
@@ -13,7 +12,6 @@ import (
 )
 
 const (
-	ShellTmpPath    = ".oms"
 	WindowsShellExt = ".bat"
 	LinuxShellExt   = ".sh"
 )
@@ -215,8 +213,7 @@ func (c *Client) GetPwd() (string, error) {
 	return c.sftpClient.Getwd()
 }
 
-func (s *Session) RunScript(shell string, sudo bool) ([]byte, error) {
-	fPath := filepath.ToSlash(filepath.Join(ShellTmpPath, uuid.NewString()))
+func (s *Session) RunScript(shell string, sudo bool, fPath string) ([]byte, error) {
 
 	if s.Client.GetTargetMachineOs() != GOOSWindows {
 		fPath += LinuxShellExt
