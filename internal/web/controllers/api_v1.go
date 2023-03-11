@@ -14,6 +14,7 @@ import (
 	"github.com/ssbeatty/oms/internal/ssh"
 	"github.com/ssbeatty/oms/internal/task"
 	"github.com/ssbeatty/oms/internal/web/payload"
+	"github.com/ssbeatty/oms/pkg/types"
 	"github.com/ssbeatty/oms/pkg/utils"
 	"github.com/ssbeatty/oms/version"
 	"io"
@@ -23,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -1178,14 +1180,13 @@ func (s *Service) PostPlayBook(c *Context) {
 			return
 		}
 		for _, step := range steps {
-			st := s.sshManager.NewStep(step.Type)
-			err := json.Unmarshal([]byte(step.Params), st)
-			if err != nil {
-				s.Logger.Errorf("error when parse plugin param: %s, err: %v", step.Params, err)
+			st, setupErr := s.sshManager.NewStep(step.Type, step.Name, []byte(step.Params))
+			if setupErr != nil {
+				s.Logger.Errorf("Error when new step with config, err: %v", setupErr)
 				continue
 			}
 
-			caches = st.ParseCaches(st)
+			caches = types.ParseCaches(st.Config())
 			mal, _ := json.Marshal(caches)
 			step.Caches = string(mal)
 		}
@@ -1232,14 +1233,13 @@ func (s *Service) PutPlayBook(c *Context) {
 			return
 		}
 		for _, step := range steps {
-			st := s.sshManager.NewStep(step.Type)
-			err := json.Unmarshal([]byte(step.Params), st)
-			if err != nil {
-				s.Logger.Errorf("error when parse plugin param: %s, err: %v", step.Params, err)
+			st, setupErr := s.sshManager.NewStep(step.Type, step.Name, []byte(step.Params))
+			if setupErr != nil {
+				s.Logger.Errorf("error when parse plugin param: %s, err: %v", step.Params, setupErr)
 				continue
 			}
 
-			caches = st.ParseCaches(st)
+			caches = types.ParseCaches(st.Config())
 			mal, _ := json.Marshal(caches)
 			step.Caches = string(mal)
 		}
@@ -1295,8 +1295,12 @@ func (s *Service) DeletePlayBook(c *Context) {
 // @Failure 400 {object} payload.Response
 // @Router /plugin/upload [post]
 func (s *Service) PluginUpload(c *Context) {
+	const (
+		goSrcDir = "src"
+	)
+
 	var (
-		pluginPath = filepath.Join(s.conf.DataPath, config.PluginPath)
+		pluginPath = filepath.Join(s.conf.DataPath, config.PluginPath, goSrcDir)
 	)
 
 	form, err := c.MultipartForm()
@@ -1321,7 +1325,10 @@ func (s *Service) PluginUpload(c *Context) {
 		switch utils.GetFileExt(file.Filename) {
 		case "zip":
 			var (
-				zipRootDir string
+				zipRootDir    string
+				prefixFirst   int
+				firstFileName string
+				once          sync.Once
 			)
 
 			reader, err := zip.NewReader(fh, file.Size)
@@ -1329,10 +1336,22 @@ func (s *Service) PluginUpload(c *Context) {
 				s.Logger.Errorf("error when create zip reader %s, err: %v", file.Filename, err)
 				continue
 			}
-			if len(reader.File) == 1 && reader.File[0].FileInfo().IsDir() {
-				zipRootDir = reader.File[0].Name
+			// 如果所有的文件都从第一个文件开始命名 则减少文件层级
+			for _, f := range reader.File {
+				once.Do(func() {
+					if f.FileInfo().IsDir() {
+						firstFileName = f.Name
+					}
+				})
+				if strings.HasPrefix(f.Name, firstFileName) {
+					prefixFirst++
+				}
+			}
+
+			if len(reader.File) == prefixFirst {
+				zipRootDir = ""
 			} else {
-				zipRootDir = strings.TrimRight(file.Filename, "zip")
+				zipRootDir = strings.TrimRight(file.Filename, ".zip")
 			}
 
 			zipRootPath := filepath.Join(pluginPath, zipRootDir)
@@ -1346,6 +1365,9 @@ func (s *Service) PluginUpload(c *Context) {
 			for _, f := range reader.File {
 				rc, err := f.Open()
 				if err != nil {
+					continue
+				}
+				if f.FileInfo().IsDir() {
 					continue
 				}
 				filename := filepath.Join(zipRootPath, f.Name)
@@ -1366,8 +1388,11 @@ func (s *Service) PluginUpload(c *Context) {
 			}
 		case "tar.gz":
 			var (
-				tarFiles   []*tar.Header
-				zipRootDir string
+				tarFiles      []*tar.Header
+				zipRootDir    string
+				prefixFirst   int
+				firstFileName string
+				once          sync.Once
 			)
 
 			gr, err := gzip.NewReader(fh)
@@ -1385,18 +1410,30 @@ func (s *Service) PluginUpload(c *Context) {
 				if hdr == nil {
 					continue
 				}
+				once.Do(func() {
+					if hdr.FileInfo().IsDir() {
+						firstFileName = hdr.Name
+					}
+				})
+
+				if strings.HasPrefix(hdr.Name, firstFileName) {
+					prefixFirst++
+				}
 
 				tarFiles = append(tarFiles, hdr)
 			}
-			if len(tarFiles) == 1 && tarFiles[0].FileInfo().IsDir() {
-				zipRootDir = tarFiles[0].Name
+			if len(tarFiles) == prefixFirst {
+				zipRootDir = ""
 			} else {
-				zipRootDir = strings.TrimRight(file.Filename, "tar.gz")
+				zipRootDir = strings.TrimRight(file.Filename, ".tar.gz")
 			}
 
 			zipRootPath := filepath.Join(pluginPath, zipRootDir)
 
 			for _, f := range tarFiles {
+				if f.FileInfo().IsDir() {
+					continue
+				}
 				dstFileDir := filepath.Join(zipRootPath, f.Name)
 
 				switch f.Typeflag {

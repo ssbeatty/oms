@@ -8,20 +8,28 @@ import (
 )
 
 type Step interface {
-	Exec(session *transport.Session, sudo bool) ([]byte, error)
-	GetSchema(instance Step) (interface{}, error)
-	Create() Step
-	Name() string
-	Desc() string
 	ID() string
 	SetID(id string)
-	ParseCaches(instance Step) []string
+	Exec(session *transport.Session, sudo bool) ([]byte, error)
+	GetSchema() (interface{}, error)
+	Create(conf []byte) (Step, error)
+	Name() string
+	Desc() string
+	Config() interface{}
 }
 
 // build in
 
 type BaseStep struct {
 	id string // 任务步骤标识
+}
+
+func (bs *BaseStep) SetID(id string) {
+	bs.id = id
+}
+
+func (bs *BaseStep) ID() string {
+	return bs.id
 }
 
 func readStringArray(v reflect.Value) (vals []string) {
@@ -36,11 +44,15 @@ func readStringArray(v reflect.Value) (vals []string) {
 	return
 }
 
-func (bs *BaseStep) ParseCaches(instance Step) []string {
+func ParseCaches(conf interface{}) []string {
 	var ret []string
-	v := reflect.ValueOf(instance)
+	if conf == nil {
+		return ret
+	}
 
-	t := reflect.TypeOf(instance).Elem()
+	v := reflect.ValueOf(conf)
+
+	t := reflect.TypeOf(conf).Elem()
 	for i := 0; i < t.NumField(); i++ {
 		if strings.Contains(t.Field(i).Tag.Get("jsonschema"), "format=data-url") {
 			if t.Field(i).Type.Kind() == reflect.String {
@@ -53,33 +65,8 @@ func (bs *BaseStep) ParseCaches(instance Step) []string {
 	return ret
 }
 
-func (bs *BaseStep) Exec(*transport.Session) ([]byte, error) {
-
-	return nil, nil
-}
-
-func (bs *BaseStep) GetSchema(instance Step) (interface{}, error) {
+func GetSchema(config interface{}) (interface{}, error) {
 	ref := jsonschema.Reflector{DoNotReference: true}
 
-	return ref.Reflect(instance), nil
-}
-
-func (bs *BaseStep) Create() Step {
-	return nil
-}
-
-func (bs *BaseStep) Name() string {
-	return ""
-}
-
-func (bs *BaseStep) ID() string {
-	return bs.id
-}
-
-func (bs *BaseStep) Desc() string {
-	return ""
-}
-
-func (bs *BaseStep) SetID(id string) {
-	bs.id = id
+	return ref.Reflect(config), nil
 }

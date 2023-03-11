@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/ssbeatty/oms/pkg/transport"
@@ -17,6 +18,10 @@ import (
 // FileUploadStep 上传文件
 type FileUploadStep struct {
 	types.BaseStep
+	cfg *fileUploadStepConfig
+}
+
+type fileUploadStepConfig struct {
 	File    string `json:"file" jsonschema:"format=data-url"`
 	Options string `json:"options" jsonschema:"enum=upload,enum=remove,required=true" jsonschema_description:"upload: 上传到远端 remove: 删除远端文件或者目录"`
 	Remote  string `json:"remote" jsonschema:"required=true" jsonschema_description:"远程文件路径"`
@@ -32,30 +37,30 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 		// todo change fs perm
 	}
 
-	switch bs.Options {
+	switch bs.cfg.Options {
 	case "upload":
-		if exists, err := utils.PathExists(bs.File); !exists {
+		if exists, err := utils.PathExists(bs.cfg.File); !exists {
 			return nil, errors.Wrap(err, "本地缓存不存在")
 		}
-		fName := filepath.Base(bs.File)
+		fName := filepath.Base(bs.cfg.File)
 		if fName != "" && len(fName) > GUIDLength {
 			fName = fName[GUIDLength:]
 		}
-		err := session.Client.UploadFile(bs.File, bs.Remote, fName)
+		err := session.Client.UploadFile(bs.cfg.File, bs.cfg.Remote, fName)
 		if err != nil {
 			return nil, err
 		}
-		return []byte(fmt.Sprintf("上传成功, 远端路径: %s\r\n", bs.Remote)), nil
+		return []byte(fmt.Sprintf("上传成功, 远端路径: %s\r\n", bs.cfg.Remote)), nil
 
 	case "remove":
-		if session.Client.IsDir(bs.Remote) {
-			err := session.Client.RemoveDir(bs.Remote)
+		if session.Client.IsDir(bs.cfg.Remote) {
+			err := session.Client.RemoveDir(bs.cfg.Remote)
 			if err != nil {
 				return nil, err
 			}
 			return []byte("删除成功!"), nil
 		}
-		err := session.Client.Remove(bs.Remote)
+		err := session.Client.Remove(bs.cfg.Remote)
 		if err != nil {
 			return nil, err
 		}
@@ -65,12 +70,29 @@ func (bs *FileUploadStep) Exec(session *transport.Session, sudo bool) ([]byte, e
 	}
 }
 
-func (bs *FileUploadStep) Create() types.Step {
-	return &FileUploadStep{}
+func (bs *FileUploadStep) Create(conf []byte) (types.Step, error) {
+	cfg := &fileUploadStepConfig{}
+
+	err := json.Unmarshal(conf, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &FileUploadStep{
+		cfg: cfg,
+	}, nil
+}
+
+func (bs *FileUploadStep) Config() interface{} {
+	return bs.cfg
 }
 
 func (bs *FileUploadStep) Name() string {
 	return StepNameFile
+}
+
+func (bs *FileUploadStep) GetSchema() (interface{}, error) {
+
+	return types.GetSchema(bs.cfg)
 }
 
 func (bs *FileUploadStep) Desc() string {
@@ -80,6 +102,10 @@ func (bs *FileUploadStep) Desc() string {
 // MultiFileUploadStep 上传多个文件
 type MultiFileUploadStep struct {
 	types.BaseStep
+	cfg *multiFileUploadStepConfig
+}
+
+type multiFileUploadStepConfig struct {
 	Files     []string `json:"files" jsonschema:"format=data-url,required=true"`
 	RemoteDir string   `json:"remote_dir" jsonschema:"required=true" jsonschema_description:"远程文件夹路径"`
 }
@@ -94,10 +120,10 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 		total int
 	)
 
-	for _, f := range bs.Files {
+	for _, f := range bs.cfg.Files {
 		fName := filepath.Base(f)
 		if fName != "" && len(fName) > GUIDLength {
-			fPath := filepath.ToSlash(filepath.Join(bs.RemoteDir, fName[GUIDLength:]))
+			fPath := filepath.ToSlash(filepath.Join(bs.cfg.RemoteDir, fName[GUIDLength:]))
 			err := session.Client.UploadFile(f, fPath, fName[GUIDLength:])
 			if err != nil {
 				return nil, err
@@ -107,11 +133,19 @@ func (bs *MultiFileUploadStep) Exec(session *transport.Session, sudo bool) ([]by
 		total++
 	}
 
-	return []byte(fmt.Sprintf("上传成功, 远端路径: %s, 共上传文件%d个\r\n", bs.RemoteDir, total)), nil
+	return []byte(fmt.Sprintf("上传成功, 远端路径: %s, 共上传文件%d个\r\n", bs.cfg.RemoteDir, total)), nil
 }
 
-func (bs *MultiFileUploadStep) Create() types.Step {
-	return &MultiFileUploadStep{}
+func (bs *MultiFileUploadStep) Create(conf []byte) (types.Step, error) {
+	cfg := &multiFileUploadStepConfig{}
+
+	err := json.Unmarshal(conf, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &MultiFileUploadStep{
+		cfg: cfg,
+	}, nil
 }
 
 func (bs *MultiFileUploadStep) Name() string {
@@ -122,9 +156,23 @@ func (bs *MultiFileUploadStep) Desc() string {
 	return "上传多个文件"
 }
 
-// ZipFileStep 上传多个文件
+func (bs *MultiFileUploadStep) Config() interface{} {
+	return bs.cfg
+}
+
+func (bs *MultiFileUploadStep) GetSchema() (interface{}, error) {
+
+	return types.GetSchema(bs.cfg)
+}
+
+// ZipFileStep 上传压缩文件
 type ZipFileStep struct {
 	types.BaseStep
+
+	cfg *zipFileStepConfig
+}
+
+type zipFileStepConfig struct {
 	File   string `json:"file" jsonschema:"format=data-url" jsonschema_description:"*.tar | *.tar.gz | *.zip"`
 	Remote string `json:"remote" jsonschema:"required=true" jsonschema_description:"解压到远端文件夹"`
 }
@@ -134,14 +182,14 @@ func (bs *ZipFileStep) Exec(session *transport.Session, sudo bool) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	ext := utils.GetFileExt(bs.File)
+	ext := utils.GetFileExt(bs.cfg.File)
 
-	if exists, err := utils.PathExists(bs.File); !exists {
+	if exists, err := utils.PathExists(bs.cfg.File); !exists {
 		return nil, err
 	}
 
-	if !session.Client.PathExists(bs.Remote) {
-		err = session.Client.MkdirAll(bs.Remote)
+	if !session.Client.PathExists(bs.cfg.Remote) {
+		err = session.Client.MkdirAll(bs.cfg.Remote)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +213,7 @@ func (bs *ZipFileStep) Exec(session *transport.Session, sudo bool) ([]byte, erro
 		}
 	}
 
-	return []byte(fmt.Sprintf("解压成功, 远端路径: %s\r\n", bs.Remote)), nil
+	return []byte(fmt.Sprintf("解压成功, 远端路径: %s\r\n", bs.cfg.Remote)), nil
 }
 
 func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
@@ -173,7 +221,7 @@ func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
 		tr *tar.Reader
 	)
 
-	fr, err := os.Open(bs.File)
+	fr, err := os.Open(bs.cfg.File)
 	if err != nil {
 		return err
 	}
@@ -203,7 +251,7 @@ func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
 			continue
 		}
 
-		dstFileDir := filepath.ToSlash(filepath.Join(bs.Remote, hdr.Name))
+		dstFileDir := filepath.ToSlash(filepath.Join(bs.cfg.Remote, hdr.Name))
 
 		switch hdr.Typeflag {
 		case tar.TypeDir:
@@ -233,7 +281,7 @@ func (bs *ZipFileStep) unTar(session *transport.Session, _gzip bool) error {
 }
 
 func (bs *ZipFileStep) unZip(session *transport.Session) error {
-	reader, err := zip.OpenReader(bs.File)
+	reader, err := zip.OpenReader(bs.cfg.File)
 	if err != nil {
 		return err
 	}
@@ -251,7 +299,7 @@ func (bs *ZipFileStep) unZip(session *transport.Session) error {
 		if err != nil {
 			return err
 		}
-		filename := filepath.ToSlash(filepath.Join(bs.Remote, file.Name))
+		filename := filepath.ToSlash(filepath.Join(bs.cfg.Remote, file.Name))
 		err = session.Client.MkdirAll(filepath.Dir(filename))
 		if err != nil {
 			return err
@@ -270,8 +318,16 @@ func (bs *ZipFileStep) unZip(session *transport.Session) error {
 	return nil
 }
 
-func (bs *ZipFileStep) Create() types.Step {
-	return &ZipFileStep{}
+func (bs *ZipFileStep) Create(conf []byte) (types.Step, error) {
+	cfg := &zipFileStepConfig{}
+
+	err := json.Unmarshal(conf, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &ZipFileStep{
+		cfg: cfg,
+	}, nil
 }
 
 func (bs *ZipFileStep) Name() string {
@@ -280,4 +336,13 @@ func (bs *ZipFileStep) Name() string {
 
 func (bs *ZipFileStep) Desc() string {
 	return "解压缩文件"
+}
+
+func (bs *ZipFileStep) Config() interface{} {
+	return bs.cfg
+}
+
+func (bs *ZipFileStep) GetSchema() (interface{}, error) {
+
+	return types.GetSchema(bs.cfg)
 }

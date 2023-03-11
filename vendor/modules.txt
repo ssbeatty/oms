@@ -235,6 +235,11 @@ github.com/swaggo/gin-swagger
 # github.com/swaggo/swag v1.8.4
 ## explicit; go 1.18
 github.com/swaggo/swag
+# github.com/traefik/yaegi v0.15.0
+## explicit; go 1.18
+github.com/traefik/yaegi/internal/unsafe2
+github.com/traefik/yaegi/interp
+github.com/traefik/yaegi/stdlib
 # github.com/ugorji/go/codec v1.2.7
 ## explicit; go 1.11
 github.com/ugorji/go/codec

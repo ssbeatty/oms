@@ -17,6 +17,10 @@ import (
 // JsonYamlReplaceStep 上传多个文件
 type JsonYamlReplaceStep struct {
 	types.BaseStep
+	cfg *jsonYamlReplaceStepConfig
+}
+
+type jsonYamlReplaceStepConfig struct {
 	Path   string      `json:"path" jsonschema:"required=true" jsonschema_description:"例如: $.path1.path2[0].item"`
 	Value  interface{} `json:"value" jsonschema:"required=true,oneof_type=string;array" jsonschema_description:"替换的节点值, 输入字符串类型需要: \"{value}\""`
 	Remote string      `json:"remote" jsonschema:"required=true" jsonschema_description:"远程Yaml/Json路径(不支持大文件)"`
@@ -28,33 +32,33 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 		return nil, err
 	}
 
-	path, err := yaml.PathString(bs.Path)
+	path, err := yaml.PathString(bs.cfg.Path)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse json path error")
 	}
-	if !session.Client.PathExists(bs.Remote) {
+	if !session.Client.PathExists(bs.cfg.Remote) {
 		return nil, errors.New("remote not exist")
 	}
 
 	var (
 		value string
 	)
-	ext := utils.GetFileExt(bs.Remote)
+	ext := utils.GetFileExt(bs.cfg.Remote)
 
-	switch bs.Value.(type) {
+	switch bs.cfg.Value.(type) {
 	case string:
-		value = bs.Value.(string)
+		value = bs.cfg.Value.(string)
 	case []string, []interface{}:
 		switch ext {
 		case "json":
-			itl, _ := json.Marshal(bs.Value)
+			itl, _ := json.Marshal(bs.cfg.Value)
 			value = string(itl)
 		case "yaml", "yml":
-			itl, _ := yaml.Marshal(bs.Value)
+			itl, _ := yaml.Marshal(bs.cfg.Value)
 			value = string(itl)
 		}
 	}
-	fn, err := session.Client.GetSftpClient().OpenFile(bs.Remote, os.O_CREATE|os.O_RDWR)
+	fn, err := session.Client.GetSftpClient().OpenFile(bs.cfg.Remote, os.O_CREATE|os.O_RDWR)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +79,7 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 
 	fn.Close()
 
-	fn, err = session.Client.GetSftpClient().OpenFile(bs.Remote, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
+	fn, err = session.Client.GetSftpClient().OpenFile(bs.cfg.Remote, os.O_CREATE|os.O_RDWR|os.O_TRUNC)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +92,8 @@ func (bs *JsonYamlReplaceStep) Exec(session *transport.Session, sudo bool) ([]by
 	return nil, nil
 }
 
-func (bs *JsonYamlReplaceStep) GetSchema(instance types.Step) (interface{}, error) {
-	schema, err := bs.BaseStep.GetSchema(instance)
+func (bs *JsonYamlReplaceStep) GetSchema() (interface{}, error) {
+	schema, err := types.GetSchema(bs.cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +116,16 @@ func (bs *JsonYamlReplaceStep) GetSchema(instance types.Step) (interface{}, erro
 	return schema, nil
 }
 
-func (bs *JsonYamlReplaceStep) Create() types.Step {
-	return &JsonYamlReplaceStep{}
+func (bs *JsonYamlReplaceStep) Create(conf []byte) (types.Step, error) {
+	cfg := &jsonYamlReplaceStepConfig{}
+
+	err := json.Unmarshal(conf, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &JsonYamlReplaceStep{
+		cfg: cfg,
+	}, nil
 }
 
 func (bs *JsonYamlReplaceStep) Name() string {
@@ -122,4 +134,8 @@ func (bs *JsonYamlReplaceStep) Name() string {
 
 func (bs *JsonYamlReplaceStep) Desc() string {
 	return "修改Json(Yaml)文件"
+}
+
+func (bs *JsonYamlReplaceStep) Config() interface{} {
+	return bs.cfg
 }
