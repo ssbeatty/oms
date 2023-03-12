@@ -118,7 +118,18 @@ func (m *Manager) ReloadAllFilePlugins(pluginPath string) {
 		if info.Name() != manifestFilename {
 			return nil
 		}
-		step, err := m.checkPlugin(path)
+		manifest, err := readManifest(path)
+		if err != nil {
+			m.logger.Errorf("Error when load manifest %s, error: %v", path, err)
+			return nil
+		}
+
+		if _, ok := m.supportPlugins[manifest.DisplayName]; ok {
+			// skip
+			return nil
+		}
+
+		step, err := m.checkPlugin(manifest)
 		if err != nil {
 			m.logger.Errorf("Error when load plugin %s, error: %v", path, err)
 			// continue
@@ -136,9 +147,14 @@ func (m *Manager) initAllPlugins() {
 		_ = os.MkdirAll(m.pluginPath, fs.ModePerm)
 	}
 
+	// set interpreter envs
+	// PLUGIN_PATH current plugin path
+	envSlice := os.Environ()
+	envSlice = append(envSlice, fmt.Sprintf("PLUGIN_PATH=%s", m.pluginPath))
+
 	i := interp.New(interp.Options{
 		GoPath: m.pluginPath,
-		Env:    os.Environ(),
+		Env:    envSlice,
 	})
 
 	err := i.Use(stdlib.Symbols)
@@ -348,13 +364,9 @@ func RunTaskWithQuit(client *transport.Client, cmd string, quitCh chan bool, wri
 	}
 }
 
-func (m *Manager) checkPlugin(path string) (types.Step, error) {
-	manifest, err := readManifest(path)
-	if err != nil {
-		return nil, err
-	}
+func (m *Manager) checkPlugin(manifest *Manifest) (types.Step, error) {
 
-	_, err = m.interpreter.Eval(fmt.Sprintf(`import "%s"`, manifest.Import))
+	_, err := m.interpreter.Eval(fmt.Sprintf(`import "%s"`, manifest.Import))
 	if err != nil {
 		return nil, err
 	}
