@@ -1,6 +1,6 @@
 export PATH := $(GOPATH)/bin:$(PATH)
 export GO111MODULE=on
-LDFLAGS := -s -w -X oms/version.Version=$(release_name)
+LDFLAGS := -s -w -X github.com/ssbeatty/oms/version.Version=$(release_name)
 
 # https://pkg.go.dev/modernc.org/sqlite
 os-archs=darwin:amd64 darwin:arm64 freebsd:amd64 linux:386 linux:amd64 linux:arm linux:arm64 linux:riscv64 windows:amd64 windows:arm64
