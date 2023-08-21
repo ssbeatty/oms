@@ -4,16 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kardianos/service"
+	"github.com/lestrrat-go/file-rotatelogs"
 	log "github.com/sirupsen/logrus"
 	"github.com/ssbeatty/oms/internal/config"
 	"github.com/ssbeatty/oms/internal/models"
 	"github.com/ssbeatty/oms/internal/server"
 	"github.com/ssbeatty/oms/pkg/logger"
 	"github.com/ssbeatty/oms/version"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 type App struct {
@@ -99,16 +100,23 @@ func main() {
 		var logPath string
 
 		if filepath.IsAbs(conf.App.Logger) {
-			logPath = conf.App.Logger
+			logPath = conf.App.Logger + "/oms.%Y-%m-%d.log"
 		} else {
-			logPath = filepath.Join(conf.App.DataPath, conf.App.Logger)
+			logPath = filepath.Join(conf.App.DataPath, conf.App.Logger+".%Y-%m-%d")
 		}
-		logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, fs.ModePerm)
+
+		rotateLogs, err := rotatelogs.New(
+			logPath,
+			rotatelogs.WithMaxAge(conf.App.TempDate), // 保留日志文件的最大天数
+			rotatelogs.WithRotationTime(24*time.Hour), // 每天生成一个新的日志文件
+			rotatelogs.WithClock(rotatelogs.Local),    // 使用本地时钟
+			rotatelogs.WithRotationSize(1024*1024*20), // 字节数
+		)
 		if err != nil {
-			log.Error("打开日志文件失败!")
+			log.Errorf("创建 Rotatelogs 失败: %v", err)
 			return
 		}
-		logger.SetOutput(logFile)
+		logger.SetOutput(rotateLogs)
 	}
 
 	log.Infof("当前版本: %s", version.Version)
