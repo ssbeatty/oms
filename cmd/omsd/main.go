@@ -97,12 +97,15 @@ func main() {
 	if conf.App.Logger == "" || conf.App.Logger == "stdout" {
 		logger.SetOutput(os.Stdout)
 	} else {
-		var logPath string
+		var (
+			logPath    string
+			dateSuffix = ".%Y-%m-%d"
+		)
 
 		if filepath.IsAbs(conf.App.Logger) {
-			logPath = conf.App.Logger + "/oms.%Y-%m-%d.log"
+			logPath = conf.App.Logger + dateSuffix
 		} else {
-			logPath = filepath.Join(conf.App.DataPath, conf.App.Logger+".%Y-%m-%d")
+			logPath = filepath.Join(conf.App.DataPath, conf.App.Logger+dateSuffix)
 		}
 
 		rotateLogs, err := rotatelogs.New(
