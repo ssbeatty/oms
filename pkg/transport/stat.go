@@ -195,8 +195,13 @@ func getUptime(client *Client, stats *Stats) error {
 		}
 	}
 
+	hourTotal := int(stats.Uptime.Hours())
+	day := hourTotal / 24
+	hour := hourTotal % 24
+	minute := int(stats.Uptime.Minutes()) % 60
+	second := int(stats.Uptime.Seconds()) % 60
 	stats.StartUpTime = fmt.Sprintf(
-		"%d时%d分%d秒", int(stats.Uptime.Hours()), int(stats.Uptime.Minutes())%60, int(stats.Uptime.Seconds())%60)
+		"%d天%d时%d分%d秒", day, hour, minute, second)
 
 	return nil
 }
