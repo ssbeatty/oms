@@ -36,10 +36,33 @@ func (w *sudoWriter) Write(p []byte) (int, error) {
 	return w.b.Write(p)
 }
 
+func (s *Session) hasSudoCommand() bool {
+	if s.hasSudo {
+		return true
+	}
+
+	ss, err := s.Client.NewPty()
+	if err != nil {
+		return false
+	}
+
+	defer ss.Close()
+
+	_, err = ss.Output("sudo -V")
+	if err != nil {
+		return false
+	}
+
+	s.hasSudo = true
+
+	return true
+}
+
 func (s *Session) Sudo(cmd, passwd string) ([]byte, error) {
-	if cmd == "" {
+	if cmd == "" || !s.hasSudoCommand() {
 		return s.Output(cmd)
 	}
+
 	cmd = "sudo -p " + sudoPwPrompt + " -S " + cmd
 
 	// Use the sudoRW struct to handle the interaction with sudo and capture the
@@ -71,7 +94,7 @@ func (s *Session) SudoContext(ctx context.Context, cmd, passwd string) ([]byte, 
 		}
 	}()
 
-	if cmd == "" {
+	if cmd == "" || !s.hasSudoCommand() {
 		return s.Output(cmd)
 	}
 	cmd = "sudo -p " + sudoPwPrompt + " -S " + cmd

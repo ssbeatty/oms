@@ -116,6 +116,7 @@ type Session struct {
 	Client     *Client
 	sshSession *ssh.Session
 	stdin      io.WriteCloser
+	hasSudo    bool
 }
 
 /*
