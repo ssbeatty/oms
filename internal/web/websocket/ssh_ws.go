@@ -98,10 +98,14 @@ func (s *SSHSession) ReceiveWsMsg(wsConn *websocket.Conn, exitCh chan struct{}) 
 			return
 		default:
 			// read websocket msg
-			_, wsData, err := wsConn.ReadMessage()
+			msgType, wsData, err := wsConn.ReadMessage()
 			if err != nil {
 				s.logger.Errorf("reading webSocket message failed, err: %v", err)
 				return
+			}
+
+			if msgType == websocket.BinaryMessage {
+				goto SEND
 			}
 
 			// 每次传输一个或多个char
@@ -244,7 +248,6 @@ func (s *SSHSession) SendComboOutput(wsConn *websocket.Conn, exitCh chan struct{
 							s.ZModemRZ = true
 							conn.WriteMessage(websocket.BinaryMessage, ZModemRZESStart)
 						} else {
-							conn.WriteMessage(websocket.BinaryMessage, buff)
 							conn.WriteJSON(&message{Type: "data", Data: buff})
 						}
 					}
