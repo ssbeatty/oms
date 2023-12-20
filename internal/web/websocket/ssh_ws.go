@@ -157,6 +157,7 @@ func (s *SSHSession) SendComboOutput(wsConn *websocket.Conn, exitCh chan struct{
 					continue
 				}
 
+				r.mu.Lock()
 				buff := r.buffer.Bytes()
 
 				if s.ZModemSZOO {
@@ -253,6 +254,7 @@ func (s *SSHSession) SendComboOutput(wsConn *websocket.Conn, exitCh chan struct{
 					}
 				}
 				r.buffer.Reset()
+				r.mu.Unlock()
 			}
 		}
 	}
