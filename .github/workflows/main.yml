@@ -36,6 +36,7 @@ jobs:
           cd web/omsUI
           npm install yarn
           node_modules/.bin/yarn
+          echo insecure >> $HOME/.curlrc
           node_modules/.bin/yarn config set strict-ssl false
           npm run build
 
