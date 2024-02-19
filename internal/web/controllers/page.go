@@ -50,6 +50,7 @@ func (s *Service) GetWebsocketSSH(c *gin.Context) {
 	wsConn, err := upGrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.Logger.Errorf("upgrade websocket failed, err: %v", err)
+		return
 	}
 	defer wsConn.Close()
 
