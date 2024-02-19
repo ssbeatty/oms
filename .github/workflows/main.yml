@@ -36,6 +36,7 @@ jobs:
           cd web/omsUI
           npm install yarn
           node_modules/.bin/yarn
+          node_modules/.bin/yarn config set strict-ssl false
           npm run build
 
       - name: Make all
