@@ -35,9 +35,7 @@ jobs:
         run: |
           cd web/omsUI
           npm install yarn
-          node_modules/.bin/yarn
-          echo insecure >> $HOME/.curlrc
-          node_modules/.bin/yarn config set strict-ssl false
+          node_modules/.bin/yarn install --registry http://registry.npm.taobao.org/
           npm run build
 
       - name: Make all
