@@ -28,15 +28,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '14'
-          cache: 'yarn'
-          cache-dependency-path: web/omsUI/yarn.lock
 
       - name: Node build
         run: |
           cd web/omsUI
-          npm install yarn
-          node_modules/.bin/yarn install --registry http://registry.npm.taobao.org/
-          npm run build
+          yarn install --registry https://registry.npmmirror.com/
+          yarn run build
 
       - name: Make all
         run: |
