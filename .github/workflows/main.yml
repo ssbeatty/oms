@@ -3,6 +3,18 @@ on:
   push:
     tags:
       - 'v*.**'
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+      tag_name:
+        type: string
+        description: 'Tag name'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -29,6 +41,10 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+
       - name: Node build
         run: |
           cd web/omsUI
@@ -39,7 +55,7 @@ jobs:
         run: |
           make all
         env:
-          release_name: ${{ github.ref_name }}
+          release_name: ${{ inputs.tag_name != '' && inputs.tag_name || github.ref_name }}
 
       - name: Draft release
         uses: softprops/action-gh-release@v1
