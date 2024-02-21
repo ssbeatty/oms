@@ -3,6 +3,18 @@ on:
   push:
     tags:
       - 'v*.**'
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+      tag_name:
+        type: string
+        description: 'Tag name'
+        required: false
+        default: ''
 
 jobs:
   build:
@@ -27,24 +39,23 @@ jobs:
       - name: Set Node
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
-          cache: 'yarn'
-          cache-dependency-path: web/omsUI/yarn.lock
+          node-version: '16'
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Node build
         run: |
           cd web/omsUI
-          npm install yarn
-          node_modules/.bin/yarn
-          echo insecure >> $HOME/.curlrc
-          node_modules/.bin/yarn config set strict-ssl false
-          npm run build
+          yarn install --registry http://registry.yarnpkg.com/ --no-lockfile
+          yarn run build
 
       - name: Make all
         run: |
           make all
         env:
-          release_name: ${{ github.ref_name }}
+          release_name: ${{ inputs.tag_name != '' && inputs.tag_name || github.ref_name }}
 
       - name: Draft release
         uses: softprops/action-gh-release@v1
