@@ -39,7 +39,7 @@ jobs:
       - name: Set Node
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '14'
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -48,7 +48,7 @@ jobs:
       - name: Node build
         run: |
           cd web/omsUI
-          yarn install --registry http://registry.npmmirror.com/
+          yarn install --registry http://registry.yarnpkg.com/ --no-lockfile
           yarn run build
 
       - name: Make all
