@@ -48,8 +48,9 @@ jobs:
       - name: Node build
         run: |
           cd web/omsUI
-          yarn install --registry http://registry.yarnpkg.com/ --no-lockfile
-          yarn run build
+          npm install pnpm
+          node_modules/.bin/pnpm install
+          pnpm run build
 
       - name: Make all
         run: |
