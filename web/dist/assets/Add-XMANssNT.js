@@ -1,0 +1,1 @@
+import{r,f as a,i as t,h as d}from"./index-vyLcd-Je.js";var e={},v=t,i=d;Object.defineProperty(e,"__esModule",{value:!0});var o=e.default=void 0,u=i(r),l=v(a()),p=(0,l.default)(u.createElement("path",{d:"M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"}),"Add");o=e.default=p;export{o as d};

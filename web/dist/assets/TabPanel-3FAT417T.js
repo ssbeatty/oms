@@ -1,0 +1,1 @@
+import{j as t}from"./index-vyLcd-Je.js";import{B as n}from"./Box-C_Unawo1.js";function d(r){const{children:i,value:a,index:e,...l}=r;return t.jsx("div",{role:"tabpanel",hidden:a!==e,id:`vertical-tabpanel-${e}`,"aria-labelledby":`vertical-tab-${e}`,...l,children:a===e&&t.jsx(n,{style:{height:"100%"},p:3,children:i})})}export{d as T};

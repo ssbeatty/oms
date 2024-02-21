@@ -140,7 +140,7 @@ func InitRouter(s *controllers.Service) *controllers.Service {
 
 	static := &web.ServeFileSystem{
 		E:    web.EmbeddedFiles,
-		Path: "omsUI/dist/assets",
+		Path: "dist/assets",
 	}
 
 	r.Use(staticF.Serve("/assets", static))

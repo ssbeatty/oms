@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-const IndexPage = "omsUI/dist/index.html"
+const IndexPage = "dist/index.html"
 
 func (s *Service) GetIndexPage(c *gin.Context) {
 	bytes, err := web.EmbeddedFiles.ReadFile(IndexPage)

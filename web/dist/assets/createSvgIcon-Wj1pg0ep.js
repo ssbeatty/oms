@@ -1,0 +1,1 @@
+import{cj as t,r,j as c,_ as m}from"./index-vyLcd-Je.js";function u(n,o){function e(a,s){return c.jsx(t,m({"data-testid":`${o}Icon`,ref:s},a,{children:n}))}return e.muiName=t.muiName,r.memo(r.forwardRef(e))}export{u as c};

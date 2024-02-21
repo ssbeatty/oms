@@ -1,0 +1,1 @@
+import{j as e,m as r}from"./index-vyLcd-Je.js";const l=r(o=>({root:{width:"100%",height:"100%",overflowY:"scroll",backgroundColor:o.palette.grey.A100}}));function c(o){const{children:s}=o,t=l();return e.jsx("div",{className:t.root,children:s})}export{c as B};

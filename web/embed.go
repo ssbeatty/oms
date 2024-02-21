@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-//go:embed omsUI/dist
+//go:embed dist
 var EmbeddedFiles embed.FS
 
 type ServeFileSystem struct {
