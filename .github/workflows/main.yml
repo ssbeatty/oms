@@ -39,7 +39,7 @@ jobs:
       - name: Set Node
         uses: actions/setup-node@v3
         with:
-          node-version: '14'
+          node-version: '16'
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
